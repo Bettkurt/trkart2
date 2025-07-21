@@ -1,11 +1,35 @@
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\bin\Debug\net6.0\TRKart.Entities.deps.json
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\bin\Debug\net6.0\TRKart.Entities.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\bin\Debug\net6.0\TRKart.Entities.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.AssemblyInfoInputs.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.AssemblyInfo.cs
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.csproj.CoreCompileInputs.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\refint\TRKart.Entities.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\TRKart.Entities.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.Entities\obj\Debug\net6.0\ref\TRKart.Entities.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.deps.json
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.GeneratedMSBuildEditorConfig.editorconfig
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfoInputs.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfo.cs
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.csproj.CoreCompileInputs.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/refint/TRKart.Entities.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.Entities/obj/Debug/net6.0/ref/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.deps.json
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.GeneratedMSBuildEditorConfig.editorconfig
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfoInputs.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfo.cs
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.csproj.CoreCompileInputs.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.sourcelink.json
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/refint/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.Entities/obj/Debug/net6.0/ref/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.deps.json
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/bin/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.GeneratedMSBuildEditorConfig.editorconfig
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfoInputs.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.AssemblyInfo.cs
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.csproj.CoreCompileInputs.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.sourcelink.json
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/refint/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/Debug/net6.0/ref/TRKart.Entities.dll

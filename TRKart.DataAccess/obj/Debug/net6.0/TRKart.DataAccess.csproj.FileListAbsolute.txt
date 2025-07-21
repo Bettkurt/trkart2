@@ -1,21 +1,65 @@
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.DataAccess.deps.json
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.DataAccess.runtimeconfig.json
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.DataAccess.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.DataAccess.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Core.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Entities.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Repository.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Core.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Entities.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\bin\Debug\net6.0\TRKart.Repository.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.csproj.AssemblyReference.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.AssemblyInfoInputs.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.AssemblyInfo.cs
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.csproj.CoreCompileInputs.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.D.7DD5A956.Up2Date
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\refint\TRKart.DataAccess.dll
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.pdb
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\TRKart.DataAccess.genruntimeconfig.cache
-C:\Users\betul\OneDrive\Masaüstü\TRKart\TRKart.DataAccess\obj\Debug\net6.0\ref\TRKart.DataAccess.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.deps.json
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.runtimeconfig.json
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.AssemblyReference.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfoInputs.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfo.cs
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.CoreCompileInputs.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.D.7DD5A956.Up2Date
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/refint/TRKart.DataAccess.dll
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.pdb
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.genruntimeconfig.cache
+C:/Users/betul/OneDrive/Masaüstü/TRKart/TRKart.DataAccess/obj/Debug/net6.0/ref/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.deps.json
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.runtimeconfig.json
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.AssemblyReference.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfoInputs.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfo.cs
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.CoreCompileInputs.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.sourcelink.json
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.D.7DD5A956.Up2Date
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/refint/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.pdb
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.genruntimeconfig.cache
+/Users/simalkangalli/Desktop/DGPAYSIT STAJ BELGELERİ/trkart2/TRKart.DataAccess/obj/Debug/net6.0/ref/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.deps.json
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.runtimeconfig.json
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.DataAccess.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Core.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Entities.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/bin/Debug/net6.0/TRKart.Repository.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.AssemblyReference.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfoInputs.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.AssemblyInfo.cs
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.csproj.CoreCompileInputs.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.sourcelink.json
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.D.7DD5A956.Up2Date
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/refint/TRKart.DataAccess.dll
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.pdb
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/TRKart.DataAccess.genruntimeconfig.cache
+/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/Debug/net6.0/ref/TRKart.DataAccess.dll
