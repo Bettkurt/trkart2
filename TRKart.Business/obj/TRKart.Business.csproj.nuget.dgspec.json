@@ -1,45 +1,42 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj": {}
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj": {}
   },
   "projects": {
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj": {
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj",
+        "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj",
         "projectName": "TRKart.Business",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj",
-        "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\obj\\",
+        "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj",
+        "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+        "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\betul\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj"
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj"
               },
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj"
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj"
               },
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj"
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj"
+              },
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj"
               }
             }
           }
@@ -53,8 +50,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net6.0": {
@@ -93,32 +89,26 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj",
+        "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj",
         "projectName": "TRKart.Core",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj",
-        "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\obj\\",
+        "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj",
+        "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+        "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\betul\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -136,8 +126,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net6.0": {
@@ -168,32 +157,114 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj",
-        "projectName": "TRKart.Entities",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj",
-        "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\obj\\",
+        "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj",
+        "projectName": "TRKart.DataAccess",
+        "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj",
+        "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+        "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\betul\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj"
+              },
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj"
+              },
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "Npgsql": {
+              "target": "Package",
+              "version": "[6.0.8, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj",
+        "projectName": "TRKart.Entities",
+        "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj",
+        "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+        "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -211,8 +282,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net6.0": {
@@ -233,43 +303,37 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj": {
+    "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj",
+        "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj",
         "projectName": "TRKart.Repository",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj",
-        "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\obj\\",
+        "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj",
+        "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+        "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\betul\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj"
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj"
               },
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj"
+              "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj": {
+                "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj"
               }
             }
           }
@@ -283,8 +347,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net6.0": {
@@ -305,7 +368,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
         }
       }
     }

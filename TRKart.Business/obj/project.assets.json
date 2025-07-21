@@ -87,6 +87,23 @@
           "lib/netstandard2.0/_._": {}
         }
       },
+      "Microsoft.EntityFrameworkCore.Relational/6.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "6.0.0",
+          "Microsoft.Extensions.Configuration.Abstractions": "6.0.0"
+        },
+        "compile": {
+          "lib/net6.0/Microsoft.EntityFrameworkCore.Relational.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Microsoft.EntityFrameworkCore.Relational.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.Extensions.Caching.Abstractions/6.0.0": {
         "type": "package",
         "dependencies": {
@@ -344,6 +361,37 @@
           }
         }
       },
+      "Npgsql/6.0.8": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+        },
+        "compile": {
+          "lib/net6.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL/6.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "6.0.0",
+          "Microsoft.EntityFrameworkCore.Abstractions": "6.0.0",
+          "Microsoft.EntityFrameworkCore.Relational": "6.0.0",
+          "Npgsql": "6.0.0"
+        },
+        "compile": {
+          "lib/net6.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {}
+        }
+      },
       "System.Collections.Immutable/6.0.0": {
         "type": "package",
         "dependencies": {
@@ -444,6 +492,24 @@
         },
         "runtime": {
           "bin/placeholder/TRKart.Core.dll": {}
+        }
+      },
+      "TRKart.DataAccess/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "6.0.0",
+          "Npgsql": "6.0.8",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "6.0.0",
+          "TRKart.Core": "1.0.0",
+          "TRKart.Entities": "1.0.0",
+          "TRKart.Repository": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/TRKart.DataAccess.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/TRKart.DataAccess.dll": {}
         }
       },
       "TRKart.Entities/1.0.0": {
@@ -627,6 +693,20 @@
         "lib/netstandard2.0/_._",
         "microsoft.entityframeworkcore.analyzers.6.0.0.nupkg.sha512",
         "microsoft.entityframeworkcore.analyzers.nuspec"
+      ]
+    },
+    "Microsoft.EntityFrameworkCore.Relational/6.0.0": {
+      "sha512": "rTRzrSbkUXoCGijlT9O7oq7JfuaU1/+VFyfSBjADQuOsfa0FCrWeB8ybue5CDvO/D6uW0kvPvlKfY2kwxXOOdg==",
+      "type": "package",
+      "path": "microsoft.entityframeworkcore.relational/6.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "lib/net6.0/Microsoft.EntityFrameworkCore.Relational.dll",
+        "lib/net6.0/Microsoft.EntityFrameworkCore.Relational.xml",
+        "microsoft.entityframeworkcore.relational.6.0.0.nupkg.sha512",
+        "microsoft.entityframeworkcore.relational.nuspec"
       ]
     },
     "Microsoft.Extensions.Caching.Abstractions/6.0.0": {
@@ -969,6 +1049,43 @@
         "microsoft.identitymodel.tokens.nuspec"
       ]
     },
+    "Npgsql/6.0.8": {
+      "sha512": "wKa8MJEJaj0xQXUQZGv7q/KfPID23jSSvFFtljMworrv7dNajr0GN8PCU1SpywqHjMWdYEfK29DY1aYbiISbQg==",
+      "type": "package",
+      "path": "npgsql/6.0.8",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net5.0/Npgsql.dll",
+        "lib/net5.0/Npgsql.xml",
+        "lib/net6.0/Npgsql.dll",
+        "lib/net6.0/Npgsql.xml",
+        "lib/netcoreapp3.1/Npgsql.dll",
+        "lib/netcoreapp3.1/Npgsql.xml",
+        "lib/netstandard2.0/Npgsql.dll",
+        "lib/netstandard2.0/Npgsql.xml",
+        "lib/netstandard2.1/Npgsql.dll",
+        "lib/netstandard2.1/Npgsql.xml",
+        "npgsql.6.0.8.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
+    "Npgsql.EntityFrameworkCore.PostgreSQL/6.0.0": {
+      "sha512": "3laelDbRuri90YL+RAezn1VWEkrzaYkKq8OJ2vzAp6In9c8UqkaFMidIHyS9ipIerrv5Qo+mU55+8s5mrCiAvg==",
+      "type": "package",
+      "path": "npgsql.entityframeworkcore.postgresql/6.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll",
+        "npgsql.entityframeworkcore.postgresql.6.0.0.nupkg.sha512",
+        "npgsql.entityframeworkcore.postgresql.nuspec",
+        "postgresql.png"
+      ]
+    },
     "System.Collections.Immutable/6.0.0": {
       "sha512": "l4zZJ1WU2hqpQQHXz1rvC3etVZN+2DLmQMO79FhOTZHMn8tDRr+WU287sbomD0BETlmKDn0ygUgVy9k5xkkJdA==",
       "type": "package",
@@ -1129,6 +1246,11 @@
       "path": "../TRKart.Core/TRKart.Core.csproj",
       "msbuildProject": "../TRKart.Core/TRKart.Core.csproj"
     },
+    "TRKart.DataAccess/1.0.0": {
+      "type": "project",
+      "path": "../TRKart.DataAccess/TRKart.DataAccess.csproj",
+      "msbuildProject": "../TRKart.DataAccess/TRKart.DataAccess.csproj"
+    },
     "TRKart.Entities/1.0.0": {
       "type": "project",
       "path": "../TRKart.Entities/TRKart.Entities.csproj",
@@ -1147,50 +1269,47 @@
       "Microsoft.EntityFrameworkCore >= 6.0.0",
       "Microsoft.Extensions.DependencyInjection >= 6.0.0",
       "TRKart.Core >= 1.0.0",
+      "TRKart.DataAccess >= 1.0.0",
       "TRKart.Entities >= 1.0.0",
       "TRKart.Repository >= 1.0.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\betul\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "/Users/simalkangalli/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj",
+      "projectUniqueName": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj",
       "projectName": "TRKart.Business",
-      "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\TRKart.Business.csproj",
-      "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Business\\obj\\",
+      "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/TRKart.Business.csproj",
+      "packagesPath": "/Users/simalkangalli/.nuget/packages/",
+      "outputPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Business/obj/",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\betul\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "/Users/simalkangalli/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
-              "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj"
+            "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj": {
+              "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Core/TRKart.Core.csproj"
             },
-            "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
-              "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj"
+            "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj": {
+              "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.DataAccess/TRKart.DataAccess.csproj"
             },
-            "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj": {
-              "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj"
+            "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj": {
+              "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Entities/TRKart.Entities.csproj"
+            },
+            "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj": {
+              "projectPath": "/Users/simalkangalli/Desktop/trkart2/TRKart.Repository/TRKart.Repository.csproj"
             }
           }
         }
@@ -1204,8 +1323,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "9.0.300"
+      }
     },
     "frameworks": {
       "net6.0": {
@@ -1244,7 +1362,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.412/RuntimeIdentifierGraph.json"
       }
     }
   }

@@ -111,7 +111,7 @@
         },
         "runtime": {
           "TRKart.Core.dll": {
-            "assemblyVersion": "1.0.0.0",
+            "assemblyVersion": "1.0.0",
             "fileVersion": "1.0.0.0"
           }
         }
@@ -119,7 +119,7 @@
       "TRKart.Entities/1.0.0": {
         "runtime": {
           "TRKart.Entities.dll": {
-            "assemblyVersion": "1.0.0.0",
+            "assemblyVersion": "1.0.0",
             "fileVersion": "1.0.0.0"
           }
         }
