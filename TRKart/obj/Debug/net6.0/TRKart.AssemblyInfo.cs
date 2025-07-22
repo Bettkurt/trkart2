@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TRKart")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2417fca9443eaaba8bda91723b7723857a871135")]
 [assembly: System.Reflection.AssemblyProductAttribute("TRKart")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TRKart")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

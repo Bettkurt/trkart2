@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TRKart.Entities
 {
@@ -12,12 +8,10 @@ namespace TRKart.Entities
 
         public string Token { get; set; } = null!;
 
-        public DateTime ExpiryDate { get; set; }
+        public DateTime Expiration { get; set; }  // Bu tek yeterli
 
-        public int CustomerId { get; set; } 
-       
-        public object? Customer { get; set; }
-        public DateTime Expiration { get; set; }
+        public int CustomerId { get; set; }       // Foreign Key
+
+        public Customer Customer { get; set; } = null!;  // Navigation Property
     }
 }
-

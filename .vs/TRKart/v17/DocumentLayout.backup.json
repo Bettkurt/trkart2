@@ -1,0 +1,346 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|solutionrelative:trkart.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\migrations\\20250720091356_initialpostgresmigration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\migrations\\20250720091356_initialpostgresmigration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\configurationbuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\configurationbuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.api\\trkart.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|solutionrelative:trkart.api\\trkart.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|solutionrelative:trkart.api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.entities\\dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|solutionrelative:trkart.entities\\dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.entities\\dtos\\logindto..cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|solutionrelative:trkart.entities\\dtos\\logindto..cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.api\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|solutionrelative:trkart.api\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\migrations\\applicationdbcontextmodelsnapshot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.entities\\sessiontoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|solutionrelative:trkart.entities\\sessiontoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.entities\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A6D827F3-984B-43E4-9D15-DE03DAACCCDA}|TRKart.Entities\\TRKart.Entities.csproj|solutionrelative:trkart.entities\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.dataaccess\\trkart.dataaccess.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{86D99DD4-6986-428F-B1D1-08CDFE0A074A}|TRKart.DataAccess\\TRKart.DataAccess.csproj|solutionrelative:trkart.dataaccess\\trkart.dataaccess.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2FB6ECA5-3A69-4BD9-AD63-1C0E495363CA}|TRKart.Business\\TRKart.Business.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.business\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2FB6ECA5-3A69-4BD9-AD63-1C0E495363CA}|TRKart.Business\\TRKart.Business.csproj|solutionrelative:trkart.business\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FC40D6A1-648F-44DB-AB27-62789DF31C12}|TRKart\\TRKart.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart\\trkart.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{FC40D6A1-648F-44DB-AB27-62789DF31C12}|TRKart\\TRKart.csproj|solutionrelative:trkart\\trkart.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{C4282E5E-FD66-447D-B692-210505D15E7F}|TRKart.API\\TRKart.API.csproj|solutionrelative:trkart.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FC40D6A1-648F-44DB-AB27-62789DF31C12}|TRKart\\TRKart.csproj|c:\\users\\betul\\onedrive\\masa\u00FCst\u00FC\\trkart2\\trkart\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{FC40D6A1-648F-44DB-AB27-62789DF31C12}|TRKart\\TRKart.csproj|solutionrelative:trkart\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ApplicationDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\ApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\ApplicationDbContext.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\ApplicationDbContext.cs",
+              "RelativeToolTip": "TRKart.DataAccess\\ApplicationDbContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T08:17:44.867Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Program.cs",
+              "RelativeDocumentMoniker": "TRKart.API\\Program.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Program.cs*",
+              "RelativeToolTip": "TRKart.API\\Program.cs*",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAF0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-18T18:48:04.599Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "20250720091356_InitialPostgresMigration.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Migrations\\20250720091356_InitialPostgresMigration.cs",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\Migrations\\20250720091356_InitialPostgresMigration.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Migrations\\20250720091356_InitialPostgresMigration.cs",
+              "RelativeToolTip": "TRKart.DataAccess\\Migrations\\20250720091356_InitialPostgresMigration.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T09:13:56.586Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Class1.cs",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\Class1.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Class1.cs",
+              "RelativeToolTip": "TRKart.DataAccess\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-21T06:11:32.667Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ConfigurationBuilder.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\ConfigurationBuilder.cs",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\ConfigurationBuilder.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\ConfigurationBuilder.cs",
+              "RelativeToolTip": "TRKart.DataAccess\\ConfigurationBuilder.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-21T06:11:29.292Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "TRKart.API\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Properties\\launchSettings.json",
+              "RelativeToolTip": "TRKart.API\\Properties\\launchSettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-07-18T18:49:00.106Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "SessionToken.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\SessionToken.cs",
+              "RelativeDocumentMoniker": "TRKart.Entities\\SessionToken.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\SessionToken.cs",
+              "RelativeToolTip": "TRKart.Entities\\SessionToken.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAowBEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T09:10:38.473Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "TRKart.API\\Controllers\\AuthController.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "TRKart.API\\Controllers\\AuthController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-18T18:46:54.94Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "TRKart.API",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\TRKart.API.csproj",
+              "RelativeDocumentMoniker": "TRKart.API\\TRKart.API.csproj",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\TRKart.API.csproj",
+              "RelativeToolTip": "TRKart.API\\TRKart.API.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-20T09:29:33.551Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "LoginDto..cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\DTOs\\LoginDto..cs",
+              "RelativeDocumentMoniker": "TRKart.Entities\\DTOs\\LoginDto..cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\DTOs\\LoginDto..cs",
+              "RelativeToolTip": "TRKart.Entities\\DTOs\\LoginDto..cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-18T18:56:40.431Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "RegisterDto.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\DTOs\\RegisterDto.cs",
+              "RelativeDocumentMoniker": "TRKart.Entities\\DTOs\\RegisterDto.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\DTOs\\RegisterDto.cs",
+              "RelativeToolTip": "TRKart.Entities\\DTOs\\RegisterDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-18T18:56:45.981Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ApplicationDbContextModelSnapshot.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "RelativeToolTip": "TRKart.DataAccess\\Migrations\\ApplicationDbContextModelSnapshot.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T09:16:47.799Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Customer.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\Customer.cs",
+              "RelativeDocumentMoniker": "TRKart.Entities\\Customer.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Entities\\Customer.cs",
+              "RelativeToolTip": "TRKart.Entities\\Customer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-19T13:33:03.47Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "TRKart.DataAccess",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\TRKart.DataAccess.csproj",
+              "RelativeDocumentMoniker": "TRKart.DataAccess\\TRKart.DataAccess.csproj",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.DataAccess\\TRKart.DataAccess.csproj",
+              "RelativeToolTip": "TRKart.DataAccess\\TRKart.DataAccess.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-20T08:49:19.516Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Business\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "TRKart.Business\\Services\\AuthService.cs",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.Business\\Services\\AuthService.cs",
+              "RelativeToolTip": "TRKart.Business\\Services\\AuthService.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAAAUwEMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T08:43:36.89Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "TRKart",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart\\TRKart.csproj",
+              "RelativeDocumentMoniker": "TRKart\\TRKart.csproj",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart\\TRKart.csproj",
+              "RelativeToolTip": "TRKart\\TRKart.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-20T08:45:45.631Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\appsettings.json",
+              "RelativeDocumentMoniker": "TRKart.API\\appsettings.json",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart.API\\appsettings.json",
+              "RelativeToolTip": "TRKart.API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-07-20T08:17:18.189Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart\\appsettings.json",
+              "RelativeDocumentMoniker": "TRKart\\appsettings.json",
+              "ToolTip": "C:\\Users\\betul\\OneDrive\\Masa\u00FCst\u00FC\\trkart2\\TRKart\\appsettings.json",
+              "RelativeToolTip": "TRKart\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-07-20T08:17:06.495Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

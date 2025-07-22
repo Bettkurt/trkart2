@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj": {}
+    "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\TRKart.Repository.csproj": {}
   },
   "projects": {
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
+    "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\TRKart.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj",
+        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\TRKart.Core.csproj",
         "projectName": "TRKart.Core",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj",
+        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\TRKart.Core.csproj",
         "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\obj\\",
+        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -79,14 +79,14 @@
         }
       }
     },
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
+    "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\TRKart.Entities.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj",
+        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\TRKart.Entities.csproj",
         "projectName": "TRKart.Entities",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj",
+        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\TRKart.Entities.csproj",
         "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\obj\\",
+        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -144,14 +144,14 @@
         }
       }
     },
-    "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj": {
+    "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\TRKart.Repository.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj",
+        "projectUniqueName": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\TRKart.Repository.csproj",
         "projectName": "TRKart.Repository",
-        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj",
+        "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\TRKart.Repository.csproj",
         "packagesPath": "C:\\Users\\betul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\obj\\",
+        "outputPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -172,11 +172,11 @@
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Core\\TRKart.Core.csproj"
+              "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\TRKart.Core.csproj": {
+                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Core\\TRKart.Core.csproj"
               },
-              "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj": {
-                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Entities\\TRKart.Entities.csproj"
+              "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\TRKart.Entities.csproj": {
+                "projectPath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Entities\\TRKart.Entities.csproj"
               }
             }
           }

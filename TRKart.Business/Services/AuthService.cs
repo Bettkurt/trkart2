@@ -1,74 +1,57 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TRKart.Business.Interfaces;
-using TRKart.Core.Helpers;
-using TRKart.Entities;
+﻿using TRKart.Business.Interfaces;
 using TRKart.Entities.DTOs;
+using TRKart.Core.Helpers;
+using TRKart.DataAccess;
+using Microsoft.EntityFrameworkCore;
+using BCrypt.Net;
 
 namespace TRKart.Business.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly ApplicationDbContext _context;
         private readonly JwtHelper _jwtHelper;
+        private readonly ApplicationDbContext _context;
 
-        public AuthService(ApplicationDbContext context, JwtHelper jwtHelper)
+        public AuthService(JwtHelper jwtHelper, ApplicationDbContext context)
         {
-            _context = context;
             _jwtHelper = jwtHelper;
+            _context = context;
         }
 
-        public async Task<string?> LoginAsync(LoginDto dto)
+        public async Task<bool> RegisterAsync(RegisterDto registerDto)
         {
-            // 1. Kullanıcıyı bul
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(x => x.Email == dto.Email);
+            var existingUser = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == registerDto.Email);
+            
+            if (existingUser != null)
+                return false;
 
-            // 2. Kullanıcı yoksa null döndür
+        
+
+            var customer = new TRKart.Entities.Customer
+            {
+                Email = registerDto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
+                 FullName = registerDto.FullName, 
+            };
+
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<string?> LoginAsync(LoginDto loginDto)
+        {
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == loginDto.Email);
+
             if (customer == null)
                 return null;
 
-            // 3. Şifre doğru mu kontrol et (BCrypt ile)
-            bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, customer.PasswordHash);
-            if (!isValid)
+            if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, customer.PasswordHash))
                 return null;
 
-            // 4. JWT token üret
-            string token = _jwtHelper.GenerateToken(customer.Email);
-
-            // 5. SessionToken tablosuna kaydet (isteğe bağlı ama önerilir)
-            var session = new SessionToken
-            {
-                CustomerId = customer.Id,
-                Token = token,
-                Expiration = DateTime.UtcNow.AddHours(1)
-            };
-
-            await _context.SessionTokens.AddAsync(session);
-            await _context.SaveChangesAsync();
-
-            // 6. Token'ı döndür
-            return token;
-        }
-
-        public async Task<bool> RegisterAsync(RegisterDto dto)
-        {
-            // Aynı e-posta var mı kontrolü
-            var existing = await _context.Customers.AnyAsync(x => x.Email == dto.Email);
-            if (existing)
-                return false;
-
-            // Yeni kullanıcı oluştur
-            var newCustomer = new Customer
-            {
-                Email = dto.Email,
-                FullName = dto.FullName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
-            };
-
-            await _context.Customers.AddAsync(newCustomer);
-            await _context.SaveChangesAsync();
-
-            return true;
+            return _jwtHelper.GenerateToken(loginDto.Email);
         }
     }
 }

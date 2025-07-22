@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zlE8jgXm95o=",
+  "dgSpecHash": "UieW+FE4t/E=",
   "success": true,
-  "projectFilePath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\TRKart\\TRKart.Repository\\TRKart.Repository.csproj",
+  "projectFilePath": "C:\\Users\\betul\\OneDrive\\Masaüstü\\trkart2\\TRKart.Repository\\TRKart.Repository.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\betul\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\6.0.0\\microsoft.extensions.configuration.abstractions.6.0.0.nupkg.sha512",
     "C:\\Users\\betul\\.nuget\\packages\\microsoft.extensions.configuration.binder\\6.0.0\\microsoft.extensions.configuration.binder.6.0.0.nupkg.sha512",

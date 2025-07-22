@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TRKart.Core\TRKart.Core.csproj" />
+    <ProjectReference Include="..\TRKart.DataAccess\TRKart.DataAccess.csproj" />
     <ProjectReference Include="..\TRKart.Entities\TRKart.Entities.csproj" />
     <ProjectReference Include="..\TRKart.Repository\TRKart.Repository.csproj" />
   </ItemGroup>
