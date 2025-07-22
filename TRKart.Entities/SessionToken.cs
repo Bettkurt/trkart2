@@ -1,23 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TRKart.Entities
 {
     public class SessionToken
     {
+        [Key]
         public int Id { get; set; }
 
+        [Required]
         public string Token { get; set; } = null!;
 
-        public DateTime ExpiryDate { get; set; }
-
-        public int CustomerId { get; set; } 
-       
-        public object? Customer { get; set; }
         public DateTime Expiration { get; set; }
+
+        // Foreign Key
+        public int CustomerId { get; set; }
+
+        [ForeignKey("CustomerId")]
+        public virtual Customer Customer { get; set; } = null!;
     }
 }
-

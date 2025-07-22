@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TRKart.Entities
 {
+    [Table("customers")]          // (İsteğe bağlı) tablo adını da sabitle
     public class Customer
     {
+        [Key]                     // Birincil anahtar
+        [Column("id")]
         public int Id { get; set; }
 
-        public string Email { get; set; } = null!;
+       [Column("email")]
+    public string Email { get; set; } = null!;
+        [Column("passwordhash")]
         public string PasswordHash { get; set; } = null!;
-        public string FullName { get; set; } = null!;
-        public ICollection<SessionToken> SessionTokens { get; set; } = new List<SessionToken>();
 
+        [Column("fullname")]
+        public string FullName  { get; set; } = null!;
+
+        // İlişkili SessionToken’lar
+        public ICollection<SessionToken> SessionTokens { get; set; } = new List<SessionToken>();
     }
 }
-
