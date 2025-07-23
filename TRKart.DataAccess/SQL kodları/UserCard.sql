@@ -1,0 +1,10 @@
+CREATE TABLE UserCard (
+    CardID INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    CustomerID INT NOT NULL,
+    CardNumber VARCHAR(20) NOT NULL,
+    ExpiryDate VARCHAR(5) NOT NULL,
+    CardType VARCHAR(20) NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+CREATE INDEX IX_UserCard_CustomerID ON UserCard(CustomerID); 

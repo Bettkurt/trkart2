@@ -20,36 +20,46 @@ function LoginForm() {
     e.preventDefault();
     try {
       const response = await login(formData);
-      setMessage('Giriş başarılı! Token: ' + response.data.token);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      setMessage('Giriş başarılı!');
     } catch (error) {
-      setMessage('Giriş başarısız: ' + (error.response?.data || error.message));
+      let errMsg = 'Giriş başarısız: ';
+      if (error.response?.data?.message) {
+        errMsg += error.response.data.message;
+      } else if (typeof error.response?.data === 'string') {
+        errMsg += error.response.data;
+      } else {
+        errMsg += error.message;
+      }
+      setMessage(errMsg);
     }
   };
 
   return (
-    <div>
-      <h2>Giriş Yap</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          name="email"
-          placeholder="E-posta"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        /><br/>
-        <input
-          type="password"
-          name="password"
-          placeholder="Şifre"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        /><br/>
-        <button type="submit">Giriş Yap</button>
-      </form>
-      {message && <p>{message}</p>}
-    </div>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        name="email"
+        placeholder="E-posta"
+        value={formData.email}
+        onChange={handleChange}
+        required
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Şifre"
+        value={formData.password}
+        onChange={handleChange}
+        required
+      />
+      <button type="submit">Giriş Yap</button>
+      {message && (
+        <div className={message.startsWith('Giriş başarılı') ? 'success' : 'error'}>{message}</div>
+      )}
+    </form>
   );
 }
 

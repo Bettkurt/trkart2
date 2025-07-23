@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TRKart.DataAccess;
 
 #nullable disable
 
@@ -72,6 +71,77 @@ namespace TRKart.DataAccess.Migrations
                     b.ToTable("SessionTokens");
                 });
 
+            modelBuilder.Entity("TRKart.Entities.Transaction", b =>
+                {
+                    b.Property<int>("TransactionID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TransactionID"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("CardID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TransactionStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("UserCardCardID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TransactionID");
+
+                    b.HasIndex("UserCardCardID");
+
+                    b.ToTable("Transactions");
+                });
+
+            modelBuilder.Entity("TRKart.Entities.UserCard", b =>
+                {
+                    b.Property<int>("CardID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CardID"));
+
+                    b.Property<string>("CardNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CardType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CustomerID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExpiryDate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("CardID");
+
+                    b.HasIndex("CustomerID");
+
+                    b.ToTable("UserCards");
+                });
+
             modelBuilder.Entity("TRKart.Entities.SessionToken", b =>
                 {
                     b.HasOne("TRKart.Entities.Customer", "Customer")
@@ -83,9 +153,36 @@ namespace TRKart.DataAccess.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("TRKart.Entities.Transaction", b =>
+                {
+                    b.HasOne("TRKart.Entities.UserCard", "UserCard")
+                        .WithMany("Transactions")
+                        .HasForeignKey("UserCardCardID");
+
+                    b.Navigation("UserCard");
+                });
+
+            modelBuilder.Entity("TRKart.Entities.UserCard", b =>
+                {
+                    b.HasOne("TRKart.Entities.Customer", "Customer")
+                        .WithMany("UserCards")
+                        .HasForeignKey("CustomerID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("TRKart.Entities.Customer", b =>
                 {
                     b.Navigation("SessionTokens");
+
+                    b.Navigation("UserCards");
+                });
+
+            modelBuilder.Entity("TRKart.Entities.UserCard", b =>
+                {
+                    b.Navigation("Transactions");
                 });
 #pragma warning restore 612, 618
         }
