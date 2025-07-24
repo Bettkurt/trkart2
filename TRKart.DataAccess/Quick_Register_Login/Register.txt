@@ -1,0 +1,17 @@
+{
+  "email": "serkan@test.com",
+  "password": "serkan123",
+  "fullName": "Serkan TEST"
+}
+
+{
+  "email": "betul@test.com",
+  "password": "betul123",
+  "fullName": "Betül TEST"
+}
+
+{
+  "email": "simal@test.com",
+  "password": "simal123",
+  "fullName": "Şimal TEST"
+}

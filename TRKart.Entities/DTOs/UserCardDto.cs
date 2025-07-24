@@ -8,14 +8,29 @@ using System.Text.Json.Serialization;
 
 namespace TRKart.Entities.DTOs
 {
-    public class UserCardDto
+    // DTO for creating a new user card
+    public class CreateUserCardDto
     {
-        [Required]
-        public int CardId { get; set; }
-        public int CustomerId { get; set; }
-        public decimal Balance { get; set; }
+        [Required(ErrorMessage = "CustomerID is required")]
+        public int CustomerID { get; set; }
+    }
 
-        [JsonIgnore] // Hides CardNumber from API responses
-        public string CardNumber { get; set; } = null!;
+    // DTO for deleting a user card
+    public class DeleteUserCardDto
+    {
+        [Required(ErrorMessage = "CardNumber is required")]
+        [StringLength(16, MinimumLength = 16, ErrorMessage = "CardNumber must be exactly 16 characters")]
+        public string CardNumber { get; set; }
+    }
+
+    // DTO for returning user card information
+    public class UserCardResponseDto
+    {
+        public int CardID { get; set; }
+        public int CustomerID { get; set; }
+        public string CardNumber { get; set; }
+        public decimal Balance { get; set; }
+        public string CardStatus { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

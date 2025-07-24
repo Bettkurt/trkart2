@@ -12,8 +12,8 @@ namespace TRKart.DataAccess
         }
 
         // Veritabanı tabloları (DbSet'ler)
-        public DbSet<Customer> Customers { get; set; } = null!;
-        public DbSet<SessionToken> SessionTokens { get; set; } = null!;
-        public DbSet<UserCard> UserCards { get; set; } = null!;
+        public DbSet<Customers> Customers { get; set; } = null!;
+        public DbSet<SessionToken> SessionToken { get; set; } = null!;
+        public DbSet<UserCard> UserCard { get; set; } = null!;
     }
 }
