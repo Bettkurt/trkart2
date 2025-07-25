@@ -4,20 +4,23 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TRKart.Entities
 {
+    [Table("SessionToken")]
     public class SessionToken
     {
         [Key]
-        public int Id { get; set; }
+        [Column("SessionID")]
+        public int SessionID { get; set; }
 
-        [Required]
+        [Column("CustomerID")]
+        public int CustomerID { get; set; }
+
+        [Column("Token")]
         public string Token { get; set; } = null!;
 
-        public DateTime Expiration { get; set; }
+        [Column("Expiration")]
+        public string Expiration { get; set; } = null!;
 
-        // Foreign Key
-        public int CustomerId { get; set; }
-
-        [ForeignKey("CustomerId")]
-        public virtual Customer Customer { get; set; } = null!;
+        [Column("CreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

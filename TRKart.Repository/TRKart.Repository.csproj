@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TRKart.Core\TRKart.Core.csproj" />
     <ProjectReference Include="..\TRKart.Entities\TRKart.Entities.csproj" />
+    <ProjectReference Include="..\TRKart.DataAccess\TRKart.DataAccess.csproj" />
   </ItemGroup>
 
 </Project>
