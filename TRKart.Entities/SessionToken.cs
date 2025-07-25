@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TRKart.Entities
 {
+    [Table("SessionToken")]
     public class SessionToken
     {
         [Key]

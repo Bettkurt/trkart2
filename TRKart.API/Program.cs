@@ -11,12 +11,8 @@ using TRKart.DataAccess;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. PostgreSQL bağlantısı
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrEmpty(connectionString))
-    throw new InvalidOperationException("DefaultConnection string is missing in configuration.");
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2. Controller servisi
 builder.Services.AddControllers()
@@ -40,9 +36,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "TRKart API", Version = "v1" });
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "TRKart API", Version = "v1" });
 
-    var jwtSecurityScheme = new OpenApiSecurityScheme
+    var jwtSecurityScheme = new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         BearerFormat = "JWT",
         Name = "Authorization",

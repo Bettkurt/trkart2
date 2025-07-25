@@ -19,3 +19,4 @@ namespace TRKart.Entities.DTOs
     public string FullName { get; set; } = null!;
 }
 }
+}
