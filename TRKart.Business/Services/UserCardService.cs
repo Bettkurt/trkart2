@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using TRKart.Business.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities;
+using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
 
 namespace TRKart.Business.Services

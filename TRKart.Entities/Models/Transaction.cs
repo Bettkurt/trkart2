@@ -9,24 +9,29 @@ namespace TRKart.Entities.Models
     {
         [Key]
         [Column("TransactionID")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TransactionID { get; set; }
 
         [Column("CardID")]
+        [ForeignKey("UserCard")]
         public int CardID { get; set; }
+        public UserCard UserCard { get; set; }
 
         [Column("Amount")]
         public decimal Amount { get; set; }
 
         [Column("TransactionType")]
-        public string TransactionType { get; set; } = null!;
+        public string TransactionType { get; set; }
 
         [Column("Description")]
         public string? Description { get; set; }
 
         [Column("TransactionDate")]
-        public DateTime TransactionDate { get; set; } = DateTime.Now;
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTime TransactionDate { get; set; }
 
         [Column("TransactionStatus")]
-        public string? TransactionStatus { get; set; } = "Completed";
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public string? TransactionStatus { get; set; }
     }
 } 

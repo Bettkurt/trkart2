@@ -6,17 +6,17 @@ CREATE TABLE "UserCard" (
     "Balance" DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     -- 'Active' or 'Inactive'. We may add different status types in the future, 
     -- i.e. 'Lost', 'Suspended', 'Deleted' etc.; based on the feature requirements
-    "CardStatus" VARCHAR(20) NOT NULL DEFAULT 'Inactive', 
+    "CardStatus" VARCHAR(20) NOT NULL DEFAULT 'Inactive' CHECK ("CardStatus" IN ('Active', 'Inactive', 'Lost')), 
     "CreatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("CustomerID") REFERENCES "Customers"("CustomerID") ON DELETE CASCADE
 );
 
----------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
 
 -- Create a sequence for card numbers (10 digits)
 CREATE SEQUENCE card_sequence START 1;
 
--- Function to calculate Luhn check digit (numeric only)
+-- Function to calculate Luhn check digit (numeric part only)
 CREATE OR REPLACE FUNCTION calculate_luhn_check_digit(number_str text) 
 RETURNS int AS $$
 DECLARE
@@ -27,8 +27,8 @@ DECLARE
 
 BEGIN
     
-    -- Process from right to left. Also, do not include 'TRK' in the calculation.
-    FOR i IN REVERSE length(number_str)..2 LOOP
+    -- Process from right to left.
+    FOR i IN REVERSE length(number_str)..1 LOOP
         digit := substring(number_str, i, 1)::int;
         
         IF is_second THEN
@@ -51,7 +51,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION generate_card_number()
 RETURNS char(16) AS $$
 DECLARE
-    prefix text := 'TRK90';  -- TRK + BIN (90)
+    prefix text := 'TRK';
+    bin text := '90'; -- BIN starts with 90, other 6 are included in the sequence
     sequence_num text;
     card_base text;
     check_digit int;
@@ -60,10 +61,10 @@ BEGIN
     sequence_num := lpad(nextval('card_sequence')::text, 10, '0');
     
     -- Combine all parts except check digit (TRK90 + 10-digit sequence)
-    card_base := prefix || sequence_num;
+    card_base := prefix || bin || sequence_num;
     
-    -- Calculate check digit using only numeric part (9000000000 + sequence)
-    check_digit := calculate_luhn_check_digit('90' || sequence_num);
+    -- Calculate check digit using only numeric part (90 + sequence)
+    check_digit := calculate_luhn_check_digit(bin || sequence_num);
     
     -- Return full card number (16 characters total)
     RETURN card_base || check_digit::text;

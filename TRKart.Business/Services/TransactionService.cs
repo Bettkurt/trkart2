@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TRKart.Business.Interfaces;
 using TRKart.Entities.Models;
-using TRKart.Repository.Interfaces;
 using TRKart.Entities.DTOs;
+using TRKart.Repository.Interfaces;
+using TRKart.Repository.Repositories;
+using TRKart.DataAccess;
 
 namespace TRKart.Business.Services
 {

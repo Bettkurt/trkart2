@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TRKart.Entities
+namespace TRKart.Entities.Models
 {
     [Table("Customers")]          // Table name
     public class Customers
     {
         [Key]                     // Primary Key
         [Column("CustomerID")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int CustomerID { get; set; }
 
         [Column("FullName")]

@@ -13,6 +13,9 @@ build/
 # VS Code
 .vscode/
 
+# VS
+.vs/
+
 # Rider / JetBrains IDEs
 .idea/
 
@@ -34,3 +37,6 @@ Migrations/
 # Environment files
 .env
 .env.*
+
+# Other files
+Quick_Register_Login/

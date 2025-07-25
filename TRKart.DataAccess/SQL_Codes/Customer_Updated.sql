@@ -1,28 +1,40 @@
--- Function to generate a unique customer number
-CREATE OR REPLACE FUNCTION generate_unique_customer_number()
-RETURNS DECIMAL(8) AS $$
+CREATE TABLE "Customers" (
+    "CustomerID" SERIAL PRIMARY KEY,
+    "CustomerNumber" CHAR(10) NOT NULL UNIQUE DEFAULT 'New_Customer',
+    "FullName" VARCHAR(100),
+    "Email" VARCHAR(100) NOT NULL UNIQUE,
+    "VerifiedUser" BOOLEAN NOT NULL DEFAULT FALSE,
+    "PasswordHash" VARCHAR(200) NOT NULL
+);
+
+---------------------------------------------------------------------------
+
+CREATE SEQUENCE customer_sequence START 1;
+
+CREATE OR REPLACE FUNCTION generate_customer_number()
+RETURNS CHAR(10) AS $$
 DECLARE
-    v_customer_number DECIMAL(8);
+    prefix text := 'C';
+    sequence_num text;
+    customer_base text;
+    check_digit int;
 BEGIN
-    -- Generate a random number between 10000000 and 99999999
-    v_customer_number := FLOOR(RANDOM() * (99999999 - 10000000 + 1)) + 10000000;
+    -- Get next sequence number (padded to 8 digits)
+    sequence_num := lpad(nextval('customer_sequence')::text, 8, '0');
     
-    -- Recursively try again if number already exists
-    IF EXISTS (SELECT 1 FROM "Customers" WHERE "CustomerNumber" = v_customer_number) THEN
-        RETURN generate_unique_customer_number();
-    END IF;
+    -- Combine all parts except check digit (C + 8-digit sequence)
+    customer_base := prefix || sequence_num;
     
-    RETURN v_customer_number;
+    -- Calculate check digit using only numeric part (sequence)
+    check_digit := calculate_luhn_check_digit(sequence_num);
+    
+    -- Return full customer number (10 characters total)
+    RETURN customer_base || check_digit::text;
 END;
 $$ LANGUAGE plpgsql;
 
------------------------------------------------------------------------------------------------
-
-CREATE TABLE "Customers" (
-    "CustomerID" SERIAL PRIMARY KEY,
-    "CustomerNumber" DECIMAL(8) NOT NULL UNIQUE DEFAULT generate_unique_customer_number(),
-    "FullName" VARCHAR(100),
-    "Email" VARCHAR(100) NOT NULL UNIQUE,
-    "PasswordHash" VARCHAR(200) NOT NULL,
-    "CreatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TRIGGER set_customer_number_trigger
+BEFORE INSERT ON "Customers"
+FOR EACH ROW
+WHEN (NEW."CustomerNumber" = 'New_Customer')
+EXECUTE FUNCTION generate_customer_number();

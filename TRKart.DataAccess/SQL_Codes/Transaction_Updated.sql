@@ -1,15 +1,17 @@
 CREATE TABLE "Transaction" (
     "TransactionID" SERIAL PRIMARY KEY,
     "CardID" INT NOT NULL,
+    "OtherTransactionID" INT NOT NULL,
     "Amount" DECIMAL(10, 2) NOT NULL,
-    "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" IN ('Pay', 'Load', 'Transfer', 'Refund')),
+    "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" IN ('Pay', 'Load', 'Refund', 'TransferOut', 'TransferIn')),
     "Description" TEXT,
     "TransactionDate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "TransactionStatus" VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK ("TransactionStatus" IN ('Pending', 'Approved', 'Denied')),
-    FOREIGN KEY ("CardID") REFERENCES "UserCard"("CardID") ON DELETE CASCADE
+    FOREIGN KEY ("CardID") REFERENCES "UserCard"("CardID") ON DELETE CASCADE,
+    FOREIGN KEY ("OtherTransactionID") REFERENCES "Transaction"("TransactionID") ON DELETE CASCADE
 );
 
--------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 
 -- Trigger function to control if a transaction can go through or not
 -- It executes everytime there is a new transaction. 
@@ -33,9 +35,9 @@ BEGIN
 		FOR UPDATE;
 
         -- Process based on transaction type
-        IF NEW."TransactionType" = 'Pay' THEN
+        IF NEW."TransactionType" = 'Pay' OR NEW."TransactionType" = 'TransferOut' THEN
             -- Check if balance is sufficient
-            IF v_current_balance >= NEW."Amount" AND NEW."Amount" > 0 AND v_current_card_status = 'Active' THEN
+            IF NEW."Amount" > 0 AND v_current_balance >= NEW."Amount" AND v_current_card_status = 'Active' THEN
                 -- Update card balance
                 UPDATE "UserCard"
                 SET "Balance" = "Balance" - NEW."Amount"
@@ -65,7 +67,18 @@ BEGIN
             ELSE
                 NEW."TransactionStatus" := 'Denied';
             END IF;
-        END IF;
+        ELSIF NEW."TransactionType" = 'Refund' OR NEW."TransactionType" = 'TransferIn' THEN
+            -- For refund transactions, just need positive amount
+            IF NEW."Amount" > 0 AND v_current_card_status = 'Active' THEN
+                -- Update card balance
+                UPDATE "UserCard"
+                SET "Balance" = "Balance" + NEW."Amount"
+                WHERE "CardID" = NEW."CardID";
+                NEW."TransactionStatus" := 'Approved';
+            ELSE
+                NEW."TransactionStatus" := 'Denied';
+            END IF;           
+        END IF; 
     END IF;
 
     RETURN NEW;

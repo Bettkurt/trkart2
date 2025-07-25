@@ -3,6 +3,7 @@ using TRKart.Business.Interfaces;
 using TRKart.Core.Helpers;
 using TRKart.DataAccess;
 using TRKart.Entities;
+using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
 
 namespace TRKart.Business.Services
