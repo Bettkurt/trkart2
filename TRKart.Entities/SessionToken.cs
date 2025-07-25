@@ -8,19 +8,18 @@ namespace TRKart.Entities
     public class SessionToken
     {
         [Key]
-        [Column("SessionID")]
         public int SessionID { get; set; }
 
-        [Column("CustomerID")]
+        [ForeignKey("CustomerID")]
         public int CustomerID { get; set; }
+        public virtual Customers Customer { get; set; } = null!;
 
-        [Column("Token")]
-        public string Token { get; set; } = null!;
+        [Required]
+        public string Token { get; set; }
 
-        [Column("Expiration")]
-        public string Expiration { get; set; } = null!;
+        public DateTime Expiration { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        [Required]
+        public DateTime CreatedAt { get; set; }
     }
 }

@@ -85,6 +85,7 @@ builder.Services.AddAuthentication(options =>
 // 5. DI Servisler
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddScoped<IUserCardService, UserCardService>();
 
 var app = builder.Build();
 

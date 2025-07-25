@@ -41,10 +41,11 @@ namespace TRKart.Business.Services
             {
                 CustomerID = customer.CustomerID,
                 Token = token,
-                Expiration = DateTime.UtcNow.AddHours(1).ToString()
+                CreatedAt = DateTime.UtcNow,
+                Expiration = DateTime.UtcNow.AddHours(1)
             };
 
-            await _context.SessionTokens.AddAsync(session);
+            await _context.SessionToken.AddAsync(session);
             await _context.SaveChangesAsync();
 
             // 6. Token döndür
@@ -59,7 +60,7 @@ namespace TRKart.Business.Services
                 return false;
 
             // Yeni kullanıcı oluştur
-            var newCustomer = new Customer
+            var newCustomer = new Customers
             {
                 Email = dto.Email,
                 FullName = dto.FullName,
