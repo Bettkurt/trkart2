@@ -8,9 +8,9 @@ namespace TRKart.Entities
     [Table("customers")]          // (İsteğe bağlı) tablo adını da sabitle
     public class Customer
     {
-        [Key]                     // Birincil anahtar
-        [Column("id")]
-        public int Id { get; set; }
+        [Key]
+        [Column("CustomerID")]
+        public int CustomerID { get; set; }
 
        [Column("email")]
     public string Email { get; set; } = null!;

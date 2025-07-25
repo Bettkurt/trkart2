@@ -39,9 +39,9 @@ namespace TRKart.Business.Services
             // 5. SessionToken tablosuna kaydet (isteğe bağlı ama güvenlik için önerilir)
             var session = new SessionToken
             {
-                CustomerId = customer.Id,
+                CustomerID = customer.CustomerID,
                 Token = token,
-                Expiration = DateTime.UtcNow.AddHours(1)
+                Expiration = DateTime.UtcNow.AddHours(1).ToString()
             };
 
             await _context.SessionTokens.AddAsync(session);
