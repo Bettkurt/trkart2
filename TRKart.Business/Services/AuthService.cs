@@ -3,6 +3,7 @@ using TRKart.Business.Interfaces;
 using TRKart.Core.Helpers;
 using TRKart.DataAccess;
 using TRKart.Entities;
+using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
 
 namespace TRKart.Business.Services
@@ -39,12 +40,13 @@ namespace TRKart.Business.Services
             // 5. SessionToken tablosuna kaydet (isteğe bağlı ama güvenlik için önerilir)
             var session = new SessionToken
             {
-                CustomerId = customer.Id,
+                CustomerID = customer.CustomerID,
                 Token = token,
+                CreatedAt = DateTime.UtcNow,
                 Expiration = DateTime.UtcNow.AddHours(1)
             };
 
-            await _context.SessionTokens.AddAsync(session);
+            await _context.SessionToken.AddAsync(session);
             await _context.SaveChangesAsync();
 
             // 6. Token döndür
@@ -59,7 +61,7 @@ namespace TRKart.Business.Services
                 return false;
 
             // Yeni kullanıcı oluştur
-            var newCustomer = new Customer
+            var newCustomer = new Customers
             {
                 Email = dto.Email,
                 FullName = dto.FullName,

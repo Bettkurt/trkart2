@@ -1,7 +1,0 @@
-CREATE TABLE SessionTokens (
-    Id SERIAL PRIMARY KEY,
-    CustomerId INT NOT NULL,
-    Token VARCHAR(500) NOT NULL,
-    Expiration TIMESTAMP NOT NULL,
-    FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-);

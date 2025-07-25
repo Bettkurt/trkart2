@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TRKart.Entities;
+using TRKart.Entities.Models;
+using TRKart.Entities.DTOs;
 
 namespace TRKart.DataAccess
 {
@@ -11,8 +12,10 @@ namespace TRKart.DataAccess
         {
         }
 
-        // Veritabanı tabloları (DbSet'ler)
-        public DbSet<Customer> Customers { get; set; } = null!;
-        public DbSet<SessionToken> SessionTokens { get; set; } = null!;
+        // Tables from database
+        public DbSet<Customers> Customers { get; set; } = null!;
+        public DbSet<SessionToken> SessionToken { get; set; } = null!;
+        public DbSet<UserCard> UserCard { get; set; } = null!;
+        public DbSet<Transaction> Transaction { get; set; } = null!;
     }
 }

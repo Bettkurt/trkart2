@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -7,21 +7,23 @@ using TRKart.Business.Interfaces;
 using TRKart.Business.Services;
 using TRKart.Core.Helpers;
 using TRKart.DataAccess;
+using TRKart.Repository.Interfaces;
+using TRKart.Repository.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. PostgreSQL bağlantısı
+// 1. PostgreSQL connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Controller servisi
+// 2. Controller service
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// CORS yapılandırması ekle
+// 3. CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -32,7 +34,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 3. Swagger + JWT desteği
+// 4. Swagger + JWT support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -60,7 +62,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// 4. JWT Authentication
+// 5. JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(options =>
@@ -82,20 +84,23 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 5. DI Servisler
+// 6. DI Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddScoped<IUserCardService, UserCardService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
 
 var app = builder.Build();
 
-// 6. Swagger sadece geliştirme ortamında aktif
+// 7. Swagger only active on development environment
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 7. Middleware sırası - CORS'u authentication'dan önce koyun
+// 8. Middleware order - CORS before authentication
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
