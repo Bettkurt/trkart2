@@ -30,18 +30,12 @@ namespace TRKart.Repository.Repositories
             return await _context.Transaction.Where(t => t.CardID == cardId).ToListAsync();
         }
 
-        public async Task<bool> UpdateTransactionAsync(Transaction transaction)
+        public async Task<IEnumerable<Transaction>> GetTransactionsByCustomerIdAsync(int customerId)
         {
-            _context.Transaction.Update(transaction);
-            return await _context.SaveChangesAsync() > 0;
-        }
-
-        public async Task<bool> DeleteTransactionAsync(int transactionId)
-        {
-            var transaction = await _context.Transaction.FindAsync(transactionId);
-            if (transaction == null) return false;
-            _context.Transaction.Remove(transaction);
-            return await _context.SaveChangesAsync() > 0;
+            return await _context.Transaction
+                .Include(t => t.UserCard)
+                .Where(t => t.UserCard.CustomerID == customerId)
+                .ToListAsync();
         }
     }
 } 

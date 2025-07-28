@@ -6,6 +6,6 @@ namespace TRKart.Business.Interfaces
     public interface IAuthService
     {
         Task<bool> RegisterAsync(RegisterDto dto);
-        Task<string?> LoginAsync(LoginDto dto);
+        Task<(string? Token, DateTime? Expiration)> LoginAsync(LoginDto dto);
     }
 }

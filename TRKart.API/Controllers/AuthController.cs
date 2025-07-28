@@ -27,11 +27,28 @@ namespace TRKart.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            var tokenOrEmail = await _authService.LoginAsync(dto);
-            if (tokenOrEmail == null)
+            var (token, expiration) = await _authService.LoginAsync(dto);
+            if (token == null)
                 return Unauthorized("Geçersiz e-posta veya şifre.");
+            // Set cookie
+            Response.Cookies.Append(
+                "SessionToken",
+                token,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = expiration,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict
+                });
+            return Ok(new { message = "Giriş başarılı!", token });
+        }
 
-            return Ok(new { message = "Giriş başarılı!", token = tokenOrEmail });
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("SessionToken");
+            return Ok(new { message = "Çıkış başarılı!" });
         }
     }
 }

@@ -35,14 +35,9 @@ namespace TRKart.Business.Services
             return await _transactionRepository.GetTransactionsByCardIdAsync(CardID);
         }
 
-        public async Task<bool> UpdateTransactionAsync(Transaction transaction)
+        public async Task<IEnumerable<Transaction>> GetTransactionsByCustomerIdAsync(int customerId)
         {
-            return await _transactionRepository.UpdateTransactionAsync(transaction);
-        }
-
-        public async Task<bool> DeleteTransactionAsync(int CardID)
-        {
-            return await _transactionRepository.DeleteTransactionAsync(CardID);
+            return await _transactionRepository.GetTransactionsByCustomerIdAsync(customerId);
         }
     }
 } 
