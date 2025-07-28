@@ -24,7 +24,7 @@ namespace TRKart.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddTransaction([FromBody]TransactionCreateDto dto)
+        public async Task<IActionResult> AddTransaction([FromBody] TransactionCreateDto dto)
         {
             var result = await _transactionService.AddTransactionAsync(dto);
             return Ok(result);
@@ -35,28 +35,15 @@ namespace TRKart.API.Controllers
         {
             var card = await _context.UserCard.FirstOrDefaultAsync(c => c.CardNumber == cardNumber);
             if (card == null) return NotFound();
-            var transactions = await _context.Transaction.Where(t => t.CardID == card.CardID).ToListAsync();
+            var transactions = await _transactionService.GetTransactionsByCardIdAsync(card.CardID);
             return Ok(transactions);
         }
 
-        [HttpPut("by-card/{CardId}")]
-        public async Task<IActionResult> UpdateTransaction(int CardId, [FromBody] Transaction transaction)
+        [HttpGet("by-customer/{customerId}")]
+        public async Task<IActionResult> GetTransactionsByCustomerId(int customerId)
         {
-            if (CardId != transaction.CardID)
-                return BadRequest();
-            var result = await _transactionService.UpdateTransactionAsync(transaction);
-            if (!result)
-                return NotFound();
-            return NoContent();
-        }
-
-        [HttpDelete("by-card/{CardId}")]
-        public async Task<IActionResult> DeleteTransaction(int CardId)
-        {
-            var result = await _transactionService.DeleteTransactionAsync(CardId);
-            if (!result)
-                return NotFound();
-            return NoContent();
+            var transactions = await _transactionService.GetTransactionsByCustomerIdAsync(customerId);
+            return Ok(transactions);
         }
     }
 } 

@@ -19,38 +19,27 @@ namespace TRKart.Business.Services
             _jwtHelper = jwtHelper;
         }
 
-        public async Task<string?> LoginAsync(LoginDto dto)
+        public async Task<(string? Token, DateTime? Expiration)> LoginAsync(LoginDto dto)
         {
-            // 1. Kullanıcıyı e-posta ile bul
             var customer = await _context.Customers
                 .FirstOrDefaultAsync(x => x.Email == dto.Email);
-
-            // 2. Kullanıcı bulunamazsa null dön
             if (customer == null)
-                return null;
-
-            // 3. Şifre doğruluğunu kontrol et (BCrypt kullanılıyor)
+                return (null, null);
             bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, customer.PasswordHash);
             if (!isValid)
-                return null;
-
-            // 4. JWT token oluştur
+                return (null, null);
             string token = _jwtHelper.GenerateToken(customer.Email);
-
-            // 5. SessionToken tablosuna kaydet (isteğe bağlı ama güvenlik için önerilir)
+            DateTime expiration = dto.RememberMe ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddHours(1);
             var session = new SessionToken
             {
                 CustomerID = customer.CustomerID,
                 Token = token,
                 CreatedAt = DateTime.UtcNow,
-                Expiration = DateTime.UtcNow.AddHours(1)
+                Expiration = expiration
             };
-
             await _context.SessionToken.AddAsync(session);
             await _context.SaveChangesAsync();
-
-            // 6. Token döndür
-            return token;
+            return (token, expiration);
         }
 
         public async Task<bool> RegisterAsync(RegisterDto dto)
