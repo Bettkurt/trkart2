@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { login, loginPasswordOnly, hasValidSession, sessionEmail } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +17,13 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      await login(email, password, false);
+      if (hasValidSession && sessionEmail) {
+        // Password-only login
+        await loginPasswordOnly(password);
+      } else {
+        // Full login
+        await login(email, password, false);
+      }
       navigate('/dashboard');
     } catch (err) {
       setError('Login failed. Please check your credentials.');
@@ -36,26 +42,43 @@ const LoginPage: React.FC = () => {
       <div className="flex flex-1 items-center justify-center px-4">
         <div className="max-w-md w-full">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Login</h1>
-          <p className="text-gray-400 mb-8 text-base">You can log in with your registered email address and password.</p>
+          <p className="text-gray-400 mb-8 text-base">
+            {hasValidSession && sessionEmail 
+              ? `Welcome back! Please enter your password to continue.`
+              : "You can log in with your registered email address and password."
+            }
+          </p>
+          
+          {hasValidSession && sessionEmail && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Logged in as:</p>
+              <p className="text-base font-semibold text-gray-800">{sessionEmail}</p>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-base mb-2">
                 {error}
               </div>
             )}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full px-3 py-3 border-2 border-gray-300 rounded-xl text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+            
+            {!hasValidSession && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full px-3 py-3 border-2 border-gray-300 rounded-xl text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            )}
+            
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
               <div className="relative flex items-center border-2 border-gray-300 rounded-xl overflow-hidden focus-within:border-blue-400 bg-white">
@@ -86,6 +109,7 @@ const LoginPage: React.FC = () => {
                 <a href="#" className="text-cyan-500 font-semibold text-base hover:underline">Forgot my password ?</a>
               </div>
             </div>
+            
             <button
               type="submit"
               disabled={isLoading}
@@ -94,6 +118,7 @@ const LoginPage: React.FC = () => {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
+          
           <div className="text-center mt-16">
             <span className="text-gray-400 text-lg">Don't have an account? </span>
             <Link 

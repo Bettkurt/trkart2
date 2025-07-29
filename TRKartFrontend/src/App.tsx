@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
@@ -8,13 +9,16 @@ import DashboardPage from '@/pages/DashboardPage';
 import TransactionHistoryPage from '@/pages/TransactionHistoryPage';
 import UserCardsPage from '@/pages/UserCardsPage';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TransactionTestPage from './pages/TransactionTestPage';
+
+
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
@@ -25,7 +29,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
@@ -33,6 +37,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppRoutes: React.FC = () => {
   return (
+
     <Router>
       <Routes>
         <Route path="/" element={
@@ -65,16 +70,23 @@ const AppRoutes: React.FC = () => {
             <UserCardsPage />
           </ProtectedRoute>
         } />
-      </Routes>
+        <Route path="/transaction-test" element={
+        <TransactionTestPage />
+      } />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+       </Routes>
     </Router>
+
   );
 };
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
   );
 };
 

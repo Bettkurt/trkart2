@@ -37,5 +37,25 @@ namespace TRKart.Repository.Repositories
                 .Where(t => t.UserCard.CustomerID == customerId)
                 .ToListAsync();
         }
+
+        public async Task<decimal> GetCardBalanceAsync(int cardId)
+        {
+            var card = await _context.UserCard
+                .Where(c => c.CardID == cardId)
+                .Select(c => c.Balance)
+                .FirstOrDefaultAsync();
+            
+            return card;
+        }
+
+        public async Task<bool> IsCardActiveAsync(int cardId)
+        {
+            var card = await _context.UserCard
+                .Where(c => c.CardID == cardId)
+                .Select(c => c.CardStatus)
+                .FirstOrDefaultAsync();
+            
+            return card == "Active";
+        }
     }
 } 

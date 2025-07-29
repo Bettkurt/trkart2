@@ -1,9 +1,19 @@
 import api from './api';
-import { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types';
+import { LoginRequest, PasswordOnlyLoginRequest, SessionCheckResponse, RegisterRequest, AuthResponse, User } from '@/types';
 
 class AuthService {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/Auth/login', credentials);
+    return response.data;
+  }
+
+  async loginPasswordOnly(credentials: PasswordOnlyLoginRequest): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/Auth/login-password-only', credentials);
+    return response.data;
+  }
+
+  async checkSession(): Promise<SessionCheckResponse> {
+    const response = await api.get<SessionCheckResponse>('/Auth/check-session');
     return response.data;
   }
 
@@ -19,14 +29,13 @@ class AuthService {
       console.error('Logout error:', error);
     } finally {
       // Clear local storage regardless of API call success
-      localStorage.removeItem('token');
       localStorage.removeItem('user');
     }
   }
 
-  // Store user data in localStorage
-  setUserData(token: string, user: User): void {
-    localStorage.setItem('token', token);
+  // Store user data in localStorage (token is now in cookies)
+  // We don't need to manually get it since it's HttpOnly
+  setUserData(user: User): void {
     localStorage.setItem('user', JSON.stringify(user));
   }
 
@@ -36,19 +45,21 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null;
   }
 
-  // Get token from localStorage
+  // Get token from cookies (this is handled by the browser automatically)
+  // We don't need to manually get it since it's HttpOnly
   getToken(): string | null {
-    return localStorage.getItem('token');
+    // Token is in HttpOnly cookies, so we can't access it from JavaScript
+    // The backend will handle token validation
+    return null;
   }
 
-  // Check if user is authenticated
+  // Check if user is authenticated by checking if we have user data
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return !!this.getUserData();
   }
 
   // Clear all auth data
   clearAuthData(): void {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
 }

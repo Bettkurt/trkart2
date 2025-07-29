@@ -44,6 +44,42 @@ namespace TRKart.API.Controllers
             return Ok(new { message = "Giriş başarılı!", token });
         }
 
+        [HttpPost("login-password-only")]
+        public async Task<IActionResult> LoginPasswordOnly([FromBody] PasswordOnlyLoginDto dto)
+        {
+            var sessionToken = Request.Cookies["SessionToken"];
+            if (string.IsNullOrEmpty(sessionToken))
+                return Unauthorized("No valid session found.");
+
+            var (token, expiration) = await _authService.LoginWithPasswordOnlyAsync(sessionToken, dto.Password);
+            if (token == null)
+                return Unauthorized("Geçersiz şifre veya oturum süresi dolmuş.");
+
+            // Set new cookie
+            Response.Cookies.Append(
+                "SessionToken",
+                token,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = expiration,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict
+                });
+            return Ok(new { message = "Giriş başarılı!", token });
+        }
+
+        [HttpGet("check-session")]
+        public async Task<IActionResult> CheckSession()
+        {
+            var sessionToken = Request.Cookies["SessionToken"];
+            if (string.IsNullOrEmpty(sessionToken))
+                return Ok(new { hasValidSession = false, email = (string?)null });
+
+            var (isValid, email) = await _authService.ValidateSessionAsync(sessionToken);
+            return Ok(new { hasValidSession = isValid, email });
+        }
+
         [HttpPost("logout")]
         public IActionResult Logout()
         {

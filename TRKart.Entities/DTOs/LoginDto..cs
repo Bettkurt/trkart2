@@ -11,4 +11,9 @@ namespace TRKart.Entities.DTOs
         public string Password { get; set; } = null!;
         public bool RememberMe { get; set; } = false;
     }
+
+    public class PasswordOnlyLoginDto
+    {
+        public string Password { get; set; } = null!;
+    }
 }

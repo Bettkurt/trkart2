@@ -10,5 +10,7 @@ namespace TRKart.Repository.Interfaces
         Task<Transaction> AddTransactionAsync(Transaction transaction);
         Task<IEnumerable<Transaction>> GetTransactionsByCardIdAsync(int cardId);
         Task<IEnumerable<Transaction>> GetTransactionsByCustomerIdAsync(int customerId);
+        Task<decimal> GetCardBalanceAsync(int cardId);
+        Task<bool> IsCardActiveAsync(int cardId);
     }
 } 
