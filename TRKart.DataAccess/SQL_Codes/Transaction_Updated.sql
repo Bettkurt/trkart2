@@ -1,14 +1,14 @@
 CREATE TABLE "Transaction" (
     "TransactionID" SERIAL PRIMARY KEY,
     "CardID" INT NOT NULL,
-    "OtherTransactionID" INT NOT NULL,
+    "TransferTransactionID" INT NOT NULL,
     "Amount" DECIMAL(10, 2) NOT NULL,
     "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" IN ('Pay', 'Load', 'Refund', 'TransferOut', 'TransferIn')),
     "Description" TEXT,
     "TransactionDate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "TransactionStatus" VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK ("TransactionStatus" IN ('Pending', 'Approved', 'Denied')),
     FOREIGN KEY ("CardID") REFERENCES "UserCard"("CardID") ON DELETE CASCADE,
-    FOREIGN KEY ("OtherTransactionID") REFERENCES "Transaction"("TransactionID") ON DELETE CASCADE
+    FOREIGN KEY ("TransferTransactionID") REFERENCES "Transaction"("TransactionID") ON DELETE CASCADE
 );
 
 ---------------------------------------------------------------------------------------------------
