@@ -39,7 +39,6 @@ Migrations/
 .env.*
 
 # node_modules
-TRKartFrontend/node_modules/
 node_modules/
 
 # Other files
