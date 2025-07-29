@@ -90,6 +90,7 @@ builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
+builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 
 var app = builder.Build();
 

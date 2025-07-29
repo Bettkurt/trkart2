@@ -6,10 +6,14 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasValidSession: boolean;
+  sessionEmail: string | null;
   login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
+  loginPasswordOnly: (password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
+  checkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,14 +33,48 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+
+  const checkSession = async () => {
+    try {
+      const sessionData = await authService.checkSession();
+      setHasValidSession(sessionData.hasValidSession);
+      setSessionEmail(sessionData.email);
+      
+      if (sessionData.hasValidSession && sessionData.email) {
+        // Create a user object from the session email
+        const userData: User = {
+          customerID: 0, // This should come from the backend
+          email: sessionData.email,
+          fullName: '', // This should come from the backend
+        };
+        setUser(userData);
+      } else {
+        // Clear user data if no valid session
+        setUser(null);
+        authService.clearAuthData();
+      }
+    } catch (error) {
+      console.error('Session check error:', error);
+      setHasValidSession(false);
+      setSessionEmail(null);
+      setUser(null);
+      authService.clearAuthData();
+    }
+  };
 
   useEffect(() => {
-    // Check for existing auth data on app load
-    const initializeAuth = () => {
+    // Check for existing session on app load
+    const initializeAuth = async () => {
+      await checkSession();
+      
+      // Also check for stored user data as fallback
       const storedUser = authService.getUserData();
-      if (storedUser && authService.isAuthenticated()) {
+      if (storedUser && !user) {
         setUser(storedUser);
       }
+      
       setIsLoading(false);
     };
 
@@ -45,20 +83,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string, rememberMe: boolean) => {
     try {
-      const response = await authService.login({ email, password, rememberMe });
+      await authService.login({ email, password, rememberMe });
       
-      // For now, we'll create a user object from the email
-      // In a real app, you might want to get user details from the backend
+      // Create a user object from the email
       const userData: User = {
         customerID: 0, // This should come from the backend
         email,
         fullName: '', // This should come from the backend
       };
       
-      authService.setUserData(response.token, userData);
+      authService.setUserData(userData);
       setUser(userData);
+      setHasValidSession(true);
+      setSessionEmail(email);
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const loginPasswordOnly = async (password: string) => {
+    try {
+      // The backend will get the session token from cookies
+      await authService.loginPasswordOnly({ password });
+      
+      // Update session state
+      setHasValidSession(true);
+      if (sessionEmail) {
+        const userData: User = {
+          customerID: 0, // This should come from the backend
+          email: sessionEmail,
+          fullName: '', // This should come from the backend
+        };
+        setUser(userData);
+        authService.setUserData(userData);
+      }
+    } catch (error) {
+      console.error('Password-only login error:', error);
       throw error;
     }
   };
@@ -79,10 +140,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await authService.logout();
       setUser(null);
+      setHasValidSession(false);
+      setSessionEmail(null);
     } catch (error) {
       console.error('Logout error:', error);
       // Even if logout fails, clear local state
       setUser(null);
+      setHasValidSession(false);
+      setSessionEmail(null);
     }
   };
 
@@ -90,10 +155,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    hasValidSession,
+    sessionEmail,
     login,
+    loginPasswordOnly,
     register,
     logout,
     setUser,
+    checkSession,
   };
 
   return (

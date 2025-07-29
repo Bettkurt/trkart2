@@ -7,5 +7,7 @@ namespace TRKart.Business.Interfaces
     {
         Task<bool> RegisterAsync(RegisterDto dto);
         Task<(string? Token, DateTime? Expiration)> LoginAsync(LoginDto dto);
+        Task<(bool IsValid, string? Email)> ValidateSessionAsync(string token);
+        Task<(string? Token, DateTime? Expiration)> LoginWithPasswordOnlyAsync(string token, string password);
     }
 }
