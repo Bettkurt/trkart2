@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -34,6 +35,11 @@ const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        } />
         <Route path="/login" element={
           <PublicRoute>
             <LoginPage />
@@ -59,7 +65,6 @@ const AppRoutes: React.FC = () => {
             <UserCardsPage />
           </ProtectedRoute>
         } />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );

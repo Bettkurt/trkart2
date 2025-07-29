@@ -40,6 +40,7 @@ Migrations/
 
 # node_modules
 TRKartFrontend/node_modules/
+node_modules/
 
 # Other files
 Quick_Register_Login/
