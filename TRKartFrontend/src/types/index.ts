@@ -5,10 +5,6 @@ export interface LoginRequest {
   rememberMe: boolean;
 }
 
-export interface PasswordOnlyLoginRequest {
-  password: string;
-}
-
 export interface SessionCheckResponse {
   hasValidSession: boolean;
   email: string | null;
@@ -144,4 +140,4 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   totalPages: number;
-} 
+}

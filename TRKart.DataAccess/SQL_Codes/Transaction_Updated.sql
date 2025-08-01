@@ -1,7 +1,11 @@
+-------------------------------------------------------------------------------------------
+-------------------------------------Transaction-------------------------------------------
+-------------------------------------------------------------------------------------------
+
 CREATE TABLE "Transaction" (
     "TransactionID" SERIAL PRIMARY KEY,
     "CardID" INT NOT NULL,
-    "TransferTransactionID" INT NOT NULL,
+    "TransferTransactionID" INT,
     "Amount" DECIMAL(10, 2) NOT NULL,
     "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" IN ('Pay', 'Load', 'Refund', 'TransferOut', 'TransferIn')),
     "Description" TEXT,

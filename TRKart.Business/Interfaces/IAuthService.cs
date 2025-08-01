@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using TRKart.Entities.DTOs;
 
 namespace TRKart.Business.Interfaces
@@ -9,6 +9,8 @@ namespace TRKart.Business.Interfaces
         Task<(string? Token, DateTime? Expiration)> LoginAsync(LoginDto dto);
         Task<(bool IsValid, string? Email, int? CustomerID, string? FullName)> ValidateSessionAsync(string token);
         Task<(string? Token, DateTime? Expiration)> LoginWithPasswordOnlyAsync(string token, string password);
+        Task<bool> InvalidateSessionAsync(string token);
+        Task<string?> GetUserEmailByTokenAsync(string token);
         Task<int?> GetCustomerIdFromTokenAsync(string token);
     }
 }

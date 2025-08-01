@@ -10,12 +10,11 @@ namespace TRKart.Entities.DTOs
     public class RegisterDto
     {
         [Required]
-        public string Email { get; set; } = null!;
+        public string Email { get; set; }
 
         [Required]
-        public string Password { get; set; } = null!;
+        public string Password { get; set; }
 
-        [Required]
         public string FullName { get; set; } = null!;
     }
 }

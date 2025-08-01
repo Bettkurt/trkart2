@@ -6,7 +6,7 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
-import TransactionHistoryPage from '@/pages/TransactionHistoryPage';
+// import TransactionHistoryPage from '@/pages/TransactionHistoryPage';
 import UserCardsPage from '@/pages/UserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
@@ -88,7 +88,7 @@ const App: React.FC = () => {
         <AppRoutes />
       </AuthProvider>
     </Router>
-  );
-};
+  )
+}
 
 export default App;

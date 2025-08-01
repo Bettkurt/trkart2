@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '@/types';
 import authService from '@/services/authService';
 
@@ -8,12 +8,12 @@ interface AuthContextType {
   isLoading: boolean;
   hasValidSession: boolean;
   sessionEmail: string | null;
-  login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-  loginPasswordOnly: (password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string) => Promise<void>;
+  login: (credentials: { email: string; password: string; rememberMe: boolean }) => Promise<void>;
+  register: (email: string, password: string, fullName: string, rememberMe: boolean) => Promise<void>;
   logout: () => Promise<void>;
-  setUser: (user: User | null) => void;
   checkSession: () => Promise<void>;
+  getRememberedEmail: () => string | null;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,7 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const sessionData = await authService.checkSession();
       setHasValidSession(sessionData.hasValidSession);
-      setSessionEmail(sessionData.email);
       
       if (sessionData.hasValidSession && sessionData.email) {
         // Create a user object from the session data
@@ -51,29 +50,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(userData);
       } else {
-        // Clear user data if no valid session
+        setSessionEmail(null);
         setUser(null);
-        authService.clearAuthData();
       }
     } catch (error) {
       console.error('Session check error:', error);
       setHasValidSession(false);
       setSessionEmail(null);
       setUser(null);
-      authService.clearAuthData();
     }
   };
+
+  const getRememberedEmail = useCallback((): string | null => {
+    return authService.getRememberedEmail();
+  }, []);
 
   useEffect(() => {
     // Check for existing session on app load
     const initializeAuth = async () => {
-      await checkSession();
-      
-      // Also check for stored user data as fallback
+      await checkSession(); 
+           
+      /* Also check for stored user data as fallback
       const storedUser = authService.getUserData();
       if (storedUser && !user) {
         setUser(storedUser);
-      }
+      } */
       
       setIsLoading(false);
     };
@@ -81,11 +82,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean) => {
+  const login = async (credentials: { email: string; password: string; rememberMe: boolean }) => {
     try {
-      console.log('Attempting login with:', { email, password, rememberMe });
-      const response = await authService.login({ email, password, rememberMe });
+      // console.log('Attempting login with:', { email, password, rememberMe });
+      setIsLoading(true);
+      const response = await authService.login(credentials, credentials.rememberMe);
       console.log('Login response:', response);
+
+      // Get the email from the auth service which handles the remember me logic
+      const rememberedEmail = authService.getRememberedEmail();
+      const userEmail = rememberedEmail || credentials.email;
       
       // Test session immediately after login to get customerID and fullName
       setTimeout(async () => {
@@ -116,25 +122,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set initial user data (will be updated after session check)
       const initialUserData: User = {
         customerID: 0, // Will be updated after session check
-        email,
+        email: '',
         fullName: '', // Will be updated after session check
       };
       
       authService.setUserData(initialUserData);
       setUser(initialUserData);
       setHasValidSession(true);
-      setSessionEmail(email);
+      setSessionEmail(userEmail);
+      
+      // No need to store user data in localStorage, authService handles the email storage
     } catch (error) {
       console.error('Login error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const loginPasswordOnly = async (password: string) => {
+  const register = async (email: string, password: string, fullName: string, rememberMe: boolean) => {
     try {
-      // The backend will get the session token from cookies
-      await authService.loginPasswordOnly({ password });
+      setIsLoading(true);
+      // Pass rememberMe to authService.register
+      await authService.register({ email, password, fullName }, rememberMe);
       
+      // After successful registration, log the user in with rememberMe preference
+      await login({ 
+        email, 
+        password, 
+        rememberMe 
+      });
       // Update session state and get user data
       setTimeout(async () => {
         try {
@@ -163,21 +180,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Set initial session state
       setHasValidSession(true);
-    } catch (error) {
-      console.error('Password-only login error:', error);
-      throw error;
-    }
-  };
-
-  const register = async (email: string, password: string, fullName: string) => {
-    try {
-      await authService.register({ email, password, fullName });
       
-      // After successful registration, log the user in
-      await login(email, password, false);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -199,19 +207,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       await authService.logout();
-      // Clear user-specific data before clearing user state
-      clearUserData(sessionEmail);
-      setUser(null);
-      setHasValidSession(false);
-      setSessionEmail(null);
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state and user data
+    } finally {
+      setIsLoading(false);
       clearUserData(sessionEmail);
       setUser(null);
       setHasValidSession(false);
       setSessionEmail(null);
+      localStorage.removeItem('user');
     }
   };
 
@@ -222,11 +228,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     hasValidSession,
     sessionEmail,
     login,
-    loginPasswordOnly,
     register,
     logout,
     setUser,
     checkSession,
+    getRememberedEmail,
   };
 
   return (
@@ -234,4 +240,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};
