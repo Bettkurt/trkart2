@@ -30,6 +30,11 @@ namespace TRKart.API.Controllers
             var (token, expiration) = await _authService.LoginAsync(dto);
             if (token == null)
                 return Unauthorized("Geçersiz e-posta veya şifre.");
+            
+            Console.WriteLine($"Setting cookie for user: {dto.Email}");
+            Console.WriteLine($"Token: {token.Substring(0, Math.Min(20, token.Length))}...");
+            Console.WriteLine($"Expiration: {expiration}");
+            
             // Set cookie
             Response.Cookies.Append(
                 "SessionToken",
@@ -38,9 +43,13 @@ namespace TRKart.API.Controllers
                 {
                     HttpOnly = true,
                     Expires = expiration,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict
+                    Secure = false, // Set to false for localhost development
+                    SameSite = SameSiteMode.Lax, // More permissive for development
+                    Path = "/" // Explicitly set path
                 });
+            
+            Console.WriteLine($"Cookie set. Response headers: {string.Join(", ", Response.Headers.Select(h => $"{h.Key}={h.Value}"))}");
+            
             return Ok(new { message = "Giriş başarılı!", token });
         }
 
@@ -63,8 +72,10 @@ namespace TRKart.API.Controllers
                 {
                     HttpOnly = true,
                     Expires = expiration,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict
+                    Secure = false, // Set to false for localhost development
+                    SameSite = SameSiteMode.Lax, // More permissive for development
+                    Domain = "localhost", // Explicitly set domain
+                    Path = "/" // Explicitly set path
                 });
             return Ok(new { message = "Giriş başarılı!", token });
         }
@@ -74,10 +85,10 @@ namespace TRKart.API.Controllers
         {
             var sessionToken = Request.Cookies["SessionToken"];
             if (string.IsNullOrEmpty(sessionToken))
-                return Ok(new { hasValidSession = false, email = (string?)null });
+                return Ok(new { hasValidSession = false, email = (string?)null, customerID = (int?)null, fullName = (string?)null });
 
-            var (isValid, email) = await _authService.ValidateSessionAsync(sessionToken);
-            return Ok(new { hasValidSession = isValid, email });
+            var (isValid, email, customerID, fullName) = await _authService.ValidateSessionAsync(sessionToken);
+            return Ok(new { hasValidSession = isValid, email, customerID, fullName });
         }
 
         [HttpPost("logout")]

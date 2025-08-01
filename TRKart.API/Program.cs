@@ -9,6 +9,7 @@ using TRKart.Core.Helpers;
 using TRKart.DataAccess;
 using TRKart.Repository.Interfaces;
 using TRKart.Repository.Repositories;
+using TRKart.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,9 +29,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Allow cookies
     });
 });
 
@@ -102,12 +104,14 @@ if (app.Environment.IsDevelopment())
 }
 
 // 8. Middleware order - CORS before authentication
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for HTTP development
 app.UseCors("AllowAll");
+app.UseAuthenticationMiddleware(); // Custom authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
 
-app.Run();
+// Force HTTP for development
+app.Run("http://localhost:7037");

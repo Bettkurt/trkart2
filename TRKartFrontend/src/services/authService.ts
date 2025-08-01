@@ -3,7 +3,11 @@ import { LoginRequest, PasswordOnlyLoginRequest, SessionCheckResponse, RegisterR
 
 class AuthService {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
+    console.log('Making login request with credentials:', credentials);
     const response = await api.post<AuthResponse>('/Auth/login', credentials);
+    console.log('Login response:', response);
+    console.log('Response headers:', response.headers);
+    console.log('Response cookies:', document.cookie);
     return response.data;
   }
 

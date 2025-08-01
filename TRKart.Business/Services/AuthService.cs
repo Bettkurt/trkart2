@@ -42,22 +42,22 @@ namespace TRKart.Business.Services
             return (token, expiration);
         }
 
-        public async Task<(bool IsValid, string? Email)> ValidateSessionAsync(string token)
+        public async Task<(bool IsValid, string? Email, int? CustomerID, string? FullName)> ValidateSessionAsync(string token)
         {
             var session = await _context.SessionToken
                 .Include(s => s.Customer)
                 .FirstOrDefaultAsync(s => s.Token == token && s.Expiration > DateTime.UtcNow);
             
             if (session == null)
-                return (false, null);
+                return (false, null, null, null);
             
-            return (true, session.Customer.Email);
+            return (true, session.Customer.Email, session.Customer.CustomerID, session.Customer.FullName);
         }
 
         public async Task<(string? Token, DateTime? Expiration)> LoginWithPasswordOnlyAsync(string token, string password)
         {
             // First validate the existing session
-            var (isValid, email) = await ValidateSessionAsync(token);
+            var (isValid, email, customerID, fullName) = await ValidateSessionAsync(token);
             if (!isValid || string.IsNullOrEmpty(email))
                 return (null, null);
 
@@ -116,6 +116,17 @@ namespace TRKart.Business.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<int?> GetCustomerIdFromTokenAsync(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return null;
+
+            var session = await _context.SessionToken
+                .FirstOrDefaultAsync(s => s.Token == token && s.Expiration > DateTime.UtcNow);
+            
+            return session?.CustomerID;
         }
     }
 }

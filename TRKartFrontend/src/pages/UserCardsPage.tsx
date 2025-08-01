@@ -11,15 +11,55 @@ const UserCardsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Helper function to save cards to localStorage (user-specific)
+  const saveCardsToStorage = (cards: UserCard[]) => {
+    try {
+      const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
+      localStorage.setItem(userKey, JSON.stringify(cards));
+    } catch (error) {
+      console.error('Failed to save cards to localStorage:', error);
+    }
+  };
+
+  // Helper function to load cards from localStorage (user-specific)
+  const loadCardsFromStorage = (): UserCard[] => {
+    try {
+      const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
+      const stored = localStorage.getItem(userKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Failed to load cards from localStorage:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     const fetchCards = async () => {
-      if (!user?.customerID) return;
+      // If no user email, show empty state
+      if (!user?.email) {
+        setCards([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // If no user or no customerID, try to load from localStorage
+      if (!user?.customerID || user.customerID === 0) {
+        const storedCards = loadCardsFromStorage();
+        setCards(storedCards);
+        setIsLoading(false);
+        return;
+      }
       
       try {
         const data = await userCardService.getCardsByCustomerId(user.customerID);
         setCards(data);
+        saveCardsToStorage(data);
       } catch (err) {
-        setError('Failed to load cards');
+        console.error('Failed to load cards:', err);
+        setError('Failed to load cards.');
+        // Try to load from localStorage as fallback
+        const storedCards = loadCardsFromStorage();
+        setCards(storedCards);
       } finally {
         setIsLoading(false);
       }
@@ -54,6 +94,18 @@ const UserCardsPage: React.FC = () => {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
+          {/* User Status */}
+          {user?.email && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-4 text-sm">
+              <div className="flex items-center justify-between">
+                <span>💳 Cards are saved locally for this user</span>
+                <span className="text-xs bg-blue-100 px-2 py-1 rounded">
+                  👤 {user.email}
+                </span>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
