@@ -1,31 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login, loginPasswordOnly, hasValidSession, sessionEmail } = useAuth();
+  const { login, hasValidSession, sessionEmail, getRememberedEmail } = useAuth();
   const navigate = useNavigate();
+
+  // Check for remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = getRememberedEmail();
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, [getRememberedEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
+    
     try {
-      if (hasValidSession && sessionEmail) {
-        // Password-only login
-        await loginPasswordOnly(password);
-      } else {
-        // Full login
-        await login(email, password, false);
-      }
+      await login({ email, password, rememberMe });
       navigate('/dashboard');
     } catch (err) {
+      console.error('Login error:', err);
       setError('Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
@@ -105,7 +117,20 @@ const LoginPage: React.FC = () => {
                   )}
                 </button>
               </div>
-              <div className="mt-2">
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center">
+                  <input
+                    id="rememberMe"
+                    name="rememberMe"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+                    Remember me
+                  </label>
+                </div>
                 <a href="#" className="text-cyan-500 font-semibold text-base hover:underline">Forgot my password ?</a>
               </div>
             </div>

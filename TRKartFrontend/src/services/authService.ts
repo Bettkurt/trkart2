@@ -1,67 +1,119 @@
 import api from './api';
-import { LoginRequest, PasswordOnlyLoginRequest, SessionCheckResponse, RegisterRequest, AuthResponse, User } from '@/types';
+import { LoginRequest, RegisterRequest, SessionCheckResponse, AuthResponse } from '@/types';
+import sessionService from './sessionService';
+
+const REMEMBER_ME_KEY = 'rememberMe';
+const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
 class AuthService {
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/Auth/login', credentials);
+  // Remember Me functionality
+  setRememberMe(value: boolean): void {
+    localStorage.setItem(REMEMBER_ME_KEY, value ? '1' : '0');
+  }
+
+  getRememberMe(): boolean {
+    return localStorage.getItem(REMEMBER_ME_KEY) === '1';
+  }
+
+  // Email storage for Remember Me
+  setRememberedEmail(email: string): void {
+    localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+  }
+
+  getRememberedEmail(): string | null {
+    return localStorage.getItem(REMEMBERED_EMAIL_KEY);
+  }
+
+  clearRememberedEmail(): void {
+    localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+  }
+
+  // Auth methods
+  async login(credentials: LoginRequest, rememberMe: boolean): Promise<AuthResponse> {
+    this.setRememberMe(rememberMe);
+    
+    const response = await api.post<AuthResponse>('/Auth/login', {
+      email: credentials.email,
+      password: credentials.password,
+      rememberMe: rememberMe
+    }, {
+      withCredentials: true // Ensure credentials are sent
+    });
+
+    // Store user session data
+    if (response.data && response.data.token) {
+      sessionService.setUserSession({
+        accessToken: response.data.token,
+        email: credentials.email
+      });
+    } 
+
+    // Update stored email based on preference
+    if (rememberMe) {
+      this.setRememberedEmail(credentials.email);
+    } else {
+      this.clearRememberedEmail();
+    }
+
     return response.data;
   }
 
-  async loginPasswordOnly(credentials: PasswordOnlyLoginRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/Auth/login-password-only', credentials);
+  async register(credentials: RegisterRequest, rememberMe: boolean): Promise<AuthResponse> {
+    this.setRememberMe(rememberMe);
+    
+    const response = await api.post<AuthResponse>('/Auth/register', {
+      email: credentials.email,
+      password: credentials.password,
+      fullName: credentials.fullName,
+      rememberMe: rememberMe
+    });
+
+    // Update stored email based on preference
+    if (rememberMe) {
+      this.setRememberedEmail(credentials.email);
+    } else {
+      this.clearRememberedEmail();
+    }
+
     return response.data;
+  }
+
+  async logout(): Promise<boolean> {
+    try {
+      
+      try {
+        // Call the server to invalidate the session
+        await api.post('/Auth/logout', {}, {
+          withCredentials: true,
+          headers: {
+            'Authorization': `Bearer ${api.defaults.headers.common['Authorization']}`
+          }
+        });
+        
+      } catch (error) {
+        console.error('[AuthService] Error during logout API call:', error);
+        // Continue with client-side cleanup even if API call fails
+      }
+      
+      // Clear the axios authorization header
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Redirect to home page
+      window.location.href = '/';
+      
+      return true;
+    } catch (error) {
+      console.error('[AuthService] Logout error:', error);
+      // Even if there's an error, we'll still redirect to home
+      window.location.href = '/';
+      return false;
+    }
   }
 
   async checkSession(): Promise<SessionCheckResponse> {
     const response = await api.get<SessionCheckResponse>('/Auth/check-session');
     return response.data;
   }
-
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/Auth/register', userData);
-    return response.data;
-  }
-
-  async logout(): Promise<void> {
-    try {
-      await api.post('/Auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local storage regardless of API call success
-      localStorage.removeItem('user');
-    }
-  }
-
-  // Store user data in localStorage (token is now in cookies)
-  // We don't need to manually get it since it's HttpOnly
-  setUserData(user: User): void {
-    localStorage.setItem('user', JSON.stringify(user));
-  }
-
-  // Get user data from localStorage
-  getUserData(): User | null {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  }
-
-  // Get token from cookies (this is handled by the browser automatically)
-  // We don't need to manually get it since it's HttpOnly
-  getToken(): string | null {
-    // Token is in HttpOnly cookies, so we can't access it from JavaScript
-    // The backend will handle token validation
-    return null;
-  }
-
-  // Check if user is authenticated by checking if we have user data
-  isAuthenticated(): boolean {
-    return !!this.getUserData();
-  }
-
-  // Clear all auth data
-  clearAuthData(): void {
-    localStorage.removeItem('user');
-  }
 }
 
-export default new AuthService(); 
+export default new AuthService();

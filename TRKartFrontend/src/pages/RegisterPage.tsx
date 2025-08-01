@@ -8,7 +8,8 @@ const RegisterPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+  const [rememberMe, setRememberMe] = useState(false);
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -18,7 +19,7 @@ const RegisterPage: React.FC = () => {
     setError('');
 
     try {
-      await register(email, password, fullName);
+      await register(email, password, fullName, rememberMe);
       navigate('/dashboard');
     } catch (err) {
       setError('Registration failed. Please try again.');
@@ -83,6 +84,19 @@ const RegisterPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </div>
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+                Remember me
+              </label>
             </div>
           </div>
 

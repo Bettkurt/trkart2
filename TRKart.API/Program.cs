@@ -23,14 +23,24 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// 3. CORS configuration
+// 3. CORS configuration for local development
+var allowedOrigins = new[] 
+{
+    "http://localhost:3000",  // Frontend
+    "https://localhost:7037"  // Swagger/API interface
+};
+
+
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowedOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowCredentials()
+              .WithExposedHeaders("Set-Cookie");
     });
 });
 
@@ -103,11 +113,15 @@ if (app.Environment.IsDevelopment())
 
 // 8. Middleware order - CORS before authentication
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+
+app.UseCors("AllowedOrigins");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
+// app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
+// Use the bottom one to directly connect to swagger interface
+app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).AllowAnonymous();
 
 app.Run();
