@@ -45,7 +45,7 @@ namespace TRKart.API.Controllers
                     error = ex.Message.Contains("Input validation failed") ? "INPUT_VALIDATION_ERROR" : "TRANSACTION_DENIED"
                 });
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 return StatusCode(500, new { 
                     success = false, 
@@ -96,7 +96,7 @@ namespace TRKart.API.Controllers
                     message = "Amount is valid" 
                 });
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 return StatusCode(500, new { 
                     success = false, 
@@ -117,7 +117,7 @@ namespace TRKart.API.Controllers
                     feasibility = feasibilityCheck 
                 });
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 return StatusCode(500, new { 
                     success = false, 
@@ -139,7 +139,7 @@ namespace TRKart.API.Controllers
                     balance = balance 
                 });
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 return StatusCode(500, new { 
                     success = false, 
@@ -197,7 +197,7 @@ namespace TRKart.API.Controllers
                     card = card
                 });
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
                 return StatusCode(500, new { 
                     success = false, 

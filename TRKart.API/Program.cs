@@ -9,6 +9,7 @@ using TRKart.Core.Helpers;
 using TRKart.DataAccess;
 using TRKart.Repository.Interfaces;
 using TRKart.Repository.Repositories;
+using TRKart.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -112,10 +113,9 @@ if (app.Environment.IsDevelopment())
 }
 
 // 8. Middleware order - CORS before authentication
-app.UseHttpsRedirection();
-
-app.UseCors("AllowedOrigins");
-
+// app.UseHttpsRedirection(); // Disabled for HTTP development
+app.UseCors("AllowAll");
+app.UseAuthenticationMiddleware(); // Custom authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -124,4 +124,5 @@ app.MapControllers();
 // Use the bottom one to directly connect to swagger interface
 app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).AllowAnonymous();
 
-app.Run();
+// Force HTTP for development
+app.Run("http://localhost:7037");

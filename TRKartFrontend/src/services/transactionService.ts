@@ -9,6 +9,45 @@ import {
 } from '@/types';
 
 class TransactionService {
+  // New secure user-specific methods
+  async getUserTransactions(): Promise<Transaction[]> {
+    const response = await api.get<{ success: boolean; transactions: Transaction[] }>('/SecureTransaction/user/transactions');
+    return response.data.transactions;
+  }
+
+  async getUserCards(): Promise<any[]> {
+    const response = await api.get<{ success: boolean; cards: any[] }>('/SecureTransaction/user/cards');
+    return response.data.cards;
+  }
+
+  async createUserTransaction(transactionData: CreateTransactionRequest): Promise<TransactionResponse> {
+    console.log('Making API call to create transaction:', transactionData);
+    const response = await api.post<TransactionResponse>('/SecureTransaction/user/transaction', transactionData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    console.log('API response:', response);
+    return response.data;
+  }
+
+  async getUserCardBalance(cardId: number): Promise<CardBalanceResponse> {
+    const response = await api.get<CardBalanceResponse>(`/SecureTransaction/user/card/${cardId}/balance`);
+    return response.data;
+  }
+
+  async getUserCardTransactions(cardId: number): Promise<Transaction[]> {
+    const response = await api.get<{ success: boolean; transactions: Transaction[] }>(`/SecureTransaction/user/card/${cardId}/transactions`);
+    return response.data.transactions;
+  }
+
+  async checkUserTransactionFeasibility(transactionData: CreateTransactionRequest): Promise<FeasibilityCheckResponse> {
+    const response = await api.post<FeasibilityCheckResponse>('/SecureTransaction/user/check-feasibility', transactionData);
+    return response.data;
+  }
+
+  // Existing methods for backward compatibility
   async getTransactionsByCardNumber(cardNumber: string): Promise<Transaction[]> {
     const response = await api.get<Transaction[]>(`/Transaction/by-card/${cardNumber}`);
     return response.data;

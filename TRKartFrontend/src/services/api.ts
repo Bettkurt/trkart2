@@ -3,16 +3,17 @@ import sessionService from './sessionService';
 
 // Create axios instance with credentials
 const api: AxiosInstance = axios.create({
-  baseURL: (import.meta as any).env?.VITE_API_BASE_URL || 'https://localhost:7037/api',
+  baseURL: (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:7037/api',
   timeout: 10000,
-  withCredentials: true, // This is important for sending/receiving cookies
+  withCredentials: true, // Include cookies in requests
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
-// Request interceptor to add JWT token
+// Request interceptor - no need to add headers for session token
+// Session token is automatically sent with cookies
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Get the access token from session storage
@@ -38,8 +39,10 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      // Don't clear rememberMe and email from localStorage
-      // Just redirect to login page
+      // Session expired or invalid
+      localStorage.removeItem('user');
+      // Don't redirect automatically, let the component handle it
+      console.log('Session expired or invalid');
       window.location.href = '/login';
     }
     

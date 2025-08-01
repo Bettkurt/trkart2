@@ -8,6 +8,8 @@ export interface LoginRequest {
 export interface SessionCheckResponse {
   hasValidSession: boolean;
   email: string | null;
+  customerID: number | null;
+  fullName: string | null;
 }
 
 export interface AuthResponse {
@@ -52,12 +54,13 @@ export interface DeleteUserCardRequest {
 export interface Transaction {
   transactionID: number;
   cardID: number;
-  cardNumber: string;
+  cardNumber?: string;
   amount: number;
   transactionType: string;
   description?: string;
   transactionDate: string;
-  createdAt: string;
+  transactionStatus?: string;
+  createdAt?: string;
 }
 
 export interface CreateTransactionRequest {

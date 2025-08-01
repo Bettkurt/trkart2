@@ -42,12 +42,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setHasValidSession(sessionData.hasValidSession);
       
       if (sessionData.hasValidSession && sessionData.email) {
-        setSessionEmail(sessionData.email);
-        setUser({
-          customerID: 0, // Should come from backend
+        // Create a user object from the session data
+        const userData: User = {
+          customerID: sessionData.customerID || 0,
           email: sessionData.email,
-          fullName: '' // Should come from backend
-        });
+          fullName: sessionData.fullName || '',
+        };
+        setUser(userData);
       } else {
         setSessionEmail(null);
         setUser(null);
@@ -83,20 +84,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: { email: string; password: string; rememberMe: boolean }) => {
     try {
+      // console.log('Attempting login with:', { email, password, rememberMe });
       setIsLoading(true);
-      await authService.login(credentials, credentials.rememberMe);
-      
+      const response = await authService.login(credentials, credentials.rememberMe);
+      console.log('Login response:', response);
+
       // Get the email from the auth service which handles the remember me logic
       const rememberedEmail = authService.getRememberedEmail();
       const userEmail = rememberedEmail || credentials.email;
       
-      const userData: User = {
-        customerID: 0, // Should come from backend
-        email: userEmail,
-        fullName: '' // Should come from backend
+      // Test session immediately after login to get customerID and fullName
+      setTimeout(async () => {
+        try {
+          const sessionCheck = await authService.checkSession();
+          console.log('Session check after login:', sessionCheck);
+          
+          if (sessionCheck.hasValidSession && sessionCheck.email) {
+            // Create a user object from the session data with customerID and fullName
+            const userData: User = {
+              customerID: sessionCheck.customerID || 0,
+              email: sessionCheck.email,
+              fullName: sessionCheck.fullName || '',
+            };
+            
+            authService.setUserData(userData);
+            setUser(userData);
+            setHasValidSession(true);
+            setSessionEmail(sessionCheck.email);
+            
+            console.log('User data updated after login:', userData);
+          }
+        } catch (error) {
+          console.error('Session check error after login:', error);
+        }
+      }, 1000);
+      
+      // Set initial user data (will be updated after session check)
+      const initialUserData: User = {
+        customerID: 0, // Will be updated after session check
+        email: '',
+        fullName: '', // Will be updated after session check
       };
       
-      setUser(userData);
+      authService.setUserData(initialUserData);
+      setUser(initialUserData);
       setHasValidSession(true);
       setSessionEmail(userEmail);
       
@@ -121,6 +152,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password, 
         rememberMe 
       });
+      // Update session state and get user data
+      setTimeout(async () => {
+        try {
+          const sessionCheck = await authService.checkSession();
+          console.log('Session check after password-only login:', sessionCheck);
+          
+          if (sessionCheck.hasValidSession && sessionCheck.email) {
+            // Create a user object from the session data with customerID and fullName
+            const userData: User = {
+              customerID: sessionCheck.customerID || 0,
+              email: sessionCheck.email,
+              fullName: sessionCheck.fullName || '',
+            };
+            
+            setUser(userData);
+            authService.setUserData(userData);
+            setHasValidSession(true);
+            setSessionEmail(sessionCheck.email);
+            
+            console.log('User data updated after password-only login:', userData);
+          }
+        } catch (error) {
+          console.error('Session check error after password-only login:', error);
+        }
+      }, 1000);
+      
+      // Set initial session state
+      setHasValidSession(true);
+      
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -129,23 +189,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to clear user-specific data from localStorage
+  const clearUserData = (userEmail: string | null) => {
+    try {
+      if (userEmail) {
+        // Clear user-specific transactions and cards
+        localStorage.removeItem(`trkart_transactions_${userEmail}`);
+        localStorage.removeItem(`trkart_cards_${userEmail}`);
+      }
+      // Also clear anonymous data
+      localStorage.removeItem('trkart_transactions_anonymous');
+      localStorage.removeItem('trkart_cards_anonymous');
+    } catch (error) {
+      console.error('Failed to clear user data:', error);
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
       await authService.logout();
-      setUser(null);
-      setHasValidSession(false);
-      setSessionEmail(null);
-      localStorage.removeItem('user');
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state
+    } finally {
+      setIsLoading(false);
+      clearUserData(sessionEmail);
       setUser(null);
       setHasValidSession(false);
       setSessionEmail(null);
       localStorage.removeItem('user');
-    } finally {
-      setIsLoading(false);
     }
   };
 

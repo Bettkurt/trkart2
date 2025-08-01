@@ -31,7 +31,9 @@ class AuthService {
   // Auth methods
   async login(credentials: LoginRequest, rememberMe: boolean): Promise<AuthResponse> {
     this.setRememberMe(rememberMe);
-    
+
+    console.log('Making login request with credentials:', credentials);
+
     const response = await api.post<AuthResponse>('/Auth/login', {
       email: credentials.email,
       password: credentials.password,
@@ -39,6 +41,10 @@ class AuthService {
     }, {
       withCredentials: true // Ensure credentials are sent
     });
+
+    console.log('Login response:', response);
+    console.log('Response headers:', response.headers);
+    console.log('Response cookies:', document.cookie);
 
     // Store user session data
     if (response.data && response.data.token) {

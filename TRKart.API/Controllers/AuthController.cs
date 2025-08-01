@@ -35,7 +35,12 @@ namespace TRKart.API.Controllers
             if (token == null) {
                 return Unauthorized("Geçersiz e-posta veya şifre.");
             }
-            // Set cookie with settings for development
+
+            Console.WriteLine($"Setting cookie for user: {dto.Email}");
+            Console.WriteLine($"Token: {token.Substring(0, Math.Min(20, token.Length))}...");
+            Console.WriteLine($"Expiration: {expiration}");
+            
+            // Set cookie
             Response.Cookies.Append(
                 "SessionToken",
                 token,
@@ -44,7 +49,7 @@ namespace TRKart.API.Controllers
                     HttpOnly = true,
                     Expires = expiration,
                     Secure = true,
-                    SameSite = SameSiteMode.None,
+                    SameSite = SameSiteMode.Lax,
                     Path = "/",
                     // IsEssential = true
                 });
@@ -55,12 +60,11 @@ namespace TRKart.API.Controllers
         public async Task<IActionResult> CheckSession()
         {
             var sessionToken = Request.Cookies["SessionToken"];
-            if (string.IsNullOrEmpty(sessionToken))  {
-                return Ok(new { hasValidSession = false });
-            }
+            if (string.IsNullOrEmpty(sessionToken))
+                return Ok(new { hasValidSession = false, email = (string?)null, customerID = (int?)null, fullName = (string?)null });
 
-            var (isValid, email) = await _authService.ValidateSessionAsync(sessionToken);
-            return Ok(new { hasValidSession = isValid, email });
+            var (isValid, email, customerID, fullName) = await _authService.ValidateSessionAsync(sessionToken);
+            return Ok(new { hasValidSession = isValid, email, customerID, fullName });
         }
 
         [HttpGet("user-email")]

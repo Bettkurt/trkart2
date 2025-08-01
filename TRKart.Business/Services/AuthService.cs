@@ -44,24 +44,25 @@ namespace TRKart.Business.Services
             return (token, expiration);
         }
 
-        public async Task<(bool IsValid, string? Email)> ValidateSessionAsync(string token)
+        public async Task<(bool IsValid, string? Email, int? CustomerID, string? FullName)> ValidateSessionAsync(string token)
         {
             var session = await _context.SessionToken
                 .Include(s => s.Customer)
                 .FirstOrDefaultAsync(s => s.Token == token && s.ExpirationDate > DateTime.UtcNow);
             
             if (session == null)
-                return (false, null);
+                return (false, null, null, null);
             
-            return (true, session.Customer.Email);
+            return (true, session.Customer.Email, session.Customer.CustomerID, session.Customer.FullName);
         }
 
         public async Task<bool> InvalidateSessionAsync(string token)
         {
+            // First validate the existing session
             try {
-                if (string.IsNullOrEmpty(token)) {
-                    return true;
-                }
+                var (isValid, email, customerID, fullName) = await ValidateSessionAsync(token);
+                if (!isValid || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+                    return (null, null);
 
                 var session = await _context.SessionToken
                     .FirstOrDefaultAsync(s => s.Token == token);
@@ -105,6 +106,17 @@ namespace TRKart.Business.Services
             return true;
         }
 
+        public async Task<int?> GetCustomerIdFromTokenAsync(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return null;
+
+            var session = await _context.SessionToken
+                .FirstOrDefaultAsync(s => s.Token == token && s.Expiration > DateTime.UtcNow);
+            
+            return session?.CustomerID;
+        }
+        
         public async Task<string?> GetUserEmailByTokenAsync(string token)
         {
             if (string.IsNullOrEmpty(token)) {
