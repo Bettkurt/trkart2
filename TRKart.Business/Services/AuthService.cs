@@ -62,14 +62,14 @@ namespace TRKart.Business.Services
             try {
                 var (isValid, email, customerID, fullName) = await ValidateSessionAsync(token);
                 if (!isValid || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
-                    return (null, null);
+                    return false;
 
                 var session = await _context.SessionToken
                     .FirstOrDefaultAsync(s => s.Token == token);
 
                 // If the session doesn't exist, it's already invalid
                 if (session == null) {
-                    return true;
+                    return false;
                 }
                 
                 // Set expiration to now to invalidate the token
@@ -112,7 +112,7 @@ namespace TRKart.Business.Services
                 return null;
 
             var session = await _context.SessionToken
-                .FirstOrDefaultAsync(s => s.Token == token && s.Expiration > DateTime.UtcNow);
+                .FirstOrDefaultAsync(s => s.Token == token && s.ExpirationDate > DateTime.UtcNow);
             
             return session?.CustomerID;
         }

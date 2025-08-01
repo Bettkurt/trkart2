@@ -114,7 +114,7 @@ if (app.Environment.IsDevelopment())
 
 // 8. Middleware order - CORS before authentication
 // app.UseHttpsRedirection(); // Disabled for HTTP development
-app.UseCors("AllowAll");
+app.UseCors("AllowedOrigins");
 app.UseAuthenticationMiddleware(); // Custom authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();

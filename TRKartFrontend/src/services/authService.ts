@@ -1,11 +1,42 @@
 import api from './api';
-import { LoginRequest, RegisterRequest, SessionCheckResponse, AuthResponse } from '@/types';
+import { LoginRequest, RegisterRequest, SessionCheckResponse, AuthResponse, User } from '@/types';
 import sessionService from './sessionService';
 
 const REMEMBER_ME_KEY = 'rememberMe';
 const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
 class AuthService {
+
+    // Store user data in localStorage (token is now in cookies)
+  // We don't need to manually get it since it's HttpOnly
+  setUserData(user: User): void {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
+
+  // Get user data from localStorage
+  getUserData(): User | null {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  // Get token from cookies (this is handled by the browser automatically)
+  // We don't need to manually get it since it's HttpOnly
+  getToken(): string | null {
+    // Token is in HttpOnly cookies, so we can't access it from JavaScript
+    // The backend will handle token validation
+    return null;
+  }
+
+  // Check if user is authenticated by checking if we have user data
+  isAuthenticated(): boolean {
+    return !!this.getUserData();
+  }
+
+  // Clear all auth data
+  clearAuthData(): void {
+    localStorage.removeItem('user');
+  }
+
   // Remember Me functionality
   setRememberMe(value: boolean): void {
     localStorage.setItem(REMEMBER_ME_KEY, value ? '1' : '0');
