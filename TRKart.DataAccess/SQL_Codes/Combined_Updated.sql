@@ -95,14 +95,62 @@ EXECUTE FUNCTION set_customer_number();
 -------------------------------------SessionToken------------------------------------------
 -------------------------------------------------------------------------------------------
 
-CREATE TABLE "SessionToken" (
+-- Create the SessionToken table
+CREATE TABLE public."SessionToken"
+(
     "SessionID" SERIAL PRIMARY KEY,
-    "CustomerID" INT NOT NULL,
-    "Token" VARCHAR(500) UNIQUE NOT NULL,
-    "ExpirationDate" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '1 hour',  -- We can change this to 1 day or 1 week etc. if needed
-    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("CustomerID") REFERENCES "Customers"("CustomerID") ON DELETE CASCADE
+    "CustomerID" INTEGER NOT NULL,
+    "AccessToken" TEXT UNIQUE,
+    "RefreshToken" TEXT NOT NULL UNIQUE,
+    "AccessTokenExpiration" TIMESTAMP,
+    "RefreshTokenExpiration" TIMESTAMP NOT NULL,
+    "RefreshTokenCreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "IsRevoked" BOOLEAN NOT NULL DEFAULT false,
+    "DeviceInfo" TEXT,
+    "IPAddress" TEXT,
+    
+    -- Foreign key constraint
+    CONSTRAINT "FK_SessionToken_Customers_CustomerID" 
+        FOREIGN KEY ("CustomerID") 
+        REFERENCES public."Customers" ("CustomerID")
+        ON DELETE CASCADE
 );
+
+-------------------------------------------------------------------------------------------
+-------------------------------------TokenBlacklist---------------------------------------
+-------------------------------------------------------------------------------------------
+
+CREATE TABLE "TokenBlacklist" (
+    "BlacklistID" SERIAL PRIMARY KEY,
+    "RefreshToken" VARCHAR(500) NOT NULL,
+    "BlacklistedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "Reason" TEXT,
+    "IPAddress" VARCHAR(45)
+);
+
+---------------------------------------Functions-------------------------------------------
+
+-- Create function to purge expired tokens
+CREATE OR REPLACE FUNCTION purge_expired_tokens()
+RETURNS void AS $$
+DECLARE
+    purge_before TIMESTAMP;
+BEGIN
+    -- Remove sessions that expired more than 30 days ago
+    purge_before := NOW() - INTERVAL '30 days';
+
+    DELETE FROM "SessionToken"
+    WHERE "RefreshTokenExpiration" < purge_before;
+
+    -- Remove blacklist entries older than 90 days
+    purge_before := NOW() - INTERVAL '90 days';
+
+    DELETE FROM "TokenBlacklist"
+    WHERE "BlacklistedAt" < purge_before;
+
+    RAISE NOTICE 'Token cleanup completed at %', NOW();
+END;
+$$ LANGUAGE plpgsql;
 
 -------------------------------------------------------------------------------------------
 -------------------------------------UserCard---------------------------------------------
@@ -304,5 +352,9 @@ CREATE INDEX IDX_USERCARD_CUSTOMERID ON "UserCard"("CustomerID");
 CREATE INDEX IDX_USERCARD_CARDNUMBER ON "UserCard"("CardNumber");
 CREATE INDEX IDX_TRANSACTION_CARDID ON "Transaction"("CardID");
 CREATE INDEX IDX_TRANSACTION_TRANSFERTRANSACTIONID ON "Transaction"("TransferTransactionID");
-CREATE INDEX IDX_SESSIONTOKEN_CUSTOMERID ON "SessionToken"("CustomerID");
-CREATE INDEX IDX_SESSIONTOKEN_TOKEN ON "SessionToken"("Token");
+CREATE INDEX "IX_SessionToken_CustomerID" ON public."SessionToken" ("CustomerID");
+CREATE INDEX "IX_SessionToken_RefreshToken" ON public."SessionToken" ("RefreshToken");
+CREATE INDEX "IX_SessionToken_AccessToken" ON public."SessionToken" ("AccessToken");
+CREATE INDEX "IX_SessionToken_Expirations" ON public."SessionToken" ("AccessTokenExpiration", "RefreshTokenExpiration");
+CREATE INDEX "IDX_TOKENBLACKLIST_REFRESHTOKEN" ON "TokenBlacklist"("RefreshToken");
+CREATE INDEX "IDX_TOKENBLACKLIST_BLACKLISTEDAT" ON "TokenBlacklist"("BlacklistedAt");

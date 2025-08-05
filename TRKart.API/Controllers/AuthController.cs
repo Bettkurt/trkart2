@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using global::TRKart.Business.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -31,39 +32,130 @@ namespace TRKart.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            var (token, expiration) = await _authService.LoginAsync(dto);
-            if (token == null) {
+            // Get client information
+            string? ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string? userAgent = Request.Headers["User-Agent"].ToString();
+
+            var tokenResponse = await _authService.LoginAsync(dto, ipAddress, userAgent);
+            if (tokenResponse == null) {
                 return Unauthorized("Geçersiz e-posta veya şifre.");
             }
 
-            Console.WriteLine($"Setting cookie for user: {dto.Email}");
-            Console.WriteLine($"Token: {token.Substring(0, Math.Min(20, token.Length))}...");
-            Console.WriteLine($"Expiration: {expiration}");
-            
-            // Set cookie
+            // Set access token in cookie
             Response.Cookies.Append(
-                "SessionToken",
-                token,
+                "AccessToken",
+                tokenResponse.AccessToken,
                 new CookieOptions
                 {
                     HttpOnly = true,
-                    Expires = expiration,
+                    Expires = tokenResponse.AccessTokenExpiration,
                     Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Path = "/",
-                    // IsEssential = true
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/"
                 });
-            return Ok(new { message = "Giriş başarılı!", token });
+
+            // Set refresh token in cookie with longer expiration
+            Response.Cookies.Append(
+                "RefreshToken",
+                tokenResponse.RefreshToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = tokenResponse.RefreshTokenExpiration,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/"
+                });
+
+            return Ok(new { 
+                message = "Giriş başarılı!", 
+                accessToken = tokenResponse.AccessToken,
+                refreshToken = tokenResponse.RefreshToken,
+                accessTokenExpiration = tokenResponse.AccessTokenExpiration,
+                refreshTokenExpiration = tokenResponse.RefreshTokenExpiration
+            });
         }
+
+        [HttpPost("refresh-token")]
+public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request = null)
+{
+    // Try to get refresh token from request body first, then from cookie
+    string? refreshToken = request?.RefreshToken;
+    if (string.IsNullOrEmpty(refreshToken))
+    {
+        refreshToken = Request.Cookies["RefreshToken"];
+    }
+
+    if (string.IsNullOrEmpty(refreshToken))
+    {
+        return BadRequest("Refresh token is required");
+    }
+
+    // IMPORTANT: Check if refresh token is blacklisted before processing
+    bool isBlacklisted = await _authService.IsRefreshTokenBlacklistedAsync(refreshToken);
+    if (isBlacklisted)
+    {
+        // Clear the blacklisted refresh token cookie
+        Response.Cookies.Delete("RefreshToken", new CookieOptions {
+            Path = "/",
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict
+        });
+
+        return Unauthorized("Refresh token has been revoked");
+    }
+
+    string? ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+    var tokenResponse = await _authService.RefreshTokenAsync(refreshToken, ipAddress);
+
+    if (tokenResponse == null)
+    {
+        return Unauthorized("Invalid or expired refresh token");
+    }
+
+    // Set new access token in cookie
+    Response.Cookies.Append(
+        "AccessToken",
+        tokenResponse.AccessToken,
+        new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = tokenResponse.AccessTokenExpiration,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/"
+        });
+
+    // Set new refresh token in cookie
+    Response.Cookies.Append(
+        "RefreshToken",
+        tokenResponse.RefreshToken,
+        new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = tokenResponse.RefreshTokenExpiration,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/"
+        });
+
+    return Ok(new {
+        accessToken = tokenResponse.AccessToken,
+        refreshToken = tokenResponse.RefreshToken,
+        accessTokenExpiration = tokenResponse.AccessTokenExpiration,
+        refreshTokenExpiration = tokenResponse.RefreshTokenExpiration
+    });
+}
 
         [HttpGet("check-session")]
         public async Task<IActionResult> CheckSession()
         {
-            var sessionToken = Request.Cookies["SessionToken"];
-            if (string.IsNullOrEmpty(sessionToken))
+            var accessToken = Request.Cookies["AccessToken"];
+            if (string.IsNullOrEmpty(accessToken))
                 return Ok(new { hasValidSession = false, email = (string?)null, customerID = (int?)null, fullName = (string?)null });
 
-            var (isValid, email, customerID, fullName) = await _authService.ValidateSessionAsync(sessionToken);
+            var (isValid, email, customerID, fullName) = await _authService.ValidateAccessTokenAsync(accessToken);
             return Ok(new { hasValidSession = isValid, email, customerID, fullName });
         }
 
@@ -74,7 +166,7 @@ namespace TRKart.API.Controllers
                 return BadRequest("Token is required");
             }
 
-            var email = await _authService.GetUserEmailByTokenAsync(token);
+            var email = await _authService.GetUserEmailByAccessTokenAsync(token);
             if (email == null) {
                 return NotFound("No user found with the provided token");
             }
@@ -87,20 +179,27 @@ namespace TRKart.API.Controllers
         {
             try
             {
-                // Get and invalidate the session token
-                var sessionToken = Request.Cookies["SessionToken"];
-                if (!string.IsNullOrEmpty(sessionToken)) {
-                    await _authService.InvalidateSessionAsync(sessionToken);
+                // Get refresh token and revoke it
+                var refreshToken = Request.Cookies["RefreshToken"];
+                if (!string.IsNullOrEmpty(refreshToken)) {
+                    await _authService.RevokeTokenAsync(refreshToken);
                 }
-                
-                // Delete the cookie
-                Response.Cookies.Delete("SessionToken", new CookieOptions { 
+
+                // Delete both cookies
+                Response.Cookies.Delete("AccessToken", new CookieOptions { 
                     Path = "/", 
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow
+                    SameSite = SameSiteMode.Strict
                 });
+
+                Response.Cookies.Delete("RefreshToken", new CookieOptions { 
+                    Path = "/", 
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict
+                });
+
                 return Ok(new { message = "Çıkış başarılı!" });
             }
             catch (Exception ex)

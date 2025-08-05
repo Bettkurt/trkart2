@@ -1,6 +1,6 @@
 // Auth types
 export interface LoginRequest {
-  email: string;
+    email: string | null;
   password: string;
   rememberMe: boolean;
 }
@@ -12,9 +12,20 @@ export interface SessionCheckResponse {
   fullName: string | null;
 }
 
-export interface AuthResponse {
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiration: string;
+  refreshTokenExpiration: string;
+  message?: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface AuthResponse extends TokenResponse {
   message: string;
-  token: string;
 }
 
 export interface RegisterRequest {

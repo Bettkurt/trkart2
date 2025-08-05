@@ -17,5 +17,6 @@ namespace TRKart.DataAccess
         public DbSet<SessionToken> SessionToken { get; set; } = null!;
         public DbSet<UserCard> UserCard { get; set; } = null!;
         public DbSet<Transaction> Transaction { get; set; } = null!;
+        public DbSet<TokenBlacklist> TokenBlacklist { get; set; } = null!;
     }
 }
