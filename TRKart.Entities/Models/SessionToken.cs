@@ -35,9 +35,9 @@ namespace TRKart.Entities.Models
         public DateTime RefreshTokenExpiration { get; set; }
 
         [Required]
-        [Column("CreatedAt")]
+        [Column("RefreshTokenCreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime CreatedAt { get; set; }
+        public DateTime RefreshTokenCreatedAt { get; set; }
 
         [Column("IsRevoked")]
         public bool IsRevoked { get; set; } = false;
