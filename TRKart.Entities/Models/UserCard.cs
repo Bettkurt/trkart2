@@ -36,6 +36,7 @@ namespace TRKart.Entities.Models
         public string CardStatus { get; set; }
 
         // Maps to CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        [Column("CreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime CreatedAt { get; set; }
 

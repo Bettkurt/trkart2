@@ -48,7 +48,7 @@ namespace TRKart.API.Services
 
             // Remove expired sessions that are older than 1 month
             var oldSessions = await dbContext.SessionToken
-                .Where(s => s.RefreshTokenExpiration < now && s.CreatedAt < monthAgo)
+                .Where(s => s.RefreshTokenExpiration < now && s.RefreshTokenCreatedAt < monthAgo)
                 .ToListAsync();
 
             if (oldSessions.Any())

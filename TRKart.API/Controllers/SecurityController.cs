@@ -68,7 +68,7 @@ namespace TRKart.API.Controllers
                 .Where(s => s.CustomerID == customerId.Value && !s.IsRevoked && s.RefreshTokenExpiration > DateTime.UtcNow)
                 .Select(s => new {
                     s.SessionID,
-                    s.CreatedAt,
+                    s.RefreshTokenCreatedAt,
                     s.RefreshTokenExpiration,
                     s.IPAddress,
                     s.DeviceInfo
