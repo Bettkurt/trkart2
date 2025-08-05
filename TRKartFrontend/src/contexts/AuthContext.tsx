@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '@/types';
 import authService from '@/services/authService';
+import sessionService from '@/services/sessionService';
 
 interface AuthContextType {
   user: User | null;
@@ -38,7 +39,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkSession = async () => {
     try {
+      console.log('[Auth] Checking session...');
+      
+      // First check if we need to refresh the token
+      const shouldRefresh = await sessionService.checkAndRefreshToken();
+      
+      if (!shouldRefresh) {
+        console.log('[Auth] Token refresh failed or not needed, checking session anyway');
+        // Continue to check session even if refresh failed
+      }
+      
+      // Then check the session with the backend
+      console.log('[Auth] Verifying session with backend...');
       const sessionData = await authService.checkSession();
+      console.log('[Auth] Session check result:', sessionData);
+      
       setHasValidSession(sessionData.hasValidSession);
       
       if (sessionData.hasValidSession && sessionData.email) {
@@ -48,8 +63,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: sessionData.email,
           fullName: sessionData.fullName || '',
         };
+        console.log('[Auth] Setting user data:', userData);
         setUser(userData);
+        setSessionEmail(sessionData.email);
       } else {
+        console.log('[Auth] No valid session or email found');
         setSessionEmail(null);
         setUser(null);
       }

@@ -31,8 +31,6 @@ var allowedOrigins = new[]
     "https://localhost:7037"  // Swagger/API interface
 };
 
-
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowedOrigins", policy =>
@@ -104,6 +102,8 @@ builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositorie
 builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 
 var app = builder.Build();
+// Use custom JWT middleware before authorization
+app.UseJwtMiddleware();
 
 // 7. Swagger only active on development environment
 if (app.Environment.IsDevelopment())

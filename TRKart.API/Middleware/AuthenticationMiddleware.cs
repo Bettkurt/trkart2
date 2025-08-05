@@ -23,11 +23,11 @@ namespace TRKart.API.Middleware
                 {
                     Console.WriteLine($"SessionToken: {sessionToken.Substring(0, Math.Min(10, sessionToken.Length))}...");
                     
-                    // Get IAuthService from service provider within the request scope
+                    // Get IAuthService from the service provider within the request scope
                     var authService = context.RequestServices.GetService<IAuthService>();
                     if (authService != null)
                     {
-                        var customerId = await authService.GetCustomerIdFromTokenAsync(sessionToken);
+                        var customerId = await authService.GetCustomerIdFromAccessTokenAsync(sessionToken);
                         Console.WriteLine($"CustomerID from token: {customerId}");
                         
                         if (customerId.HasValue)
