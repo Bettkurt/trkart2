@@ -11,6 +11,8 @@ import UserCardsPage from '@/pages/UserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
+import AddCardPage from '@/pages/AddCardPage';
+import CardDeletionPage from '@/pages/CardDeletionPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -70,6 +72,16 @@ const AppRoutes: React.FC = () => {
       <Route path="/cards" element={
         <ProtectedRoute>
           <UserCardsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/add-card" element={
+        <ProtectedRoute>
+          <AddCardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/delete-card/:cardId" element={
+        <ProtectedRoute>
+          <CardDeletionPage />
         </ProtectedRoute>
       } />
       <Route path="/transaction-test" element={

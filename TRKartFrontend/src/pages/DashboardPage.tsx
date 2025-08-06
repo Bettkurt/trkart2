@@ -49,7 +49,7 @@ const DashboardPage: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
               <div className="mt-4 space-y-2">
                 <Link to="/new-transaction" className="btn-primary w-full block text-center">New Transaction</Link>
-                <Link to="/cards" className="btn-secondary w-full block text-center">Add New Card</Link>
+                <Link to="/add-card" className="btn-secondary w-full block text-center">Add New Card</Link>
               </div>
             </div>
           </div>

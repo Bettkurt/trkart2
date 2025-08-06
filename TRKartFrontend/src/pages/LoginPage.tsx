@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Eye, EyeOff } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -48,7 +49,9 @@ const LoginPage: React.FC = () => {
     <div className="flex min-h-screen bg-white">
       {/* Left: Logo */}
       <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white">
-        <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
+        <Link to="/" className="hover:opacity-90 transition-opacity">
+          <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
+        </Link>
       </div>
       {/* Right: Login Form */}
       <div className="flex flex-1 items-center justify-center px-4">
@@ -93,28 +96,24 @@ const LoginPage: React.FC = () => {
             
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-              <div className="relative flex items-center border-2 border-gray-300 rounded-xl overflow-hidden focus-within:border-blue-400 bg-white">
+              <div className="relative">
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="flex-1 px-3 py-3 outline-none bg-white text-gray-700 text-lg placeholder-gray-400 border-0"
+                  className="w-full px-3 py-3 border-2 border-gray-300 rounded-xl text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all pr-10"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
                   tabIndex={-1}
-                  className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  onClick={() => setShowPassword((v) => !v)}
                 >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.336-3.236.938-4.675m1.662-2.662A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 1.657-.336 3.236-.938 4.675m-1.662 2.662A9.956 9.956 0 0112 21c-2.21 0-4.267-.72-5.938-1.938" /></svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm6 0c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" /></svg>
-                  )}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               <div className="flex items-center justify-between mt-2">
@@ -145,7 +144,7 @@ const LoginPage: React.FC = () => {
           </form>
           
           <div className="text-center mt-16">
-            <span className="text-gray-400 text-lg">Don't have an account? </span>
+            <span className="text-gray-600 text-lg">Don't have an account? </span>
             <Link 
               to="/register" 
               className="text-cyan-500 font-bold hover:underline transition-all text-lg"
