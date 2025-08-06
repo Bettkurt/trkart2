@@ -41,7 +41,7 @@ class SessionService {
     }
   }
 
-  // Set user session after successful login
+  /* Set user session after successful login
   setUserSession(data: {
     accessToken: string;
     refreshToken: string;
@@ -55,6 +55,7 @@ class SessionService {
     this.setSessionData(SESSION_KEYS.REFRESH_TOKEN_EXPIRY, data.refreshTokenExpiration);
     this.setSessionData(SESSION_KEYS.USER_EMAIL, data.email);
   }
+  */
 
   // Get current user ID
   getUserId(): string | null {
@@ -194,14 +195,14 @@ class SessionService {
         console.log('[Token] Token refresh successful');
         console.log('[Token] New access token (truncated):', 
           response.data.accessToken ? `${response.data.accessToken.substring(0, 10)}...` : 'none');
-        
+        /*
         this.setUserSession({
           accessToken: response.data.accessToken,
           refreshToken: response.data.refreshToken,
           accessTokenExpiration: response.data.accessTokenExpiration,
           refreshTokenExpiration: response.data.refreshTokenExpiration,
           email: this.getSessionData('userEmail') || ''
-        });
+        }); */
         
         // Verify the token was actually set
         const newAccessToken = this.getAccessToken();

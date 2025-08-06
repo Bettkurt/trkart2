@@ -1,4 +1,4 @@
-﻿import api from './api';
+import api from './api';
 import sessionService from './sessionService';
 import { TokenResponse } from '@/types';
 
@@ -30,7 +30,7 @@ class TokenService {
             refreshToken
           });
 
-          // Update the session with the new tokens
+          /* Update the session with the new tokens
           if (response.data) {
             sessionService.setUserSession({
               accessToken: response.data.accessToken,
@@ -39,7 +39,7 @@ class TokenService {
               refreshTokenExpiration: response.data.refreshTokenExpiration,
               email: sessionService.getSessionData('userEmail') || ''
             });
-          }
+          } */
 
           resolve(response.data);
         } catch (error) {
