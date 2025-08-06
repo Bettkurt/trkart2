@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import transactionService from '@/services/transactionService';
+import userCardService from '@/services/userCardService';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserCard } from '@/types';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const TransactionFormPage: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +21,31 @@ const TransactionFormPage: React.FC = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
+  const [userCards, setUserCards] = useState<UserCard[]>([]);
+  const [loadingCards, setLoadingCards] = useState(true);
+
+  // Load user cards on component mount
+  useEffect(() => {
+    const loadUserCards = async () => {
+      if (!user?.customerID) {
+        setLoadingCards(false);
+        return;
+      }
+
+      try {
+        setLoadingCards(true);
+        const cards = await userCardService.getUserCards();
+        setUserCards(cards);
+      } catch (error) {
+        console.error('Failed to load user cards:', error);
+        setValidationMessage('❌ Failed to load your cards. Please try again.');
+      } finally {
+        setLoadingCards(false);
+      }
+    };
+
+    loadUserCards();
+  }, [user]);
 
   // Real-time validation handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,15 +81,17 @@ const TransactionFormPage: React.FC = () => {
     }));
   };
 
-  const handleCardIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = validationUtils.sanitizeCardId(e.target.value);
+  const handleCardIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
     setFormData(prev => ({ ...prev, cardID: value }));
     
-    const validation = validationUtils.validateCardId(value);
-    setErrors(prev => ({
-      ...prev,
-      cardID: validation.isValid ? '' : validation.error || ''
-    }));
+    // Clear card ID error when a card is selected
+    if (value) {
+      setErrors(prev => ({
+        ...prev,
+        cardID: ''
+      }));
+    }
   };
 
   // Backend validation for amount only
@@ -86,6 +116,16 @@ const TransactionFormPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setValidationMessage('');
+
+    // Validate card selection
+    if (!formData.cardID) {
+      setErrors(prev => ({
+        ...prev,
+        cardID: 'Please select a card'
+      }));
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const backendValid = await validateWithBackend();
@@ -206,19 +246,30 @@ const TransactionFormPage: React.FC = () => {
               {/* Card ID */}
               <div>
                 <label htmlFor="cardID" className="block text-sm font-medium text-gray-700 mb-1">
-                  Card ID
+                  Card
                 </label>
-                <input
-                  type="text"
-                  id="cardID"
-                  value={formData.cardID}
-                  onChange={handleCardIdChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Enter card ID"
-                  required
-                />
+                {loadingCards ? (
+                  <LoadingSpinner />
+                ) : userCards.length === 0 ? (
+                  <p className="text-red-500 text-sm">No cards found for this customer. Please add a card first.</p>
+                ) : (
+                  <select
+                    id="cardID"
+                    value={formData.cardID}
+                    onChange={handleCardIdChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    required
+                  >
+                    <option value="">Select a card</option>
+                                         {userCards.map(card => (
+                       <option key={card.cardID} value={card.cardID}>
+                         {card.cardNumber} - ${card.balance.toFixed(2)}
+                       </option>
+                     ))}
+                  </select>
+                )}
                 {errors.cardID && (
                   <p className="text-red-500 text-sm mt-1">{errors.cardID}</p>
                 )}

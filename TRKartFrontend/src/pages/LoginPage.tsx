@@ -48,7 +48,9 @@ const LoginPage: React.FC = () => {
     <div className="flex min-h-screen bg-white">
       {/* Left: Logo */}
       <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white">
-        <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
+        <Link to="/">
+          <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
+        </Link>
       </div>
       {/* Right: Login Form */}
       <div className="flex flex-1 items-center justify-center px-4">
