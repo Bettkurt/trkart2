@@ -154,7 +154,7 @@ const TransactionFormPage: React.FC = () => {
       });
       const data = await response.json();
       console.log('Auth test result:', data);
-      alert(`Auth test: ${data.message} (CustomerID: ${data.customerId}, SessionToken: ${data.sessionTokenPresent})`);
+      alert(`Auth test: ${data.message} (CustomerID: ${data.customerId}, AccessToken: ${data.accessTokenPresent}, RefreshToken: ${data.refreshTokenPresent})`);
     } catch (error) {
       console.error('Auth test error:', error);
       alert('Auth test failed');

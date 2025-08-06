@@ -15,19 +15,22 @@ namespace TRKart.API.Middleware
         {
             try
             {
-                var sessionToken = context.Request.Cookies["SessionToken"];
+                var refreshToken = context.Request.Cookies["RefreshToken"];
+                var accessToken = context.Request.Cookies["AccessToken"];
                 Console.WriteLine($"Request to: {context.Request.Path}");
-                Console.WriteLine($"SessionToken present: {!string.IsNullOrEmpty(sessionToken)}");
+                Console.WriteLine($"RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
+                Console.WriteLine($"AccessToken present: {!string.IsNullOrEmpty(accessToken)}");
                 
-                if (!string.IsNullOrEmpty(sessionToken))
+                
+                if (!string.IsNullOrEmpty(refreshToken))
                 {
-                    Console.WriteLine($"SessionToken: {sessionToken.Substring(0, Math.Min(10, sessionToken.Length))}...");
+                    Console.WriteLine($"RefreshToken: {refreshToken.Substring(0, Math.Min(10, refreshToken.Length))}...");
                     
                     // Get IAuthService from the service provider within the request scope
                     var authService = context.RequestServices.GetService<IAuthService>();
                     if (authService != null)
                     {
-                        var customerId = await authService.GetCustomerIdFromAccessTokenAsync(sessionToken);
+                        var customerId = await authService.GetCustomerIdFromAccessTokenAsync(accessToken);
                         Console.WriteLine($"CustomerID from token: {customerId}");
                         
                         if (customerId.HasValue)
@@ -41,7 +44,7 @@ namespace TRKart.API.Middleware
                                 new System.Security.Claims.Claim("CustomerID", customerId.Value.ToString())
                             };
                             
-                            var identity = new System.Security.Claims.ClaimsIdentity(claims, "SessionToken");
+                            var identity = new System.Security.Claims.ClaimsIdentity(claims, "AccessToken");
                             context.User = new System.Security.Claims.ClaimsPrincipal(identity);
                             Console.WriteLine($"Authentication successful for CustomerID: {customerId.Value}");
                         }
@@ -57,7 +60,7 @@ namespace TRKart.API.Middleware
                 }
                 else
                 {
-                    Console.WriteLine("No SessionToken found in cookies");
+                    Console.WriteLine("No RefreshToken found in cookies");
                 }
             }
             catch (Exception ex)

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using global::TRKart.Business.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
 
 namespace TRKart.API.Controllers
@@ -12,10 +13,12 @@ namespace TRKart.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ApplicationDbContext _context;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ApplicationDbContext context)
         {
             _authService = authService;
+            _context = context;
         }
 
         [HttpPost("register")]
@@ -179,10 +182,20 @@ public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest req
         {
             try
             {
-                // Get refresh token and revoke it
-                var refreshToken = Request.Cookies["RefreshToken"];
-                if (!string.IsNullOrEmpty(refreshToken)) {
-                    await _authService.RevokeTokenAsync(refreshToken);
+                // Get access token and update its expiration in the database
+                var accessToken = Request.Cookies["AccessToken"];
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    // Find the session with this access token and update its expiration
+                    var session = await _context.SessionToken
+                        .FirstOrDefaultAsync(s => s.AccessToken == accessToken);
+                    
+                    if (session != null)
+                    {
+                        // Set access token expiration to now in the database
+                        session.AccessTokenExpiration = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
                 // Delete both cookies
@@ -200,12 +213,11 @@ public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest req
                     SameSite = SameSiteMode.Strict
                 });
 
-                return Ok(new { message = "Çıkış başarılı!" });
+                return Ok(new { message = "Successfully logged out" });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during logout: {ex}");
-                throw; // Re-throw to ensure we don't silently fail
+                return StatusCode(500, new { message = "An error occurred during logout", error = ex.Message });
             }
         }
     }

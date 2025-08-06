@@ -31,17 +31,20 @@ namespace TRKart.API.Controllers
         public IActionResult TestAuth()
         {
             var customerId = GetCurrentCustomerId();
-            var sessionToken = Request.Cookies["SessionToken"];
+            var accessToken = Request.Cookies["AccessToken"];
+            var refreshToken = Request.Cookies["RefreshToken"];
             
             Console.WriteLine($"TestAuth called");
-            Console.WriteLine($"SessionToken in controller: {!string.IsNullOrEmpty(sessionToken)}");
+            Console.WriteLine($"AccessToken in controller: {!string.IsNullOrEmpty(accessToken)}");
+            Console.WriteLine($"RefreshToken in controller: {!string.IsNullOrEmpty(refreshToken)}");
             Console.WriteLine($"CustomerID from GetCurrentCustomerId: {customerId}");
             Console.WriteLine($"All cookies: {string.Join(", ", Request.Cookies.Select(c => $"{c.Key}={c.Value}"))}");
             
             return Ok(new { 
                 isAuthenticated = customerId.HasValue,
                 customerId = customerId,
-                sessionTokenPresent = !string.IsNullOrEmpty(sessionToken),
+                accessTokenPresent = !string.IsNullOrEmpty(accessToken),
+                refreshTokenPresent = !string.IsNullOrEmpty(refreshToken),
                 message = customerId.HasValue ? "Authentication successful" : "Authentication failed"
             });
         }

@@ -1,6 +1,5 @@
 import api from './api';
 import { LoginRequest, RegisterRequest, SessionCheckResponse, AuthResponse, TokenResponse, RefreshTokenRequest, User } from '@/types';
-import sessionService from './sessionService';
 
 const REMEMBER_ME_KEY = 'rememberMe';
 const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
@@ -17,15 +16,42 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null;
   }
 
-  // Check if user is authenticated by checking session service
+  // Check if user is authenticated by checking if we have user data in localStorage
   isAuthenticated(): boolean {
-    return sessionService.isAuthenticated();
+    return !!this.getUserData();
   }
 
-  // Clear all auth data
+  // Clear auth data while preserving Remember Me and email if needed
   clearAuthData(): void {
+    // Save Remember Me and email before clearing
+    const rememberMe = this.getRememberMe();
+    const rememberedEmail = this.getRememberedEmail();
+    const userEmail = this.getUserData()?.email;
+    
+    // Clear all auth-related items
     localStorage.removeItem('user');
-    sessionService.clearSession();
+    
+    // Clear transaction and card data for the user
+    if (userEmail) {
+      localStorage.removeItem(`trkart_transactions_${userEmail}`);
+      localStorage.removeItem(`trkart_cards_${userEmail}`);
+    }
+    
+    // Clear anonymous data as well
+    localStorage.removeItem('trkart_transactions_anonymous');
+    localStorage.removeItem('trkart_cards_anonymous');
+    
+    // Restore Remember Me and email if needed
+    if (rememberMe && rememberedEmail) {
+      this.setRememberMe(true);
+      this.setRememberedEmail(rememberedEmail);
+    } else {
+      // Clear Remember Me settings if not needed
+      localStorage.removeItem(REMEMBER_ME_KEY);
+      if (!rememberMe) {
+        this.clearRememberedEmail();
+      }
+    }
   }
 
   // Remember Me functionality
@@ -83,14 +109,14 @@ class AuthService {
         throw new Error('Invalid token data received from server');
       }
       
-      // Update session storage with token data
+      /* Update session storage with token data
       sessionService.setUserSession({
         accessToken,
         refreshToken,
         accessTokenExpiration,
         refreshTokenExpiration,
         email: credentials.email
-      });
+      }); */
 
       // Set up user data object with default values
       const userData: User = {
@@ -152,7 +178,7 @@ class AuthService {
       withCredentials: true
     });
 
-    // Update session with new tokens
+    /* Update session with new tokens
     if (response.data) {
       const userEmail = sessionService.getSessionData('userEmail') || '';
 
@@ -163,43 +189,34 @@ class AuthService {
         refreshTokenExpiration: response.data.refreshTokenExpiration,
         email: userEmail
       });
-    }
+    } */
 
     return response.data;
   }
 
   async logout(): Promise<boolean> {
     try {
-      // Get refresh token before clearing session
-      const refreshToken = sessionService.getRefreshToken();
-
+      // Clear client-side auth data first
+      this.clearAuthData();
+      
+      // Clear the axios authorization header
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Call the server to clear the HTTP-only cookies
       try {
-        // Call the server to revoke the refresh token
-        if (refreshToken) {
-          await api.post('/Auth/logout', {}, {
-            withCredentials: true
-          });
-        }
+        await api.post('/Auth/logout', {}, { 
+          withCredentials: true
+        });
       } catch (error) {
         console.error('[AuthService] Error during logout API call:', error);
         // Continue with client-side cleanup even if API call fails
       }
-
-      // Clear all auth data
-      this.clearAuthData();
-
-      // Clear the axios authorization header
-      delete api.defaults.headers.common['Authorization'];
-
-      // Redirect to home page
-      window.location.href = '/';
-
+      
       return true;
     } catch (error) {
       console.error('[AuthService] Logout error:', error);
-      // Even if there's an error, we'll still clear data and redirect to home
+      // Ensure we still clear data even if something goes wrong
       this.clearAuthData();
-      window.location.href = '/';
       return false;
     }
   }
@@ -207,15 +224,9 @@ class AuthService {
   async checkSession(): Promise<SessionCheckResponse> {
     console.log('[AuthService] Checking session with server...');
     
-    // Get the current access token
-    const accessToken = sessionService.getAccessToken();
-    
     try {
       const response = await api.get<SessionCheckResponse>('/Auth/check-session', {
-        withCredentials: true,
-        headers: accessToken ? {
-          'Authorization': `Bearer ${accessToken}`
-        } : {}
+        withCredentials: true
       });
       
       console.log('[AuthService] Session check response:', {
@@ -225,17 +236,11 @@ class AuthService {
       });
       
       return response.data;
-
     } catch (error: any) {
       console.error('[AuthService] Session check error:', {
         message: error.message,
         status: error.response?.status,
-        data: error.response?.data,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers
-        }
+        data: error.response?.data
       });
       throw error;
     }

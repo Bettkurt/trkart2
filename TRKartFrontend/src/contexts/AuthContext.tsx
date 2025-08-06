@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '@/types';
 import authService from '@/services/authService';
-import sessionService from '@/services/sessionService';
 
 interface AuthContextType {
   user: User | null;
@@ -39,18 +38,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkSession = async () => {
     try {
-      console.log('[Auth] Checking session...');
-      
-      // First check if we need to refresh the token
-      const shouldRefresh = await sessionService.checkAndRefreshToken();
-      
-      if (!shouldRefresh) {
-        console.log('[Auth] Token refresh failed or not needed, checking session anyway');
-        // Continue to check session even if refresh failed
-      }
-      
-      // Then check the session with the backend
-      console.log('[Auth] Verifying session with backend...');
+      console.log('[Auth] Checking session with backend...');
       const sessionData = await authService.checkSession();
       console.log('[Auth] Session check result:', sessionData);
       
@@ -66,6 +54,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('[Auth] Setting user data:', userData);
         setUser(userData);
         setSessionEmail(sessionData.email);
+        
+        // Store user data in localStorage for quick access
+        authService.setUserData(userData);
       } else {
         console.log('[Auth] No valid session or email found');
         setSessionEmail(null);
@@ -86,14 +77,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Check for existing session on app load
     const initializeAuth = async () => {
-      await checkSession(); 
-           
-      /* Also check for stored user data as fallback
+      // First check if we have user data in localStorage
       const storedUser = authService.getUserData();
-      if (storedUser && !user) {
+      if (storedUser) {
         setUser(storedUser);
-      } */
+        setSessionEmail(storedUser.email);
+      }
       
+      // Then verify with the server
+      await checkSession();
       setIsLoading(false);
     };
 
@@ -102,56 +94,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: { email: string; password: string; rememberMe: boolean }) => {
     try {
-      // console.log('Attempting login with:', { email, password, rememberMe });
       setIsLoading(true);
-      const response = await authService.login(credentials, credentials.rememberMe);
-      console.log('Login response:', response);
-
-      // Get the email from the auth service which handles the remember me logic
-      const rememberedEmail = authService.getRememberedEmail();
-      const userEmail = rememberedEmail || credentials.email;
+      await authService.login(credentials, credentials.rememberMe);
       
-      // Test session immediately after login to get customerID and fullName
-      setTimeout(async () => {
-        try {
-          const sessionCheck = await authService.checkSession();
-          console.log('Session check after login:', sessionCheck);
-          
-          if (sessionCheck.hasValidSession && sessionCheck.email) {
-            // Create a user object from the session data with customerID and fullName
-            const userData: User = {
-              customerID: sessionCheck.customerID || 0,
-              email: sessionCheck.email,
-              fullName: sessionCheck.fullName || '',
-            };
-            
-            authService.setUserData(userData);
-            setUser(userData);
-            setHasValidSession(true);
-            setSessionEmail(sessionCheck.email);
-            
-            console.log('User data updated after login:', userData);
-          }
-        } catch (error) {
-          console.error('Session check error after login:', error);
-        }
-      }, 1000);
+      // After successful login, verify the session to get user data
+      const sessionCheck = await authService.checkSession();
       
-      // Set initial user data (will be updated after session check)
-      const initialUserData: User = {
-        customerID: 0, // Will be updated after session check
-        email: '',
-        fullName: '', // Will be updated after session check
-      };
-      
-      authService.setUserData(initialUserData);
-      setUser(initialUserData);
-      setHasValidSession(true);
-      setSessionEmail(userEmail);
-      
-      // No need to store user data in localStorage, authService handles the email storage
+      if (sessionCheck.hasValidSession && sessionCheck.email) {
+        const userData: User = {
+          customerID: sessionCheck.customerID || 0,
+          email: sessionCheck.email,
+          fullName: sessionCheck.fullName || '',
+        };
+        
+        // Update user data in context and localStorage
+        setUser(userData);
+        setHasValidSession(true);
+        setSessionEmail(sessionCheck.email);
+        authService.setUserData(userData);
+      } else {
+        throw new Error('Login successful but could not verify session');
+      }
     } catch (error) {
       console.error('Login error:', error);
+      setHasValidSession(false);
+      setUser(null);
+      setSessionEmail(null);
       throw error;
     } finally {
       setIsLoading(false);
@@ -207,35 +175,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Helper function to clear user-specific data from localStorage
-  const clearUserData = (userEmail: string | null) => {
-    try {
-      if (userEmail) {
-        // Clear user-specific transactions and cards
-        localStorage.removeItem(`trkart_transactions_${userEmail}`);
-        localStorage.removeItem(`trkart_cards_${userEmail}`);
-      }
-      // Also clear anonymous data
-      localStorage.removeItem('trkart_transactions_anonymous');
-      localStorage.removeItem('trkart_cards_anonymous');
-    } catch (error) {
-      console.error('Failed to clear user data:', error);
-    }
-  };
+
 
   const logout = async () => {
     try {
       setIsLoading(true);
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setIsLoading(false);
-      clearUserData(sessionEmail);
+      // Call authService.logout which handles both server and client cleanup
+      const success = await authService.logout();
+      
+      if (!success) {
+        throw new Error('Logout failed');
+      }
+      
+      // Clear React state
       setUser(null);
       setHasValidSession(false);
       setSessionEmail(null);
-      localStorage.removeItem('user');
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, ensure we clear the local state
+      setUser(null);
+      setHasValidSession(false);
+      setSessionEmail(null);
+      authService.clearAuthData();
+      window.location.href = '/login';
+    } finally {
+      setIsLoading(false);
     }
   };
 
