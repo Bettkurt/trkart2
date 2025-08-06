@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,22 +12,40 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SessionID { get; set; }
 
-        [ForeignKey("CustomerID")]
+
+        [Column("CustomerID")]
+        [ForeignKey("Customer")]
         public int CustomerID { get; set; }
-        public virtual Customers Customer { get; set; } = null!;
+
+        // Navigation property for the one-to-many relationship with Customer
+        public Customers Customer { get; set; }
+
+        [Column("AccessToken")]
+        public string? AccessToken { get; set; }
 
         [Required]
-        [Column("Token")]
-        public string Token { get; set; }
+        [Column("RefreshToken")]
+        public string RefreshToken { get; set; }
+
+        [Column("AccessTokenExpiration")]
+        public DateTime? AccessTokenExpiration { get; set; }
 
         [Required]
-        [Column("Expiration")]
+        [Column("RefreshTokenExpiration")]
+        public DateTime RefreshTokenExpiration { get; set; }
+
+        [Required]
+        [Column("RefreshTokenCreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime Expiration { get; set; }
+        public DateTime RefreshTokenCreatedAt { get; set; }
 
-        [Required]
-        [Column("CreatedAt")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime CreatedAt { get; set; }
+        [Column("IsRevoked")]
+        public bool IsRevoked { get; set; } = false;
+
+        [Column("DeviceInfo")]
+        public string? DeviceInfo { get; set; }
+
+        [Column("IPAddress")]
+        public string? IPAddress { get; set; }
     }
 }

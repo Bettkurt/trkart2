@@ -9,6 +9,7 @@ using TRKart.Core.Helpers;
 using TRKart.DataAccess;
 using TRKart.Repository.Interfaces;
 using TRKart.Repository.Repositories;
+using TRKart.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,14 +24,22 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// 3. CORS configuration
+// 3. CORS configuration for local development
+var allowedOrigins = new[] 
+{
+    "http://localhost:3000",  // Frontend
+    "https://localhost:7037"  // Swagger/API interface
+};
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowedOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowCredentials()
+              .WithExposedHeaders("Set-Cookie");
     });
 });
 
@@ -90,8 +99,11 @@ builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
+builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 
 var app = builder.Build();
+// Use custom JWT middleware before authorization
+app.UseJwtMiddleware();
 
 // 7. Swagger only active on development environment
 if (app.Environment.IsDevelopment())
@@ -101,12 +113,16 @@ if (app.Environment.IsDevelopment())
 }
 
 // 8. Middleware order - CORS before authentication
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+// app.UseHttpsRedirection(); // Disabled for HTTP development
+app.UseCors("AllowedOrigins");
+app.UseAuthenticationMiddleware(); // Custom authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
+// app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
+// Use the bottom one to directly connect to swagger interface
+app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).AllowAnonymous();
 
-app.Run();
+// Force HTTP for development
+app.Run("http://localhost:7037");

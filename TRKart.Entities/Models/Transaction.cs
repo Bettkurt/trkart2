@@ -15,12 +15,24 @@ namespace TRKart.Entities.Models
         [Column("CardID")]
         [ForeignKey("UserCard")]
         public int CardID { get; set; }
+        // Navigation property for the one-to-many relationship with UserCard
         public UserCard UserCard { get; set; }
 
+        // In case of a transfer transaction between cards and/or customers, this will point to the
+        // counterpart of a transfer transaction. E.g., if a TransferOut transaction is done, this
+        // will point to the TransferIn transaction and vice versa.
+        [Column("TransferTransactionID")]
+        [ForeignKey("TransferTransaction")]
+        public int? TransferTransactionID { get; set; }
+        // Navigation property for the one-to-one relationship with TransferTransaction
+        public Transaction? TransferTransaction { get; set; }
+
         [Column("Amount")]
-        public decimal Amount { get; set; }
+        [Required]
+        public decimal Amount { get; set; } 
 
         [Column("TransactionType")]
+        [Required]
         public string TransactionType { get; set; }
 
         [Column("Description")]
@@ -32,6 +44,9 @@ namespace TRKart.Entities.Models
 
         [Column("TransactionStatus")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public string? TransactionStatus { get; set; }
+        public string TransactionStatus { get; set; }
+
+        // Related Transactions (optional one-to-optional one)
+        public virtual ICollection<Transaction>? TransferTransactions { get; set; }
     }
-} 
+}

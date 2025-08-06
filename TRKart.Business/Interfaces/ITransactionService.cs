@@ -9,7 +9,8 @@ namespace TRKart.Business.Interfaces
     {
         Task<Transaction> AddTransactionAsync(TransactionCreateDto dto);
         Task<IEnumerable<Transaction>> GetTransactionsByCardIdAsync(int CardID);
-        Task<bool> UpdateTransactionAsync(Transaction transaction);
-        Task<bool> DeleteTransactionAsync(int CardID);
+        Task<IEnumerable<Transaction>> GetTransactionsByCustomerIdAsync(int customerId);
+        Task<TransactionFeasibilityResponse> CheckTransactionFeasibilityAsync(TransactionCreateDto dto);
+        Task<decimal> GetCardBalanceAsync(int cardId);
     }
 } 
