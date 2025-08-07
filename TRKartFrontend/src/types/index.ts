@@ -47,18 +47,19 @@ export interface UserCard {
   customerID: number;
   cardNumber: string;
   balance: number;
-  status: string;
+  cardStatus: string;
   createdAt: string;
 }
 
 export interface CreateUserCardRequest {
   customerID: number;
-  cardNumber: string;
-  balance: number;
+  // cardNumber and balance are handled by the backend
+  cardNumber?: string;
+  balance?: number;
 }
 
 export interface DeleteUserCardRequest {
-  cardID: number;
+  cardNumber: string;
 }
 
 // Transaction types

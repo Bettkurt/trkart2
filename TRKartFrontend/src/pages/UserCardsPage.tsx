@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import userCardService from '@/services/userCardService';
 import { UserCard } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
+// Format card number as TRK90 XXXX XXXX XXX
+const formatCardNumber = (cardNumber: string): string => {
+  if (!cardNumber) return '';
+  // Remove any non-digit characters and take last 11 digits
+  const digits = cardNumber.replace(/\D/g, '').slice(-11);
+  // Format as TRK90 XXXX XXXX XXX
+  return `TRK90 ${digits.substring(0, 4)} ${digits.substring(4, 8)} ${digits.substring(8, 11)}`;
+};
+
 const UserCardsPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [cards, setCards] = useState<UserCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,24 +52,41 @@ const UserCardsPage: React.FC = () => {
         return;
       }
 
-      // If no user or no customerID, try to load from localStorage
-      if (!user?.customerID || user.customerID === 0) {
-        const storedCards = loadCardsFromStorage();
-        setCards(storedCards);
-        setIsLoading(false);
-        return;
-      }
-      
       try {
-        const data = await userCardService.getCardsByCustomerId(user.customerID);
-        setCards(data);
-        saveCardsToStorage(data);
+        let cardsData: UserCard[] = [];
+        
+        // Try to fetch from API first if we have a customerID
+        if (user?.customerID && user.customerID !== 0) {
+          try {
+            cardsData = await userCardService.getCardsByCustomerId(user.customerID);
+            // Ensure each card has a cardStatus, default to 'Inactive' if not provided
+            cardsData = cardsData.map(card => ({
+              ...card,
+              cardStatus: card.cardStatus || 'Inactive'
+            }));
+            saveCardsToStorage(cardsData);
+          } catch (err) {
+            console.error('Failed to load cards from API:', err);
+            // If API fails, try to load from localStorage
+            const storedCards = loadCardsFromStorage();
+            if (storedCards.length > 0) {
+              cardsData = storedCards;
+            } else {
+              setError('Failed to load cards. Using cached data if available.');
+            }
+          }
+        } else {
+          // If no customerID, try to load from localStorage
+          const storedCards = loadCardsFromStorage();
+          if (storedCards.length > 0) {
+            cardsData = storedCards;
+          }
+        }
+        
+        setCards(cardsData);
       } catch (err) {
-        console.error('Failed to load cards:', err);
-        setError('Failed to load cards.');
-        // Try to load from localStorage as fallback
-        const storedCards = loadCardsFromStorage();
-        setCards(storedCards);
+        console.error('Unexpected error loading cards:', err);
+        setError('An unexpected error occurred while loading cards.');
       } finally {
         setIsLoading(false);
       }
@@ -84,9 +111,9 @@ const UserCardsPage: React.FC = () => {
               <h1 className="text-xl font-semibold text-gray-900">My Cards</h1>
             </div>
             <div className="flex items-center">
-              <button className="btn-primary">
+              <Link to="/add-card" className="btn-primary">
                 Add New Card
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -116,36 +143,39 @@ const UserCardsPage: React.FC = () => {
             <div className="text-center py-12">
               <h3 className="text-lg font-medium text-gray-900 mb-2">No cards found</h3>
               <p className="text-gray-600">You haven't added any cards yet.</p>
-              <button className="btn-primary mt-4">Add Your First Card</button>
+              <Link to="/add-card" className="btn-primary mt-4 inline-block">Add Your First Card</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {cards.map((card) => (
                 <div key={card.cardID} className="card">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Card #{card.cardID}</h3>
-                    <div className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      card.status === 'Active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {card.status}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-500">Card Number</label>
-                      <p className="text-sm text-gray-900 font-mono">
-                        {card.cardNumber}
+                      <p className="text-base font-mono font-semibold text-gray-900 tracking-wider">
+                        {formatCardNumber(card.cardNumber)}
                       </p>
                     </div>
                     
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Balance</label>
-                      <p className="text-lg font-semibold text-gray-900">
-                        ₺{card.balance.toFixed(2)}
-                      </p>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Balance</label>
+                        <p className="text-xl font-bold text-gray-900">
+                          ₺{card.balance.toFixed(2)}
+                        </p>
+                        <div className="mt-2">
+                          <div className="text-sm font-medium text-gray-500 mb-1">Card Status</div>
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
+                            card.cardStatus === 'Active'
+                              ? 'bg-green-50 text-green-700 border border-green-200'
+                              : card.cardStatus === 'Lost'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                          }`}>
+                            {card.cardStatus}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     
                     <div>
@@ -156,9 +186,63 @@ const UserCardsPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="mt-6 flex space-x-2">
-                    <button className="btn-primary flex-1">View Details</button>
-                    <button className="btn-secondary">Delete</button>
+                  <div className="space-y-2">
+                    <button
+                      onClick={(e) => {
+                        if (card.cardStatus !== 'Lost') {
+                          e.preventDefault();
+                          navigate(`/new-transaction`);
+                        }
+                      }}
+                      disabled={card.cardStatus === 'Lost'}
+                      className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
+                        card.cardStatus === 'Lost'
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
+                      }`}
+                      title={card.cardStatus === 'Lost' ? 'You cannot add balance to a lost card' : ''}
+                    >
+                      {card.cardStatus === 'Lost' ? 'Cannot Add Balance (Card Lost)' : 'Add Balance'}
+                    </button>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/transactions?filterType=cardID&selectedCardID=${card.cardID}`);
+                        }}
+                        className="flex-1 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
+                      >
+                        Transactions
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/delete-card/${card.cardID}`);
+                        }}
+                        className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
+                      >
+                        Delete Card
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (card.cardStatus !== 'Lost') {
+                          navigate(`/lost-card/${card.cardID}`);
+                        }
+                      }}
+                      disabled={card.cardStatus === 'Lost'}
+                      className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
+                        card.cardStatus === 'Lost'
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
+                      }`}
+                      title={card.cardStatus === 'Lost' ? 'This card is already marked as lost' : 'Report this card as lost'}
+                    >
+                      {card.cardStatus === 'Lost' ? 'Card Marked as Lost' : 'Did You Lose Your Card?'}
+                    </button>
                   </div>
                 </div>
               ))}
