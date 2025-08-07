@@ -13,6 +13,7 @@ import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
 import AddCardPage from '@/pages/AddCardPage';
 import CardDeletionPage from '@/pages/CardDeletionPage';
+import AboutPage from '@/pages/AboutPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -87,6 +88,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/transaction-test" element={
         <TransactionTestPage />
       } />
+      <Route path="/about" element={<AboutPage />} />
       {/* Catch all route - redirect to home instead of dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
