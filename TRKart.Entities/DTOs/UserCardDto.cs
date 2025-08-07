@@ -8,6 +8,15 @@ using System.Text.Json.Serialization;
 
 namespace TRKart.Entities.DTOs
 {
+    public class UserCardDto
+    {
+        public int CardID { get; set; }
+        public string CardNumber { get; set; } = string.Empty;
+        public decimal Balance { get; set; }
+        public string CardStatus { get; set; } = string.Empty;
+        public int CustomerID { get; set; }
+    }
+
     // DTO for creating a new user card
     public class CreateUserCardDto
     {

@@ -11,6 +11,7 @@ import UserCardsPage from '@/pages/UserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
+import NewTransferPage from '@/pages/NewTransferPage';
 import AboutPage from '@/pages/AboutPage';
 
 // Protected Route Component
@@ -66,6 +67,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/new-transaction" element={
         <ProtectedRoute>
           <TransactionFormPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/new-transfer" element={
+        <ProtectedRoute>
+          <NewTransferPage />
         </ProtectedRoute>
       } />
       <Route path="/cards" element={

@@ -90,7 +90,7 @@ const TransactionHistoryPage: React.FC = () => {
                         <div className={`text-sm font-medium ${
                           transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)} TL
+                          {transaction.amount > 0 ? '+' : ''}₺{transaction.amount.toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-500">
                           {new Date(transaction.transactionDate).toLocaleDateString()}
