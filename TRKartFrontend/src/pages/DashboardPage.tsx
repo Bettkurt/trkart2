@@ -45,6 +45,8 @@ const DashboardPage: React.FC = () => {
               <div className="space-y-4">
                 <Link to="/new-transaction" className="btn-primary w-full block text-center py-3 text-base">New Transaction</Link>
                 <Link to="/add-card" className="btn-secondary w-full block text-center py-3 text-base">Add New Card</Link>
+                <Link to="/new-transfer" className="btn-primary w-full block text-center py-3 text-base">New Transfer</Link>
+               
               </div>
             </div>
             
