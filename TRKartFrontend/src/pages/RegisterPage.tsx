@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Eye, EyeOff } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,6 +18,12 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -28,15 +37,26 @@ const RegisterPage: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+    <div className="flex min-h-screen bg-white">
+      {/* Left: Logo */}
+      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white">
+        <Link to="/" className="hover:opacity-90 transition-opacity">
+          <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
+        </Link>
+      </div>
+      {/* Right: Register Form */}
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Create your account</h1>
+          <p className="text-gray-400 mb-8 text-base">
+            Create a new account to get started with our services.
+          </p>
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
@@ -51,7 +71,6 @@ const RegisterPage: React.FC = () => {
                 id="fullName"
                 name="fullName"
                 type="text"
-                required
                 className="input-field mt-1"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -59,7 +78,7 @@ const RegisterPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                Email address <span className="text-red-500">*</span>
               </label>
               <input
                 id="email"
@@ -73,17 +92,44 @@ const RegisterPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="input-field mt-1"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="input-field w-full pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative mt-1">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="input-field w-full pr-10"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                
+              </div>
             </div>
             <div className="flex items-center">
               <input
@@ -104,18 +150,23 @@ const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full"
+              className="w-full bg-gray-800 text-white rounded-2xl py-4 font-bold text-lg shadow-md hover:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
 
-          <div className="text-center">
-            <Link to="/login" className="text-primary-600 hover:text-primary-500">
-              Already have an account? Sign in
+          <div className="text-center mt-16">
+            <span className="text-gray-600 text-lg">Already have an account? </span>
+            <Link 
+              to="/login" 
+              className="text-cyan-500 font-bold hover:underline transition-all text-lg"
+            >
+              Sign in
             </Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
