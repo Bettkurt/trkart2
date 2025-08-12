@@ -74,6 +74,7 @@ namespace TRKart.API.Middleware
         else
         {
             // Refresh token is blacklisted, clear the cookies
+            context.Response.Cookies.Delete("AccessToken", new CookieOptions { Path = "/" });
             context.Response.Cookies.Delete("RefreshToken", new CookieOptions { Path = "/" });
         }
     }

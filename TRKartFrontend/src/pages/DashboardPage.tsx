@@ -1,12 +1,37 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  // Log component mount and user info
+  useEffect(() => {
+    logger.info('DashboardPage', 'mount', 'Dashboard page loaded', { 
+      path: location.pathname,
+      hasUser: !!user,
+      userEmail: user?.email
+    });
+
+    return () => {
+      logger.debug('DashboardPage', 'unmount', 'Dashboard page unmounting');
+    };
+  }, [location.pathname, user]);
 
   const handleLogout = async () => {
-    await logout();
+    logger.info('DashboardPage', 'logout', 'User initiated logout', { userEmail: user?.email });
+    try {
+      await logout();
+      logger.info('DashboardPage', 'logout', 'Logout successful');
+    } catch (error) {
+      logger.error('DashboardPage', 'logout', 'Logout failed', error instanceof Error ? error : new Error(String(error)));
+    }
+  };
+
+  const handleNavigation = (target: string) => {
+    logger.info('DashboardPage', 'navigation', `Navigating to ${target}`, { from: 'DashboardPage' });
   };
 
   return (
@@ -27,6 +52,7 @@ const DashboardPage: React.FC = () => {
               <button
                 onClick={handleLogout}
                 className="btn-secondary px-6 py-2 text-base"
+                data-testid="logout-button"
               >
                 Logout
               </button>
@@ -43,19 +69,39 @@ const DashboardPage: React.FC = () => {
             <div className="card p-6 bg-yellow-400 border-yellow-600">
               <h3 className="text-xl font-medium text-gray-900 mb-6">Quick Actions</h3>
               <div className="space-y-4">
-                <Link to="/new-transaction" className="btn-primary w-full block text-center py-3 text-base">New Transaction</Link>
-                <Link to="/add-card" className="btn-secondary w-full block text-center py-3 text-base">Add New Card</Link>
+                <Link 
+                  to="/new-transaction" 
+                  onClick={() => handleNavigation('New Transaction')}
+                  className="btn-primary w-full block text-center py-3 text-base"
+                >
+                  New Transaction
+                </Link>
+                <Link 
+                  to="/create-card" 
+                  onClick={() => handleNavigation('Add Card')}
+                  className="btn-secondary w-full block text-center py-3 text-base"
+                >
+                  Add New Card
+                </Link>
               </div>
             </div>
             
             {/* Transactions - Middle */}
-            <Link to="/transactions" className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600">
+            <Link 
+              to="/transactions" 
+              onClick={() => handleNavigation('Transactions')}
+              className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600"
+            >
               <h3 className="text-xl font-medium text-gray-900">Transactions</h3>
               <p className="text-gray-600 mt-3 text-base">View your transaction history</p>
             </Link>
             
             {/* My Cards - Top */}
-            <Link to="/cards" className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600">
+            <Link 
+              to="/cards" 
+              onClick={() => handleNavigation('My Cards')}
+              className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600"
+            >
               <h3 className="text-xl font-medium text-gray-900">My Cards</h3>
               <p className="text-gray-600 mt-3 text-base">Manage your payment cards</p>
             </Link>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,43 +14,100 @@ const LoginPage: React.FC = () => {
 
   const { login, hasValidSession, sessionEmail, getRememberedEmail } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check for remembered email on component mount
   useEffect(() => {
+    logger.info('LoginPage', 'mount', 'Login page loaded', { 
+      path: location.pathname,
+      hasValidSession,
+      sessionEmail: sessionEmail ? '***' + sessionEmail.slice(-4) : null
+    });
+
     const rememberedEmail = getRememberedEmail();
     if (rememberedEmail) {
+      logger.debug('LoginPage', 'rememberedEmail', 'Found remembered email', { 
+        email: rememberedEmail ? '***' + rememberedEmail.split('@')[0].slice(-4) + '@' + rememberedEmail.split('@')[1] : null 
+      });
       setEmail(rememberedEmail);
       setRememberMe(true);
     }
-  }, [getRememberedEmail]);
+
+    return () => {
+      logger.debug('LoginPage', 'unmount', 'Login page unmounting');
+    };
+  }, [getRememberedEmail, hasValidSession, location.pathname, sessionEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      setError('Please enter both email and password');
+      const errorMsg = 'Please enter both email and password';
+      logger.warn('LoginPage', 'validation', errorMsg, { 
+        hasEmail: !!email, 
+        hasPassword: !!password 
+      });
+      setError(errorMsg);
       return;
     }
     
     setIsLoading(true);
     setError('');
     
+    logger.info('LoginPage', 'login', 'Login attempt started', { 
+      email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null,
+      rememberMe,
+      hasSession: hasValidSession
+    });
+    
     try {
       await login({ email, password, rememberMe });
+      logger.info('LoginPage', 'login', 'Login successful', { 
+        email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null,
+        rememberMe
+      });
       navigate('/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('LoginPage', 'login', 'Login failed', error, { 
+        email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null,
+        rememberMe
+      });
       setError('Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const togglePasswordVisibility = () => {
+    const newState = !showPassword;
+    logger.debug('LoginPage', 'passwordVisibility', `Password visibility ${newState ? 'enabled' : 'disabled'}`);
+    setShowPassword(newState);
+  };
+
+  const handleNavigation = (target: string) => {
+    logger.info('LoginPage', 'navigation', `Navigating to ${target}`, { from: 'LoginPage' });
+  };
+
+  const handleForgotPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
+    logger.info('LoginPage', 'forgotPassword', 'Forgot password link clicked');
+    // TODO: Implement forgot password flow
+    // Ask for email, verify if it is actually in the database
+    // If it is, send a password reset email
+    // If it is not, do NOT give any feedback
+    // This is to prevent information disclosure
+  };
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* Left: Logo */}
       <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white">
-        <Link to="/" className="hover:opacity-90 transition-opacity">
+        <Link 
+          to="/" 
+          onClick={() => handleNavigation('Home')}
+          className="hover:opacity-90 transition-opacity"
+        >
           <img src="/assets/logo.png" alt="TR Türkiye Kart Logo" className="max-w-xs w-64" />
         </Link>
       </div>
@@ -109,9 +167,10 @@ const LoginPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={togglePasswordVisibility}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800"
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -130,7 +189,13 @@ const LoginPage: React.FC = () => {
                     Remember me
                   </label>
                 </div>
-                <a href="#" className="text-cyan-500 font-semibold text-base hover:underline">Forgot my password ?</a>
+                <a 
+                  href="#" 
+                  onClick={handleForgotPassword}
+                  className="text-cyan-500 font-semibold text-base hover:underline"
+                >
+                  Forgot my password ?
+                </a>
               </div>
             </div>
             
@@ -147,6 +212,7 @@ const LoginPage: React.FC = () => {
             <span className="text-gray-600 text-lg">Don't have an account? </span>
             <Link 
               to="/register" 
+              onClick={() => handleNavigation('Register')}
               className="text-cyan-500 font-bold hover:underline transition-all text-lg"
             >
               Register

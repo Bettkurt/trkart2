@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import authService from '@/services/authService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 const Security: React.FC = () => {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -8,56 +9,92 @@ const Security: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    logger.info('Security', 'mount', 'Security page loaded', {
+      path: location.pathname,
+      isAuthenticated: authService.isAuthenticated()
+    });
+
     // Check if user is authenticated
     if (!authService.isAuthenticated()) {
+      logger.warn('Security', 'auth', 'Unauthorized access attempt - redirecting to login');
       navigate('/login');
       return;
     }
 
     loadSessions();
-  }, [navigate]);
+
+    return () => {
+      logger.debug('Security', 'unmount', 'Security page unmounting');
+    };
+  }, [navigate, location.pathname]);
 
   const loadSessions = async () => {
     setLoading(true);
     setError(null);
+    
+    logger.info('Security', 'loadSessions', 'Loading active sessions');
 
     try {
       const activeSessions = await authService.getActiveSessions();
+      logger.info('Security', 'loadSessions', 'Successfully loaded active sessions', {
+        sessionCount: activeSessions.length
+      });
       setSessions(activeSessions);
     } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('Security', 'loadSessions', 'Failed to load active sessions', error);
       setError('Failed to load active sessions');
-      console.error('Error loading sessions:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRevokeAllSessions = async () => {
-    if (window.confirm('Are you sure you want to revoke all sessions? You will be logged out from all devices.')) {
+    const confirmMessage = 'Are you sure you want to revoke all sessions? You will be logged out from all devices.';
+    logger.info('Security', 'revokeAllSessions', 'User initiated session revocation', {
+      sessionCount: sessions.length
+    });
+    
+    if (window.confirm(confirmMessage)) {
       setRevokingAll(true);
+      logger.debug('Security', 'revokeAllSessions', 'Starting session revocation');
 
       try {
         const success = await authService.revokeAllSessions();
 
         if (success) {
-          // Redirect to login page
+          logger.info('Security', 'revokeAllSessions', 'Successfully revoked all sessions');
           navigate('/login');
         } else {
-          setError('Failed to revoke all sessions');
+          const errorMsg = 'Failed to revoke all sessions';
+          logger.error('Security', 'revokeAllSessions', errorMsg);
+          setError(errorMsg);
         }
       } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('Security', 'revokeAllSessions', 'Error revoking sessions', error);
         setError('Failed to revoke all sessions');
-        console.error('Error revoking sessions:', err);
       } finally {
         setRevokingAll(false);
       }
+    } else {
+      logger.debug('Security', 'revokeAllSessions', 'User cancelled session revocation');
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('Security', 'formatDate', 'Error formatting date', error, {
+        context: { dateString }
+      });
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -65,7 +102,10 @@ const Security: React.FC = () => {
       <h1 className="text-2xl font-bold mb-6">Security Settings</h1>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div 
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+          role="alert"
+        >
           {error}
         </div>
       )}
@@ -115,6 +155,8 @@ const Security: React.FC = () => {
                 onClick={handleRevokeAllSessions}
                 disabled={revokingAll}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                aria-busy={revokingAll}
+                aria-label={revokingAll ? 'Revoking all sessions...' : 'Revoke all sessions'}
               >
                 {revokingAll ? 'Revoking All Sessions...' : 'Revoke All Sessions'}
               </button>

@@ -14,7 +14,6 @@ namespace TRKart.Entities.Models
         public int CustomerID { get; set; }
 
         [Column("CustomerNumber")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public string CustomerNumber { get; set; }
 
         [Column("FullName")]

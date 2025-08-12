@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import transactionService from '@/services/transactionService';
 import userCardService from '@/services/userCardService';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserCard } from '@/types';
+import { UserCard, CreateTransactionRequest } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { logger } from '@/utils/logger';
 
 const TransactionFormPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    cardID: string;
+    amount: string;
+    transactionType: string;
+    description: string;
+  }>({
     cardID: '',
     amount: '',
     transactionType: '',
@@ -24,20 +31,34 @@ const TransactionFormPage: React.FC = () => {
   const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
 
-  // Load user cards on component mount
+  // Log component mount and load user cards
   useEffect(() => {
+    logger.info('TransactionForm', 'mount', 'Transaction form page loaded', {
+      path: location.pathname,
+      hasUser: !!user,
+      customerId: user?.customerID
+    });
+
     const loadUserCards = async () => {
       if (!user?.customerID) {
+        logger.warn('TransactionForm', 'loadCards', 'No user or customer ID found');
         setLoadingCards(false);
         return;
       }
 
       try {
         setLoadingCards(true);
+        logger.debug('TransactionForm', 'loadCards', 'Loading user cards');
+        
         const cards = await userCardService.getUserCards();
+        logger.info('TransactionForm', 'loadCards', 'Successfully loaded user cards', {
+          cardCount: cards.length
+        });
+        
         setUserCards(cards);
       } catch (error) {
-        console.error('Failed to load user cards:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('TransactionForm', 'loadCards', 'Failed to load user cards', err);
         setValidationMessage('❌ Failed to load your cards. Please try again.');
       } finally {
         setLoadingCards(false);
@@ -45,7 +66,11 @@ const TransactionFormPage: React.FC = () => {
     };
 
     loadUserCards();
-  }, [user]);
+
+    return () => {
+      logger.debug('TransactionForm', 'unmount', 'Transaction form page unmounting');
+    };
+  }, [user, location.pathname]);
 
   // Real-time validation handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,9 +78,18 @@ const TransactionFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, amount: value }));
     
     const validation = validationUtils.validateAmount(value);
+    const error = validation.isValid ? '' : validation.error || '';
+    
+    if (error) {
+      logger.debug('TransactionForm', 'validation', 'Amount validation failed', {
+        value,
+        error
+      });
+    }
+    
     setErrors(prev => ({
       ...prev,
-      amount: validation.isValid ? '' : validation.error || ''
+      amount: error
     }));
   };
 
@@ -64,9 +98,17 @@ const TransactionFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, transactionType: value }));
     
     const validation = validationUtils.validateTransactionType(value);
+    const error = validation.isValid ? '' : validation.error || '';
+    
+    logger.debug('TransactionForm', 'transactionTypeChange', 'Transaction type changed', {
+      transactionType: value,
+      isValid: validation.isValid,
+      error
+    });
+    
     setErrors(prev => ({
       ...prev,
-      transactionType: validation.isValid ? '' : validation.error || ''
+      transactionType: error
     }));
   };
 
@@ -75,15 +117,30 @@ const TransactionFormPage: React.FC = () => {
     setFormData(prev => ({ ...prev, description: value }));
     
     const validation = validationUtils.validateDescription(value);
+    const error = validation.isValid ? '' : validation.error || '';
+    
+    if (error) {
+      logger.debug('TransactionForm', 'validation', 'Description validation failed', {
+        description: value,
+        error
+      });
+    }
+    
     setErrors(prev => ({
       ...prev,
-      description: validation.isValid ? '' : validation.error || ''
+      description: error
     }));
   };
 
   const handleCardIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({ ...prev, cardID: value }));
+    
+    // Log card selection
+    logger.debug('TransactionForm', 'cardSelection', 'Card selected', {
+      cardId: value,
+      hasCards: userCards.length > 0
+    });
     
     // Clear card ID error when a card is selected
     if (value) {
@@ -96,18 +153,38 @@ const TransactionFormPage: React.FC = () => {
 
   // Backend validation for amount only
   const validateWithBackend = async () => {
+    logger.debug('TransactionForm', 'validation', 'Validating amount with backend', {
+      amount: formData.amount
+    });
+    
     try {
       const amountValidation = await transactionService.validateAmount(formData.amount);
+      
       if (!amountValidation.isValid) {
+        logger.warn('TransactionForm', 'validation', 'Backend validation failed', {
+          amount: formData.amount,
+          error: amountValidation.message
+        });
+        
         setErrors(prev => ({
           ...prev,
           amount: amountValidation.message
         }));
         return false;
       }
+      
+      logger.debug('TransactionForm', 'validation', 'Backend validation passed');
       return true;
     } catch (error: any) {
-      setValidationMessage(`Backend validation error: ${error.response?.data?.message || error.message}`);
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = `Backend validation error: ${error.response?.data?.message || error.message}`;
+      
+      logger.error('TransactionForm', 'validation', 'Error during backend validation', err, {
+        amount: formData.amount,
+        status: error.response?.status
+      });
+      
+      setValidationMessage(errorMessage);
       return false;
     }
   };
@@ -116,38 +193,56 @@ const TransactionFormPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setValidationMessage('');
-
-    // Validate card selection
-    if (!formData.cardID) {
-      setErrors(prev => ({
-        ...prev,
-        cardID: 'Please select a card'
-      }));
-      setIsSubmitting(false);
-      return;
-    }
+    
+    logger.info('TransactionForm', 'submit', 'Form submission started', {
+      hasCardSelected: !!formData.cardID,
+      amount: formData.amount,
+      transactionType: formData.transactionType
+    });
 
     try {
-      const backendValid = await validateWithBackend();
-      
-      if (!backendValid) {
-        setIsSubmitting(false);
+      // Validate card selection
+      if (!formData.cardID) {
+        const errorMsg = 'Please select a card';
+        logger.warn('TransactionForm', 'validation', 'No card selected');
+        setErrors(prev => ({ ...prev, cardID: errorMsg }));
+        setValidationMessage(`❌ ${errorMsg}`);
         return;
       }
 
-      const transactionData = {
-        cardID: parseInt(formData.cardID),
+      // Clear previous errors
+      setErrors({});
+
+      // Validate with backend
+      const isValid = await validateWithBackend();
+      if (!isValid) return;
+
+      // Prepare transaction data with proper types
+      const transactionData: CreateTransactionRequest = {
+        cardID: parseInt(formData.cardID, 10),
         amount: parseFloat(formData.amount),
         transactionType: formData.transactionType,
-        description: formData.description
+        description: formData.description || 'No description provided'
       };
 
-      console.log('Submitting transaction data:', transactionData);
-      const result = await transactionService.createUserTransaction(transactionData);
-      console.log('Transaction result:', result);
+      logger.debug('TransactionForm', 'submit', 'Submitting transaction', {
+        ...transactionData,
+        amount: transactionData.amount // Keep amount as number for logging
+      });
+
+      // Submit transaction
+      const result = await transactionService.createTransaction(transactionData);
       
       if (result.success) {
+        logger.info('TransactionForm', 'submit', 'Transaction created successfully', {
+          transactionId: result.transaction?.transactionID, // Using transactionID instead of id
+          cardId: formData.cardID,
+          amount: formData.amount,
+          transactionType: formData.transactionType
+        });
+        
         setValidationMessage('✅ Transaction created successfully!');
+        
         // Reset form
         setFormData({
           cardID: '',
@@ -155,53 +250,95 @@ const TransactionFormPage: React.FC = () => {
           transactionType: '',
           description: ''
         });
-        setErrors({});
         
         // Redirect to transactions page after a short delay
         setTimeout(() => {
+          logger.debug('TransactionForm', 'navigation', 'Redirecting to transactions page');
           navigate('/transactions');
         }, 1500);
       } else {
-        setValidationMessage(`❌ Transaction failed: ${result.message}`);
+        const errorMsg = `❌ Transaction failed: ${result.message}`;
+        logger.error('TransactionForm', 'submit', 'Transaction creation failed', new Error(result.message), {
+          context: {
+            cardId: formData.cardID,
+            amount: formData.amount,
+            transactionType: formData.transactionType
+          }
+        });
+        setValidationMessage(errorMsg);
       }
     } catch (error: any) {
-      console.error('Transaction creation error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      let errorMsg = `❌ Error: ${error.response?.data?.message || error.message || 'Unknown error occurred'}`;
       
       if (error.response?.status === 401) {
-        setValidationMessage('❌ Session expired. Please log in again.');
+        errorMsg = '❌ Session expired. Please log in again.';
+        logger.warn('TransactionForm', 'auth', 'Session expired during transaction submission', err);
+        
         // Redirect to login after a delay
         setTimeout(() => {
+          logger.info('TransactionForm', 'auth', 'Redirecting to login page');
           window.location.href = '/login';
         }, 2000);
       } else {
-        setValidationMessage(`❌ Error: ${error.response?.data?.message || error.message || 'Unknown error occurred'}`);
+        logger.error('TransactionForm', 'submit', 'Error during transaction submission', err, {
+          context: {
+            status: error.response?.status,
+            responseData: error.response?.data
+          }
+        });
       }
+      
+      setValidationMessage(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
+    logger.info('TransactionForm', 'navigation', 'User cancelled transaction, returning to transactions list');
     navigate('/transactions');
   };
 
   const testAuth = async () => {
+    logger.debug('TransactionForm', 'auth', 'Testing authentication status');
+    
     try {
-      console.log('Current cookies:', document.cookie);
+      logger.debug('TransactionForm', 'auth', 'Current authentication cookies', {
+        cookies: document.cookie.split('; ').filter(c => c.startsWith('trkart_'))
+      });
       
       const response = await fetch('http://localhost:7037/api/SecureTransaction/test-auth', {
         credentials: 'include' // Include cookies
       });
+      
       const data = await response.json();
-      console.log('Auth test result:', data);
+      logger.info('TransactionForm', 'auth', 'Authentication test successful', {
+        customerId: data.customerId,
+        accessTokenPresent: data.accessTokenPresent,
+        refreshTokenPresent: data.refreshTokenPresent
+      });
+      
       alert(`Auth test: ${data.message} (CustomerID: ${data.customerId}, AccessToken: ${data.accessTokenPresent}, RefreshToken: ${data.refreshTokenPresent})`);
     } catch (error) {
-      console.error('Auth test error:', error);
-      alert('Auth test failed');
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('TransactionForm', 'auth', 'Authentication test failed', err);
+      alert('Auth test failed. Check console for details.');
     }
   };
 
-  const hasErrors = Object.values(errors).some(error => error !== '');
+  // Track form errors
+  const hasFormErrors = Object.values(errors).some(error => error !== '');
+  
+  // Log form state changes
+  useEffect(() => {
+    logger.debug('TransactionForm', 'render', 'Form state updated', {
+      hasCardSelected: !!formData.cardID,
+      amount: formData.amount,
+      transactionType: formData.transactionType,
+      hasValidationErrors: hasFormErrors
+    });
+  }, [formData, errors, hasFormErrors]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -363,9 +500,9 @@ const TransactionFormPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || hasErrors}
+                  disabled={isSubmitting || hasFormErrors}
                   className={`flex-1 py-2 px-4 rounded-md font-medium ${
-                    isSubmitting || hasErrors
+                    isSubmitting || hasFormErrors
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700'
                   } text-white transition-colors`}

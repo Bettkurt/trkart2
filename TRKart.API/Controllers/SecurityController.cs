@@ -48,7 +48,9 @@ namespace TRKart.API.Controllers
 
             // Delete cookies for current session
             Response.Cookies.Delete("AccessToken", new CookieOptions { Path = "/" });
-            Response.Cookies.Delete("RefreshToken", new CookieOptions { Path = "/api/auth/refresh-token" });
+
+            // TODO: Check if this is correct
+            Response.Cookies.Delete("RefreshToken", new CookieOptions { Path = "/" });
 
             return Ok(new { message = $"Successfully revoked {sessions.Count} sessions" });
         }

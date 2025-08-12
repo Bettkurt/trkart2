@@ -10,8 +10,11 @@ CREATE TABLE "UserCard" (
     "Balance" DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     -- 'Active' or 'Inactive'. We may add different status types in the future, 
     -- i.e. 'Lost', 'Suspended', 'Deleted' etc.; based on the feature requirements
-    "CardStatus" VARCHAR(20) NOT NULL DEFAULT 'Inactive' CHECK ("CardStatus" IN ('Active', 'Inactive', 'Lost')), 
+    "CardStatus" VARCHAR(20) NOT NULL DEFAULT 'Inactive' CHECK ("CardStatus" IN ('Active', 'Inactive', 'Lost', 'Expired', 'Deactivated')),
+    "CardName" VARCHAR(20),
+    "CardExpirationDate" DATE NOT NULL DEFAULT (DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '5 years' + INTERVAL '1 month' - INTERVAL '1 day')::DATE,
     "CreatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "LastUpdate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("CustomerID") REFERENCES "Customers"("CustomerID") ON DELETE CASCADE
 );
 

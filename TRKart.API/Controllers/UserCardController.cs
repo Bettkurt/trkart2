@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TRKart.Business.Interfaces;
 using TRKart.Entities.DTOs;
+using TRKart.Entities.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace TRKart.API.Controllers
 {
@@ -54,7 +56,44 @@ namespace TRKart.API.Controllers
                 : Ok(card);
         }
 
-/// <summary>
+        /// <summary>
+        /// Update the status of a card (e.g., to 'Deactivated' or 'Lost')
+        /// </summary>
+        /// <param name="updateDto">Contains card ID and new status</param>
+        /// <response code="200">Card status updated successfully</response>
+        /// <response code="400">Invalid request or validation failed</response>
+        /// <response code="404">Card not found</response>
+        [HttpPut("status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateCardStatus([FromBody] CardStatusUpdateDto updateDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _userCardService.UpdateCardStatusAsync(updateDto);
+                
+                if (!result)
+                {
+                    return NotFound(new { message = "Card not found" });
+                }
+
+                return Ok(new { message = "Card status updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating card status for card ID: {CardId}", updateDto?.CardId);
+                return StatusCode(500, new { message = "An error occurred while updating the card status" });
+            }
+        }
+
+
+        /// <summary>
         /// Create a new card for a customer
         /// </summary>
         /// <param name="createDto">Card creation details</param>
@@ -87,34 +126,32 @@ namespace TRKart.API.Controllers
         }
 
         /// <summary>
-        /// Delete a card by card number
+        /// Get card status history
         /// </summary>
-        /// <param name="deleteDto">Card deletion details</param>
-        /// <response code="204">Card successfully deleted</response>
-        /// <response code="400">If the request is invalid</response>
+        /// <param name="cardNumber">The card number to get history for</param>
+        /// <returns>List of status changes for the card</returns>
+        /// <response code="200">Returns the status history</response>
         /// <response code="404">If the card is not found</response>
-        [HttpDelete]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpGet("{cardNumber}/update-history")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteCard([FromBody] DeleteUserCardDto deleteDto)
+        public async Task<ActionResult<IEnumerable<CardStatusHistoryDto>>> GetCardStatusHistory(string cardNumber)
         {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid model state for card deletion");
-                return BadRequest(ModelState);
-            }
-
             try
             {
-                var result = await _userCardService.DeleteUserCardAsync(deleteDto);
-                return result ? NoContent() : NotFound(new { message = "Silinecek kart bulunamadı." });
+                var history = await _userCardService.GetCardStatusHistoryAsync(cardNumber);
+                if (history == null)
+                {
+                    return NotFound(new { message = "Kart bulunamadı." });
+                }
+                return Ok(history);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting card {CardNumber}", deleteDto.CardNumber);
-                return StatusCode(500, new { message = "Kart silinirken bir hata oluştu." });
+                _logger.LogError(ex, "Error getting status history for card {CardNumber}", cardNumber);
+                return StatusCode(500, new { message = "Kart geçmişi alınırken bir hata oluştu." });
             }
         }
+
     }
 }

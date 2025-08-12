@@ -1,7 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 const AboutPage: React.FC = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    logger.info('AboutPage', 'mount', 'About page loaded', { path: location.pathname });
+    
+    return () => {
+      logger.debug('AboutPage', 'unmount', 'About page unmounting');
+    };
+  }, [location.pathname]);
+  
+  const handleNavigation = (target: string) => {
+    logger.info('AboutPage', 'navigation', `Navigating to ${target}`, { from: 'AboutPage' });
+  };
+  
+  const handleExternalLink = (url: string, label: string) => {
+    logger.info('AboutPage', 'externalLink', `Opening external link: ${label}`, { url });
+    // The actual navigation will be handled by the browser
+  };
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
@@ -19,16 +38,58 @@ const AboutPage: React.FC = () => {
             {/* Navigation Links */}
             <div className="flex-1 flex justify-center">
               <div className="flex space-x-12">
-                <Link to="/" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Home</Link>
-                <Link to="/about" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">About</Link>
-                <a href="#" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Application & Loading Centers</a>
-                <a href="#" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Contact</a>
+                <Link 
+                  to="/" 
+                  onClick={() => handleNavigation('Home')} 
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Home
+                </Link>
+                <Link 
+                  to="/about" 
+                  onClick={() => handleNavigation('About')}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  About
+                </Link>
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExternalLink('#', 'Application & Loading Centers');
+                  }}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Application & Loading Centers
+                </a>
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExternalLink('#', 'Contact');
+                  }}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Contact
+                </a>
               </div>
             </div>
             {/* Login/Register Buttons */}
             <div className="flex items-center space-x-4">
-              <a href="/login" className="px-4 py-2 text-base font-medium text-gray-700 hover:text-black-600 transition-colors">Login</a>
-              <a href="/register" className="px-4 py-2 text-base font-medium text-white bg-yellow-600 rounded-md hover:bg-black transition-colors">Register</a>
+              <Link 
+                to="/login" 
+                onClick={() => handleNavigation('Login')}
+                className="px-4 py-2 text-base font-medium text-gray-700 hover:text-black-600 transition-colors"
+              >
+                Login
+              </Link>
+              <Link 
+                to="/register" 
+                onClick={() => handleNavigation('Register')}
+                className="px-4 py-2 text-base font-medium text-white bg-yellow-600 rounded-md hover:bg-black transition-colors"
+              >
+                Register
+              </Link>
             </div>
           </div>
         </div>
@@ -54,14 +115,44 @@ const AboutPage: React.FC = () => {
           {/* Corporate Section */}
           <div className="flex flex-col gap-2 nav-section items-start md:items-center">
             <h3 className="font-semibold text-3xl text-gray-800 section-title mb-1">Corporate</h3>
-            <a href="#" className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors">About</a>
-            <a href="#" className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors">Press</a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleExternalLink('#', 'About (footer)');
+              }}
+              className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors"
+            >
+              About
+            </a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleExternalLink('#', 'Press');
+              }}
+              className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors"
+            >
+              Press
+            </a>
           </div>
           {/* Online Section */}
           <div className="flex flex-col gap-2 nav-section items-start md:items-center">
             <h3 className="font-semibold text-3xl text-gray-800 section-title mb-1">Online</h3>
-            <Link to="/login" className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2">Login <span className="ml-1">&rarr;</span></Link>
-            <Link to="/register" className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2">Register <span className="ml-1">&rarr;</span></Link>
+            <Link 
+              to="/login" 
+              onClick={() => handleNavigation('Login (footer)')}
+              className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2"
+            >
+              Login <span className="ml-1">&rarr;</span>
+            </Link>
+            <Link 
+              to="/register" 
+              onClick={() => handleNavigation('Register (footer)')}
+              className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2"
+            >
+              Register <span className="ml-1">&rarr;</span>
+            </Link>
           </div>
         </div>
       </footer>

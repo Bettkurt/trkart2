@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TRKart.Business.Interfaces;
+using TRKart.Core.Helpers;
+using TRKart.Core.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities;
 using TRKart.Entities.Models;
@@ -14,10 +16,13 @@ namespace TRKart.Business.Services
     public class UserCardService : IUserCardService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IUniqueNumberChecker _uniqueNumberChecker;
 
-        public UserCardService(ApplicationDbContext context)
+        public UserCardService(ApplicationDbContext context, 
+                             IUniqueNumberChecker uniqueNumberChecker)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _uniqueNumberChecker = uniqueNumberChecker ?? throw new ArgumentNullException(nameof(uniqueNumberChecker));
         }
 
         public async Task<UserCardResponseDto> CreateUserCardAsync(CreateUserCardDto createDto)
@@ -35,10 +40,18 @@ namespace TRKart.Business.Services
                 throw new KeyNotFoundException($"Customer with ID {createDto.CustomerID} not found");
             }
 
+            // Generate card number with TRK prefix and proper validation
+            var cardNumber = await CardNumberHelper.GenerateCardNumberAsync(_uniqueNumberChecker);
+            //var expirationDate = DateTime.UtcNow.AddYears(5).AddMonths(1).AddDays(-1);
+            
             var newCard = new UserCard
             {
                 CustomerID = createDto.CustomerID,
-                // Let the database handle the default values for CardNumber, Balance, CardStatus, and CreatedAt
+                CardNumber = cardNumber,
+                Balance = 0, // Default balance
+                CardStatus = "Inactive", // Default status
+                //CardExpirationDate = expirationDate,
+                CreatedAt = DateTime.UtcNow
             };
 
             try
@@ -82,39 +95,95 @@ namespace TRKart.Business.Services
             }
         }
 
-        public async Task<bool> DeleteUserCardAsync(DeleteUserCardDto deleteDto)
+        public async Task<bool> UpdateCardStatusAsync(CardStatusUpdateDto updateDto)
         {
-            if (deleteDto == null)
-                throw new ArgumentNullException(nameof(deleteDto));
+            if (updateDto == null)
+                throw new ArgumentNullException(nameof(updateDto));
 
-            var card = await _context.UserCard
-                .FirstOrDefaultAsync(c => c.CardNumber == deleteDto.CardNumber);
+            try
+            {
+                Console.WriteLine($"[UpdateCardStatusAsync] Starting update for card ID: {updateDto.CardId}");
+                Console.WriteLine($"[UpdateCardStatusAsync] New status: {updateDto.Status}");
 
-            if (card == null)
+                // Find the card by ID
+                var card = await _context.UserCard
+                    .FirstOrDefaultAsync(c => c.CardID == updateDto.CardId);
+
+                if (card == null)
+                {
+                    Console.WriteLine($"[UpdateCardStatusAsync] Card with ID {updateDto.CardId} not found");
+                    return false;
+                }
+
+                Console.WriteLine($"[UpdateCardStatusAsync] Found card - Old status: {card.CardStatus}");
+
+                // Update the card status
+                card.CardStatus = updateDto.Status;
+                //card.LastUpdate = DateTime.UtcNow;
+
+                Console.WriteLine($"[UpdateCardStatusAsync] Saving changes to database...");
+                
+                // Save changes - the CardUpdates table is updated automatically by a database trigger
+                int changes = await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"[UpdateCardStatusAsync] Changes saved. Rows affected: {changes}");
+                Console.WriteLine($"[UpdateCardStatusAsync] Card status updated successfully");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                // _logger.LogError(ex, "Error updating card status for card ID: {CardId}", updateDto?.CardId);
                 return false;
-
-            _context.UserCard.Remove(card);
-            await _context.SaveChangesAsync();
-            return true;
+            }
         }
 
         public async Task<List<UserCardResponseDto>> GetUserCardsByCustomerIdAsync(int customerID)
         {
             return await _context.UserCard
-                .Where(c => c.CustomerID == customerID)
+                .Where(c => c.CustomerID == customerID && c.CardStatus != "Deactivated")
                 .Select(c => MapToResponseDto(c))
                 .ToListAsync();
         }
 
-        public async Task<UserCardResponseDto> GetUserCardByNumberAsync(string CardNumber)
+        public async Task<UserCardResponseDto> GetUserCardByNumberAsync(string cardNumber)
         {
-            if (string.IsNullOrWhiteSpace(CardNumber))
-                throw new ArgumentException("Card number cannot be empty", nameof(CardNumber));
+            if (string.IsNullOrWhiteSpace(cardNumber))
+                throw new ArgumentException("Card number cannot be empty", nameof(cardNumber));
 
             var card = await _context.UserCard
-                .FirstOrDefaultAsync(c => c.CardNumber == CardNumber);
+                .FirstOrDefaultAsync(c => c.CardNumber == cardNumber && c.CardStatus != "Deactivated");
 
             return card != null ? MapToResponseDto(card) : null;
+        }
+
+        public async Task<List<CardStatusHistoryDto>> GetCardStatusHistoryAsync(string cardNumber)
+        {
+            if (string.IsNullOrWhiteSpace(cardNumber))
+                throw new ArgumentException("Card number cannot be empty", nameof(cardNumber));
+
+            // First get the card ID, excluding deactivated cards
+            var card = await _context.UserCard
+                .Where(c => c.CardNumber == cardNumber && c.CardStatus != "Deactivated")
+                .Select(c => new { c.CardID })
+                .FirstOrDefaultAsync();
+
+            if (card == null)
+                return null;
+
+            return await _context.CardUpdates
+                .Where(cu => cu.CardID == card.CardID)
+                .OrderByDescending(cu => cu.UpdatedAt)
+                .Select(cu => new CardStatusHistoryDto
+                {
+                    UpdateID = cu.UpdateID,
+                    CardID = cu.CardID,
+                    PreviousStatus = cu.PreviousStatus,
+                    NewStatus = cu.NewStatus,
+                    UpdatedAt = cu.UpdatedAt
+                })
+                .ToListAsync();
         }
 
         private static UserCardResponseDto MapToResponseDto(UserCard card)
@@ -128,7 +197,10 @@ namespace TRKart.Business.Services
                 CardNumber = card.CardNumber,
                 Balance = card.Balance,
                 CardStatus = card.CardStatus,
-                CreatedAt = card.CreatedAt
+                CardName = card.CardName,
+                CardExpirationDate = card.CardExpirationDate,
+                CreatedAt = card.CreatedAt,
+                LastUpdate = card.LastUpdate
             };
         }
     }
