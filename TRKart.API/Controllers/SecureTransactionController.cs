@@ -104,7 +104,7 @@ namespace TRKart.API.Controllers
             try
             {
                 var cards = await _context.UserCard
-                    .Where(c => c.CustomerID == customerId.Value)
+                    .Where(c => c.CustomerID == customerId.Value && c.CardStatus != "Deactivated")
                     .Select(c => new { 
                         c.CardID, 
                         c.CardNumber, 

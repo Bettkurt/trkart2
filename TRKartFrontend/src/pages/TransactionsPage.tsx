@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import transactionService from '@/services/transactionService';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
-
+import { logger } from '@/utils/logger';
 import { Transaction } from '@/types';
 
 interface TransactionWithStatus extends Transaction {
@@ -12,6 +12,7 @@ interface TransactionWithStatus extends Transaction {
 
 const TransactionsPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [allTransactions, setAllTransactions] = useState<TransactionWithStatus[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,10 +25,18 @@ const TransactionsPage: React.FC = () => {
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('');
   const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
-  // Load transactions from API
+  // Log component mount/unmount
   useEffect(() => {
-    loadTransactions();
-  }, [user]);
+    logger.info('TransactionsPage', 'mount', 'Transactions page loaded', {
+      path: location.pathname,
+      hasUser: !!user,
+      customerId: user?.customerID
+    });
+
+    return () => {
+      logger.debug('TransactionsPage', 'unmount', 'Transactions page unmounting');
+    };
+  }, [location.pathname, user]);
 
   // Apply filters when allTransactions or filter settings change
   useEffect(() => {
@@ -36,66 +45,131 @@ const TransactionsPage: React.FC = () => {
 
   // Helper function to save transactions to localStorage (user-specific)
   const saveTransactionsToStorage = (transactions: TransactionWithStatus[], userEmail?: string) => {
+    const email = userEmail || user?.email;
+    const context = { userEmail: email || 'anonymous', transactionCount: transactions.length };
+    
     try {
-      const email = userEmail || user?.email;
       const userKey = email ? `trkart_transactions_${email}` : 'trkart_transactions_anonymous';
       localStorage.setItem(userKey, JSON.stringify(transactions));
-      console.log(`Saved ${transactions.length} transactions for user: ${email}`);
+      
+      logger.debug('TransactionsPage', 'storage', 'Saved transactions to localStorage', context);
     } catch (error) {
-      console.error('Failed to save transactions to localStorage:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('TransactionsPage', 'storage', 'Failed to save transactions to localStorage', err, context);
     }
   };
 
   // Helper function to load transactions from localStorage (user-specific)
   const loadTransactionsFromStorage = (userEmail?: string): TransactionWithStatus[] => {
+    const email = userEmail || user?.email;
+    const context = { userEmail: email || 'anonymous' };
+    
     try {
-      const email = userEmail || user?.email;
       const userKey = email ? `trkart_transactions_${email}` : 'trkart_transactions_anonymous';
       const stored = localStorage.getItem(userKey);
       const transactions = stored ? JSON.parse(stored) : [];
-      console.log(`Loaded ${transactions.length} transactions for user: ${email}`);
+      
+      logger.debug('TransactionsPage', 'storage', 'Loaded transactions from localStorage', {
+        ...context,
+        transactionCount: transactions.length,
+        hasData: transactions.length > 0
+      });
+      
       return transactions;
     } catch (error) {
-      console.error('Failed to load transactions from localStorage:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('TransactionsPage', 'storage', 'Failed to load transactions from localStorage', err, context);
       return [];
     }
   };
 
-  // Enhanced filtering function
+  // Enhanced filtering function with logging
   const applyFilters = () => {
-    let filtered = allTransactions;
+    const filterContext = {
+      filterType,
+      selectedCardID,
+      transactionTypeFilter: transactionTypeFilter || 'none',
+      dateRange: {
+        start: dateRangeFilter.start || 'none',
+        end: dateRangeFilter.end || 'none'
+      },
+      totalTransactions: allTransactions.length
+    };
 
-    // Card ID filter
-    if (filterType === 'cardID' && selectedCardID !== '') {
-      filtered = filtered.filter(transaction => transaction.cardID === selectedCardID);
-    }
+    logger.debug('TransactionsPage', 'filter', 'Applying filters', filterContext);
+    
+    const startTime = performance.now();
+    
+    try {
+      let filtered = [...allTransactions];
 
-    // Transaction type filter
-    if (transactionTypeFilter) {
-      filtered = filtered.filter(transaction => 
-        transaction.transactionType.toLowerCase().includes(transactionTypeFilter.toLowerCase())
-      );
-    }
+      // Card ID filter
+      if (filterType === 'cardID' && selectedCardID !== '') {
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(transaction => transaction.cardID === selectedCardID);
+        logger.debug('TransactionsPage', 'filter', 'Applied card ID filter', {
+          cardID: selectedCardID,
+          beforeCount,
+          afterCount: filtered.length,
+          filteredOut: beforeCount - filtered.length
+        });
+      }
 
-    // Date range filter
-    if (dateRangeFilter.start || dateRangeFilter.end) {
-      filtered = filtered.filter(transaction => {
-        const transactionDate = new Date(transaction.transactionDate);
-        const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
-        const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+      // Transaction type filter
+      if (transactionTypeFilter) {
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(transaction => 
+          transaction.transactionType.toLowerCase().includes(transactionTypeFilter.toLowerCase())
+        );
+        logger.debug('TransactionsPage', 'filter', 'Applied transaction type filter', {
+          filter: transactionTypeFilter,
+          beforeCount,
+          afterCount: filtered.length,
+          filteredOut: beforeCount - filtered.length
+        });
+      }
 
-        if (startDate && endDate) {
-          return transactionDate >= startDate && transactionDate <= endDate;
-        } else if (startDate) {
-          return transactionDate >= startDate;
-        } else if (endDate) {
-          return transactionDate <= endDate;
-        }
-        return true;
+      // Date range filter
+      if (dateRangeFilter.start || dateRangeFilter.end) {
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(transaction => {
+          const transactionDate = new Date(transaction.transactionDate);
+          const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
+          const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+
+          if (startDate && endDate) {
+            return transactionDate >= startDate && transactionDate <= endDate;
+          } else if (startDate) {
+            return transactionDate >= startDate;
+          } else if (endDate) {
+            return transactionDate <= endDate;
+          }
+          return true;
+        });
+        
+        logger.debug('TransactionsPage', 'filter', 'Applied date range filter', {
+          start: dateRangeFilter.start || 'none',
+          end: dateRangeFilter.end || 'none',
+          beforeCount,
+          afterCount: filtered.length,
+          filteredOut: beforeCount - filtered.length
+        });
+      }
+
+      setFilteredTransactions(filtered);
+      
+      logger.info('TransactionsPage', 'filter', 'Filters applied successfully', {
+        ...filterContext,
+        filteredCount: filtered.length,
+        durationMs: Math.round(performance.now() - startTime)
       });
+      
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('TransactionsPage', 'filter', 'Error applying filters', err, filterContext);
+      // In case of error, show all transactions
+      setFilteredTransactions(allTransactions);
     }
-
-    setFilteredTransactions(filtered);
   };
 
   // Extract available CardIDs
@@ -105,15 +179,21 @@ const TransactionsPage: React.FC = () => {
   };
 
   const loadTransactions = async () => {
+    const context = {
+      hasUser: !!user,
+      userId: user?.customerID,
+      userEmail: user?.email ? `${user.email.substring(0, 3)}...${user.email.split('@')[1]}` : 'none'
+    };
+
+    logger.info('TransactionsPage', 'load', 'Loading transactions', context);
+    
     try {
       setLoading(true);
       setError('');
       
-      console.log('Loading transactions for user:', user);
-      
       // If no user email, show empty state
       if (!user?.email) {
-        console.log('No user email, showing empty state');
+        logger.warn('TransactionsPage', 'load', 'No user email, showing empty state');
         setAllTransactions([]);
         setAvailableCardIDs([]);
         setLoading(false);
@@ -122,11 +202,12 @@ const TransactionsPage: React.FC = () => {
 
       // First, try to load from localStorage
       const storedTransactions = loadTransactionsFromStorage(user.email);
-      console.log('Stored transactions:', storedTransactions);
       
       // If user has email but no customerID, use stored transactions
       if (!user?.customerID || user.customerID === 0) {
-        console.log('No customerID, using stored transactions');
+        logger.info('TransactionsPage', 'load', 'No customerID, using stored transactions', {
+          storedTransactionCount: storedTransactions.length
+        });
         setAllTransactions(storedTransactions);
         extractAvailableCardIDs(storedTransactions);
         setLoading(false);
@@ -135,31 +216,43 @@ const TransactionsPage: React.FC = () => {
 
       // Try to fetch from API using secure endpoint
       try {
-        console.log('Fetching transactions from API...');
+        logger.debug('TransactionsPage', 'load', 'Fetching transactions from API');
         const apiTransactions = await transactionService.getUserTransactions();
-        console.log('API transactions received:', apiTransactions);
         
         const transactionsWithStatus = apiTransactions.map((t: any) => ({
           ...t,
           transactionStatus: t.transactionStatus || 'API'
         }));
         
-        console.log('Transactions with status:', transactionsWithStatus);
+        logger.info('TransactionsPage', 'load', 'Successfully loaded transactions from API', {
+          transactionCount: transactionsWithStatus.length
+        });
+        
         setAllTransactions(transactionsWithStatus);
         extractAvailableCardIDs(transactionsWithStatus);
         saveTransactionsToStorage(transactionsWithStatus, user.email);
       } catch (apiError) {
-        console.error('API call failed, using stored transactions:', apiError);
+        const error = apiError instanceof Error ? apiError : new Error(String(apiError));
+        logger.error('TransactionsPage', 'load', 'API call failed, falling back to stored transactions', error, {
+          storedTransactionCount: storedTransactions.length
+        });
+        
         setAllTransactions(storedTransactions);
         extractAvailableCardIDs(storedTransactions);
       }
     } catch (error) {
-      console.error('Error loading transactions:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('TransactionsPage', 'load', 'Error loading transactions', err);
       setError('Failed to load transactions');
     } finally {
       setLoading(false);
     }
   };
+
+  // Call loadTransactions when component mounts
+  useEffect(() => {
+    loadTransactions();
+  }, [user]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -195,6 +288,7 @@ const TransactionsPage: React.FC = () => {
   };
 
   const clearFilters = () => {
+    logger.info('TransactionsPage', 'filter', 'Clearing all filters');
     setFilterType('customerID');
     setSelectedCardID('');
     setTransactionTypeFilter('');

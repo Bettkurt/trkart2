@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import userCardService from '@/services/userCardService';
+import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-const AddCardPage: React.FC = () => {
+const CardCreationPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,70 +17,105 @@ const AddCardPage: React.FC = () => {
 
   // Check if user already has 3 cards
   useEffect(() => {
+    logger.info('CardCreationPage', 'mount', 'Component mounted', { hasUser: !!user, customerId: user?.customerID });
+    
     const checkCardCount = async () => {
       if (!user?.customerID) {
-        setError('User information not available. Please log in again.');
+        const errorMsg = 'User information not available. Please log in again.';
+        logger.error('CardCreationPage', 'checkCardCount', errorMsg);
+        setError(errorMsg);
         setIsLoading(false);
         return;
       }
 
       try {
+        logger.debug('CardCreationPage', 'checkCardCount', 'Fetching user cards', { customerId: user.customerID });
         const cards = await userCardService.getCardsByCustomerId(user.customerID);
+        logger.info('CardCreationPage', 'checkCardCount', `Found ${cards.length} cards for user`, { 
+          customerId: user.customerID, 
+          cardCount: cards.length 
+        });
         setCardCount(cards.length);
       } catch (err) {
-        console.error('Failed to fetch cards:', err);
-        setError('Failed to load your card information.');
+        const errorMsg = 'Failed to load your card information.';
+        logger.error('CardCreationPage', 'checkCardCount', errorMsg, err as Error, { customerId: user?.customerID });
+        setError(errorMsg);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkCardCount();
+    
+    return () => {
+      logger.debug('CardCreationPage', 'unmount', 'Component unmounting');
+    };
   }, [user]);
 
   const handleCreateCard = async () => {
     if (!user?.customerID) {
-      setError('User information not available. Please log in again.');
+      const errorMsg = 'User information not available. Please log in again.';
+      logger.error('CardCreationPage', 'handleCreateCard', errorMsg);
+      setError(errorMsg);
       return;
     }
 
     if (cardCount >= 3) {
-      setError('You have reached the maximum number of cards (3).');
+      const errorMsg = 'You have reached the maximum number of cards (3).';
+      logger.warn('CardCreationPage', 'handleCreateCard', errorMsg, { customerId: user.customerID, cardCount });
+      setError(errorMsg);
       return;
     }
 
+    logger.info('CardCreationPage', 'handleCreateCard', 'Creating new card', { customerId: user.customerID });
+    
     setIsCreating(true);
     setError('');
     setSuccess('');
 
     try {
-      await userCardService.createUserCard({
+      const newCard = await userCardService.createUserCard({
         customerID: user.customerID
       });
       
-      setSuccess('Card created successfully! It will be activated after first load transaction.');
+      const successMsg = 'Card created successfully! It will be activated after first load transaction.';
+      logger.info('CardCreationPage', 'handleCreateCard', 'Card created successfully', { 
+        customerId: user.customerID, 
+        cardId: newCard.cardID,
+        cardNumber: newCard.cardNumber
+      });
+      
+      setSuccess(successMsg);
+      
       // Redirect back to cards page after 2 seconds
       setTimeout(() => {
+        logger.debug('CardCreationPage', 'handleCreateCard', 'Redirecting to cards page');
         navigate('/cards');
       }, 2000);
     } catch (err) {
-      console.error('Failed to create card:', err);
-      setError('Failed to create a new card. Please try again.');
+      const errorMsg = 'Failed to create a new card. Please try again.';
+      logger.error('CardCreationPage', 'handleCreateCard', errorMsg, err as Error, { customerId: user.customerID });
+      setError(errorMsg);
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleDecline = () => {
+    logger.info('CardCreationPage', 'handleDecline', 'User canceled card creation', { hasHistory: location.key !== 'default' });
+    
     // Go back to the previous page or to cards page if no history
     if (location.key !== 'default') {
+      logger.debug('CardCreationPage', 'handleDecline', 'Navigating back');
       navigate(-1);
     } else {
+      logger.debug('CardCreationPage', 'handleDecline', 'Navigating to cards page');
       navigate('/cards');
     }
   };
 
   if (isLoading) {
+    logger.debug('CardCreationPage', 'render', 'Rendering loading spinner');
     return <LoadingSpinner />;
   }
 
@@ -125,7 +161,10 @@ const AddCardPage: React.FC = () => {
               </p>
               <div className="mt-4">
                 <button 
-                  onClick={() => navigate('/cards')}
+                  onClick={() => {
+                    logger.info('CardCreationPage', 'maxCardsRedirect', 'User clicked Go to My Cards button');
+                    navigate('/cards');
+                  }}
                   className="btn-primary"
                 >
                   Go to My Cards
@@ -201,4 +240,4 @@ const AddCardPage: React.FC = () => {
   );
 };
 
-export default AddCardPage;
+export default CardCreationPage;

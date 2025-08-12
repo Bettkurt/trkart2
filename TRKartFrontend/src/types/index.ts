@@ -58,8 +58,9 @@ export interface CreateUserCardRequest {
   balance?: number;
 }
 
-export interface DeleteUserCardRequest {
-  cardNumber: string;
+export interface CardStatusUpdateRequest {
+  cardId: number;
+  status: string;
 }
 
 // Transaction types

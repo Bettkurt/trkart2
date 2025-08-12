@@ -1,5 +1,5 @@
 import api from './api';
-import { UserCard, CreateUserCardRequest, DeleteUserCardRequest } from '@/types';
+import { UserCard, CreateUserCardRequest, CardStatusUpdateRequest } from '@/types';
 
 class UserCardService {
   // New secure user-specific methods
@@ -11,10 +11,6 @@ class UserCardService {
   async createUserCard(cardData: CreateUserCardRequest): Promise<UserCard> {
     const response = await api.post<{ success: boolean; card: UserCard }>('/SecureUserCard/user/card', cardData);
     return response.data.card;
-  }
-
-  async deleteUserCard(deleteData: DeleteUserCardRequest): Promise<void> {
-    await api.delete('/SecureUserCard/user/card', { data: deleteData });
   }
 
   async getUserCardByNumber(cardNumber: string): Promise<UserCard> {
@@ -43,9 +39,22 @@ class UserCardService {
     return response.data;
   }
 
-  async deleteCard(deleteData: DeleteUserCardRequest): Promise<void> {
-    await api.delete('/UserCard', { data: deleteData });
+  /**
+   * Updates the status of a user's card (e.g., to 'Deactivated' or 'Lost')
+   * @param updateData Object containing cardId and the new status
+   */
+  async updateCardStatus(updateData: CardStatusUpdateRequest) {
+    // Using the secure endpoint which requires authentication
+    const response = await api.put<{
+      success: boolean; 
+      message: string; 
+      card: UserCard 
+    }>(
+      '/SecureUserCard/user/card/status',
+      updateData
+    );
+    return response.data;
   }
 }
 
-export default new UserCardService(); 
+export default new UserCardService();

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import userCardService from '@/services/userCardService';
 import { UserCard } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { logger } from '@/utils/logger';
 
 // Format card number as TRK90 XXXX XXXX XXX
 const formatCardNumber = (cardNumber: string): string => {
@@ -23,30 +24,36 @@ const UserCardsPage: React.FC = () => {
 
   // Helper function to save cards to localStorage (user-specific)
   const saveCardsToStorage = (cards: UserCard[]) => {
+    const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
     try {
-      const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
       localStorage.setItem(userKey, JSON.stringify(cards));
+      logger.info('UserCardsPage', 'saveCardsToStorage', `Successfully saved ${cards.length} cards to localStorage`, { userKey, cardCount: cards.length });
     } catch (error) {
-      console.error('Failed to save cards to localStorage:', error);
+      logger.error('UserCardsPage', 'saveCardsToStorage', 'Failed to save cards to localStorage', error as Error, { userKey });
     }
   };
 
   // Helper function to load cards from localStorage (user-specific)
   const loadCardsFromStorage = (): UserCard[] => {
+    const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
     try {
-      const userKey = user?.email ? `trkart_cards_${user.email}` : 'trkart_cards_anonymous';
       const stored = localStorage.getItem(userKey);
-      return stored ? JSON.parse(stored) : [];
+      const cards = stored ? JSON.parse(stored) : [];
+      logger.debug('UserCardsPage', 'loadCardsFromStorage', `Loaded ${cards.length} cards from localStorage`, { userKey, cardCount: cards.length });
+      return cards;
     } catch (error) {
-      console.error('Failed to load cards from localStorage:', error);
+      logger.error('UserCardsPage', 'loadCardsFromStorage', 'Failed to load cards from localStorage', error as Error, { userKey });
       return [];
     }
   };
 
   useEffect(() => {
+    logger.info('UserCardsPage', 'mount', 'Component mounted', { hasUser: !!user, userId: user?.customerID });
+    
     const fetchCards = async () => {
       // If no user email, show empty state
       if (!user?.email) {
+        logger.debug('UserCardsPage', 'fetchCards', 'No user email found, showing empty state');
         setCards([]);
         setIsLoading(false);
         return;
@@ -58,44 +65,73 @@ const UserCardsPage: React.FC = () => {
         // Try to fetch from API first if we have a customerID
         if (user?.customerID && user.customerID !== 0) {
           try {
+            logger.debug('UserCardsPage', 'fetchCards', 'Fetching cards from API', { customerId: user.customerID });
             cardsData = await userCardService.getCardsByCustomerId(user.customerID);
+            
+            // Log API response
+            logger.info('UserCardsPage', 'fetchCards', `Successfully fetched ${cardsData.length} cards from API`, { 
+              customerId: user.customerID,
+              cardCount: cardsData.length 
+            });
+            
             // Ensure each card has a cardStatus, default to 'Inactive' if not provided
             cardsData = cardsData.map(card => ({
               ...card,
               cardStatus: card.cardStatus || 'Inactive'
             }));
+            
             saveCardsToStorage(cardsData);
           } catch (err) {
-            console.error('Failed to load cards from API:', err);
+            logger.error('UserCardsPage', 'fetchCards', 'Failed to load cards from API', err as Error, { 
+              customerId: user.customerID 
+            });
+            
             // If API fails, try to load from localStorage
             const storedCards = loadCardsFromStorage();
             if (storedCards.length > 0) {
+              logger.info('UserCardsPage', 'fetchCards', 'Falling back to cached cards from localStorage', { 
+                cardCount: storedCards.length 
+              });
               cardsData = storedCards;
             } else {
-              setError('Failed to load cards. Using cached data if available.');
+              const errorMsg = 'Failed to load cards. Using cached data if available.';
+              logger.warn('UserCardsPage', 'fetchCards', errorMsg, { customerId: user.customerID });
+              setError(errorMsg);
             }
           }
         } else {
+          logger.debug('UserCardsPage', 'fetchCards', 'No customerID found, checking localStorage');
           // If no customerID, try to load from localStorage
           const storedCards = loadCardsFromStorage();
           if (storedCards.length > 0) {
+            logger.info('UserCardsPage', 'fetchCards', 'Using cards from localStorage', { 
+              cardCount: storedCards.length 
+            });
             cardsData = storedCards;
           }
         }
         
+        logger.debug('UserCardsPage', 'fetchCards', `Setting ${cardsData.length} cards to state`);
         setCards(cardsData);
       } catch (err) {
-        console.error('Unexpected error loading cards:', err);
-        setError('An unexpected error occurred while loading cards.');
+        const errorMsg = 'An unexpected error occurred while loading cards.';
+        logger.error('UserCardsPage', 'fetchCards', errorMsg, err as Error);
+        setError(errorMsg);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCards();
+    
+    // Cleanup function
+    return () => {
+      logger.debug('UserCardsPage', 'unmount', 'Component unmounting');
+    };
   }, [user]);
 
   if (isLoading) {
+    logger.debug('UserCardsPage', 'render', 'Rendering loading spinner');
     return <LoadingSpinner />;
   }
 
@@ -111,7 +147,7 @@ const UserCardsPage: React.FC = () => {
               <h1 className="text-xl font-semibold text-gray-900">My Cards</h1>
             </div>
             <div className="flex items-center">
-              <Link to="/add-card" className="btn-primary">
+              <Link to="/create-card" className="btn-primary">
                 Add New Card
               </Link>
             </div>
@@ -143,7 +179,7 @@ const UserCardsPage: React.FC = () => {
             <div className="text-center py-12">
               <h3 className="text-lg font-medium text-gray-900 mb-2">No cards found</h3>
               <p className="text-gray-600">You haven't added any cards yet.</p>
-              <Link to="/add-card" className="btn-primary mt-4 inline-block">Add Your First Card</Link>
+              <Link to="/create-card" className="btn-primary mt-4 inline-block">Add Your First Card</Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -189,38 +225,73 @@ const UserCardsPage: React.FC = () => {
                   <div className="space-y-2">
                     <button
                       onClick={(e) => {
-                        if (card.cardStatus !== 'Lost') {
+                        if (['Active', 'Inactive'].includes(card.cardStatus)) {
                           e.preventDefault();
+                          logger.info('UserCardsPage', 'addBalance', 'Navigating to new transaction page', { 
+                            cardId: card.cardID,
+                            cardNumber: card.cardNumber 
+                          });
                           navigate(`/new-transaction`);
+                        } else {
+                          logger.debug('UserCardsPage', 'addBalance', `Attempted to add balance to ${card.cardStatus?.toLowerCase()} card`, { 
+                            cardId: card.cardID,
+                            cardStatus: card.cardStatus 
+                          });
                         }
                       }}
-                      disabled={card.cardStatus === 'Lost'}
+                      disabled={['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus)}
                       className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        card.cardStatus === 'Lost'
+                        ['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
+                          : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
                       }`}
-                      title={card.cardStatus === 'Lost' ? 'You cannot add balance to a lost card' : ''}
+                      title={['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus) 
+                        ? `You cannot add balance to a ${card.cardStatus?.toLowerCase()} card` 
+                        : ''}
                     >
-                      {card.cardStatus === 'Lost' ? 'Cannot Add Balance (Card Lost)' : 'Add Balance'}
+                      {['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus) 
+                        ? `Cannot Add Balance (${card.cardStatus})` 
+                        : 'Add Balance'}
                     </button>
                     
                     <div className="flex gap-2">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
+                          logger.info('UserCardsPage', 'viewTransactions', 'Navigating to transactions page', { 
+                            cardId: card.cardID,
+                            cardNumber: card.cardNumber 
+                          });
                           navigate(`/transactions?filterType=cardID&selectedCardID=${card.cardID}`);
                         }}
-                        className="flex-1 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
+                        className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
                       >
                         Transactions
                       </button>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          navigate(`/delete-card/${card.cardID}`);
+                          if (card.cardStatus !== 'Deactivated') {
+                            logger.info('UserCardsPage', 'deleteCard', 'Navigating to delete card page', { 
+                              cardId: card.cardID,
+                              cardNumber: card.cardNumber,
+                              status: card.cardStatus
+                            });
+                            navigate(`/delete-card/${card.cardID}`);
+                          } else {
+                            logger.debug('UserCardsPage', 'deleteCard', 'Attempted to navigate to delete card page for deactivated card', {
+                              cardId: card.cardID,
+                              status: card.cardStatus
+                            });
+                          }
                         }}
-                        className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
+                        disabled={card.cardStatus === 'Deactivated'}
+                        className={`flex-1 px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis ${
+                          card.cardStatus === 'Deactivated'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed focus:ring-gray-400'
+                            : 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500'
+                        }`}
+                        title={card.cardStatus === 'Deactivated' ? 'Cannot delete a deactivated card' : 'Delete this card'}
                       >
                         Delete Card
                       </button>
@@ -229,19 +300,35 @@ const UserCardsPage: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        if (card.cardStatus !== 'Lost') {
-                          navigate(`/lost-card/${card.cardID}`);
+                        if (!['Lost', 'Deactivated'].includes(card.cardStatus)) {
+                          logger.info('UserCardsPage', 'reportLostCard', 'Navigating to report lost card page', { 
+                            cardId: card.cardID,
+                            cardNumber: card.cardNumber,
+                            currentStatus: card.cardStatus
+                          });
+                          navigate(`/cards/lost/${card.cardID}`);
+                        } else {
+                          logger.debug('UserCardsPage', 'reportLostCard', `Attempted to report ${card.cardStatus?.toLowerCase()} card as lost`, { 
+                            cardId: card.cardID,
+                            cardStatus: card.cardStatus 
+                          });
                         }
                       }}
-                      disabled={card.cardStatus === 'Lost'}
+                      disabled={['Lost', 'Deactivated'].includes(card.cardStatus)}
                       className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        card.cardStatus === 'Lost'
+                        ['Lost', 'Deactivated'].includes(card.cardStatus)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
+                          : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
                       }`}
-                      title={card.cardStatus === 'Lost' ? 'This card is already marked as lost' : 'Report this card as lost'}
+                      title={['Lost', 'Deactivated'].includes(card.cardStatus) 
+                        ? `This card is already ${card.cardStatus?.toLowerCase()}` 
+                        : 'Report this card as lost'}
                     >
-                      {card.cardStatus === 'Lost' ? 'Card Marked as Lost' : 'Did You Lose Your Card?'}
+                      {card.cardStatus === 'Lost' 
+                        ? 'Card Marked as Lost' 
+                        : card.cardStatus === 'Deactivated' 
+                          ? 'Card is Deactivated' 
+                          : 'Did You Lose Your Card?'}
                     </button>
                   </div>
                 </div>

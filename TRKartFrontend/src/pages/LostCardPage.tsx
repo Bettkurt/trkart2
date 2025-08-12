@@ -11,7 +11,7 @@ interface PasswordVerificationResponse {
   message?: string;
 }
 
-const CardDeletionPage: React.FC = () => {
+const LostCardPage: React.FC = () => {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -20,7 +20,7 @@ const CardDeletionPage: React.FC = () => {
   const [error, setError] = useState('');
   const [card, setCard] = useState<UserCard | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMarkingAsLost, setIsMarkingAsLost] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -28,14 +28,14 @@ const CardDeletionPage: React.FC = () => {
 
   // Load card details
   useEffect(() => {
-    logger.info('CardDeletionPage', 'mount', 'Component mounted', { cardId, hasUser: !!user, customerId: user?.customerID });
+    logger.info('LostCardPage', 'mount', 'Component mounted', { cardId, hasUser: !!user, customerId: user?.customerID });
     
     const fetchCardDetails = async () => {
       if (!cardId || !user?.customerID) {
         const errorMsg = 'Invalid card or user information.';
         const errorContext = { cardId, hasUser: !!user };
         const error = new Error(`${errorMsg} Context: ${JSON.stringify(errorContext)}`);
-        logger.error('CardDeletionPage', 'fetchCardDetails', errorMsg, error);
+        logger.error('LostCardPage', 'fetchCardDetails', errorMsg, error);
         setError(errorMsg);
         setIsLoading(false);
         return;
@@ -50,7 +50,7 @@ const CardDeletionPage: React.FC = () => {
           const foundCard = cards.find(c => c.cardID.toString() === cardId);
           
           if (foundCard) {
-            logger.info('CardDeletionPage', 'fetchCardDetails', 'Card found in localStorage', { 
+            logger.info('LostCardPage', 'fetchCardDetails', 'Card found in localStorage', { 
               cardId, 
               cardNumber: foundCard.cardNumber 
             });
@@ -60,28 +60,26 @@ const CardDeletionPage: React.FC = () => {
           }
         }
 
-        logger.debug('CardDeletionPage', 'fetchCardDetails', 'Card not in localStorage, fetching from API', { cardId });
-        
         // If not found in localStorage, try to fetch from API
-        const cardNumber = await getCardNumberFromId(parseInt(cardId));
-        if (cardNumber) {
-          logger.debug('CardDeletionPage', 'fetchCardDetails', 'Fetching card details from API', { cardNumber });
-          const cardDetails = await userCardService.getUserCardByNumber(cardNumber);
-          logger.info('CardDeletionPage', 'fetchCardDetails', 'Card details fetched successfully', { 
-            cardId: cardDetails.cardID,
-            cardNumber: cardDetails.cardNumber,
-            balance: cardDetails.balance
+        const cards = await userCardService.getUserCards();
+        const foundCard = cards.find(c => c.cardID.toString() === cardId);
+        
+        if (foundCard) {
+          logger.info('LostCardPage', 'fetchCardDetails', 'Card details fetched from API', { 
+            cardId: foundCard.cardID,
+            cardNumber: foundCard.cardNumber,
+            balance: foundCard.balance
           });
-          setCard(cardDetails);
+          setCard(foundCard);
         } else {
           const errorMsg = 'Card not found.';
-          logger.warn('CardDeletionPage', 'fetchCardDetails', errorMsg, { cardId });
+          logger.warn('LostCardPage', 'fetchCardDetails', errorMsg, { cardId });
           setError(errorMsg);
         }
       } catch (err) {
         const errorMsg = 'Failed to load card details. Please try again.';
         const error = err instanceof Error ? err : new Error(String(err));
-        logger.error('CardDeletionPage', 'fetchCardDetails', errorMsg, error, { cardId });
+        logger.error('LostCardPage', 'fetchCardDetails', errorMsg, error, { cardId });
         setError(errorMsg);
       } finally {
         setIsLoading(false);
@@ -91,57 +89,30 @@ const CardDeletionPage: React.FC = () => {
     fetchCardDetails();
     
     return () => {
-      logger.debug('CardDeletionPage', 'unmount', 'Component unmounting');
+      logger.debug('LostCardPage', 'unmount', 'Component unmounting');
     };
   }, [cardId, user]);
-
-  const getCardNumberFromId = async (cardId: number): Promise<string | null> => {
-    try {
-      logger.debug('CardDeletionPage', 'getCardNumberFromId', 'Fetching card number from ID', { cardId });
-      
-      // Try to get the card by ID from the API
-      const response = await userCardService.getUserCards();
-      const foundCard = response.find(card => card.cardID === cardId);
-      
-      if (foundCard) {
-        logger.debug('CardDeletionPage', 'getCardNumberFromId', 'Card number found', { 
-          cardId, 
-          cardNumber: foundCard.cardNumber 
-        });
-        return foundCard.cardNumber;
-      } 
-      
-      logger.warn('CardDeletionPage', 'getCardNumberFromId', 'Card not found', { cardId });
-      return null;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      logger.error('CardDeletionPage', 'getCardNumberFromId', 'Error fetching card number', error, { cardId });
-      return null;
-    }
-  };
 
   const verifyPassword = async (): Promise<boolean> => {
     if (!user?.email) {
       const errorMsg = 'No user email available for password verification';
-      logger.error('CardDeletionPage', 'verifyPassword', errorMsg);
+      logger.error('LostCardPage', 'verifyPassword', errorMsg);
       setError('Authentication error. Please log in again.');
       return false;
     }
     
     if (!password) {
       const errorMsg = 'Password is required';
-      logger.warn('CardDeletionPage', 'verifyPassword', errorMsg);
+      logger.warn('LostCardPage', 'verifyPassword', errorMsg);
       setPasswordError(errorMsg);
       return false;
     }
     
-    logger.info('CardDeletionPage', 'verifyPassword', 'Initiating password verification');
+    logger.info('LostCardPage', 'verifyPassword', 'Initiating password verification');
     setIsVerifying(true);
     setPasswordError('');
     
     try {
-      // Call the password verification endpoint
-      logger.debug('CardDeletionPage', 'verifyPassword', 'Sending password verification request');
       const response = await fetch('/api/auth/verify-password', {
         method: 'POST',
         headers: {
@@ -158,25 +129,25 @@ const CardDeletionPage: React.FC = () => {
       
       if (!response.ok) {
         const errorMsg = data.message || 'Password verification failed';
-        logger.warn('CardDeletionPage', 'verifyPassword', `Password verification failed: ${errorMsg}`, { 
+        logger.warn('LostCardPage', 'verifyPassword', `Password verification failed: ${errorMsg}`, { 
           status: response.status 
         });
         throw new Error(errorMsg);
       }
 
       if (data.isValid) {
-        logger.info('CardDeletionPage', 'verifyPassword', 'Password verification successful');
+        logger.info('LostCardPage', 'verifyPassword', 'Password verification successful');
         return true;
       } else {
         const errorMsg = data.message || 'Incorrect password. Please try again.';
-        logger.warn('CardDeletionPage', 'verifyPassword', 'Password verification failed: Invalid credentials');
+        logger.warn('LostCardPage', 'verifyPassword', 'Password verification failed: Invalid credentials');
         setPasswordError(errorMsg);
         return false;
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       const errorMsg = 'Failed to verify password. Please try again.';
-      logger.error('CardDeletionPage', 'verifyPassword', 'Password verification error', error);
+      logger.error('LostCardPage', 'verifyPassword', 'Password verification error', error);
       setPasswordError(errorMsg);
       return false;
     } finally {
@@ -184,14 +155,14 @@ const CardDeletionPage: React.FC = () => {
     }
   };
 
-  const handleDeactivation = async (): Promise<void> => {
+  const handleMarkAsLost = async (): Promise<void> => {
     if (!card) {
-      logger.error('CardDeletionPage', 'handleDeactivation', 'No card selected for deletion');
+      logger.error('LostCardPage', 'handleMarkAsLost', 'No card selected');
       return;
     }
     
     if (!showConfirmation) {
-      logger.info('CardDeletionPage', 'handleDeactivation', 'Showing deletion confirmation', { 
+      logger.info('LostCardPage', 'handleMarkAsLost', 'Showing confirmation dialog', { 
         cardId: card.cardID, 
         cardNumber: card.cardNumber 
       });
@@ -199,83 +170,90 @@ const CardDeletionPage: React.FC = () => {
       return;
     }
 
-    // If we haven't verified the password yet, verify it first
-    if (showConfirmation && !isDeleting) {
-      logger.debug('CardDeletionPage', 'handleDeactivation', 'Verifying password before deletion');
+    // Verify password if not already verified
+    if (showConfirmation && !isMarkingAsLost) {
+      logger.debug('LostCardPage', 'handleMarkAsLost', 'Verifying password before marking as lost');
       const isValid = await verifyPassword();
       if (!isValid) {
-        logger.warn('CardDeletionPage', 'handleDeactivation', 'Password verification failed, aborting deletion');
-        setPassword(''); // Clear the password field on error
+        logger.warn('LostCardPage', 'handleMarkAsLost', 'Password verification failed, aborting');
+        setPassword('');
         return;
       }
-      // If password is valid, proceed with deletion
-      logger.info('CardDeletionPage', 'handleDeactivation', 'Password verified, proceeding with deletion', { 
+      logger.info('LostCardPage', 'handleMarkAsLost', 'Password verified, proceeding', { 
         cardId: card.cardID, 
         cardNumber: card.cardNumber 
       });
     }
 
-    logger.info('CardDeletionPage', 'handleDeactivation', 'Initiating card deletion', { 
+    logger.info('LostCardPage', 'handleMarkAsLost', 'Marking card as lost', { 
       cardId: card.cardID, 
       cardNumber: card.cardNumber,
       hasBalance: card.balance > 0
     });
     
-    setIsDeleting(true);
+    setIsMarkingAsLost(true);
     try {
-      // Update card status to 'Deactivated' using the new endpoint
-      logger.debug('CardDeletionPage', 'handleDeactivation', 'Sending status update request to API', { 
+      // Update card status to 'Lost' using the API
+      logger.debug('LostCardPage', 'handleMarkAsLost', 'Sending status update request to API', { 
         cardId: card.cardID,
-        newStatus: 'Deactivated'
+        newStatus: 'Lost'
       });
       
       await userCardService.updateCardStatus({
         cardId: card.cardID,
-        status: 'Deactivated'
+        status: 'Lost'
       });
       
-      logger.info('CardDeletionPage', 'handleDeactivation', 'Card status updated to Deactivated', { 
+      logger.info('LostCardPage', 'handleMarkAsLost', 'Card status updated to Lost', { 
         cardId: card.cardID, 
         cardNumber: card.cardNumber 
       });
       
-      // Remove from localStorage
+      // Update localStorage
       if (user?.email) {
         const userKey = `trkart_cards_${user.email}`;
         const storedCards = localStorage.getItem(userKey);
         if (storedCards) {
           const cards: UserCard[] = JSON.parse(storedCards);
-          const updatedCards = cards.filter(c => c.cardID !== card.cardID);
+          const updatedCards = cards.map(c => 
+            c.cardID === card.cardID ? { ...c, cardStatus: 'Lost' } : c
+          );
           localStorage.setItem(userKey, JSON.stringify(updatedCards));
-          logger.debug('CardDeletionPage', 'handleDeactivation', 'Removed card from localStorage', { 
+          logger.debug('LostCardPage', 'handleMarkAsLost', 'Updated card status in localStorage', { 
             cardId: card.cardID,
-            remainingCards: updatedCards.length
+            newStatus: 'Lost'
           });
         }
       }
       
-      logger.info('CardDeletionPage', 'handleDeactivation', 'Navigating to cards page after successful deletion');
-      navigate('/cards');
+      // Navigate to cards page with success message
+      logger.info('LostCardPage', 'handleMarkAsLost', 'Navigating to cards page after marking as lost');
+      navigate('/cards', { 
+        state: { 
+          message: 'Card has been marked as lost successfully.',
+          messageType: 'success'
+        } 
+      });
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      const errorMsg = 'Failed to delete card. Please try again.';
-      logger.error('CardDeletionPage', 'handleDeactivation', errorMsg, error, { 
+      const errorMsg = 'Failed to mark card as lost. Please try again.';
+      logger.error('LostCardPage', 'handleMarkAsLost', errorMsg, error, { 
         cardId: card.cardID,
         cardNumber: card.cardNumber 
       });
       setError(errorMsg);
-      setIsDeleting(false);
+      setIsMarkingAsLost(false);
       setShowConfirmation(false);
     }
   };
 
   const handleTransferFunds = (): void => {
     if (!card) {
-      logger.error('CardDeletionPage', 'handleTransferFunds', 'No card selected for fund transfer');
+      logger.error('LostCardPage', 'handleTransferFunds', 'No card selected for fund transfer');
       return;
     }
     
-    logger.info('CardDeletionPage', 'handleTransferFunds', 'Initiating fund transfer before card deletion', {
+    logger.info('LostCardPage', 'handleTransferFunds', 'Initiating fund transfer before marking as lost', {
       cardId: card.cardID,
       cardNumber: card.cardNumber,
       transferAmount: card.balance
@@ -285,13 +263,14 @@ const CardDeletionPage: React.FC = () => {
       state: { 
         fromCardNumber: card.cardNumber,
         amount: card.balance,
-        transferMode: true
+        transferMode: true,
+        returnUrl: `/cards/lost/${card.cardID}`
       } 
     });
   };
 
   const handleCancel = (): void => {
-    logger.info('CardDeletionPage', 'handleCancel', 'User canceled card deletion', {
+    logger.info('LostCardPage', 'handleCancel', 'User canceled marking card as lost', {
       cardId: card?.cardID,
       cardNumber: card?.cardNumber,
       hadConfirmation: showConfirmation
@@ -333,12 +312,12 @@ const CardDeletionPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
-        <h1 className="text-2xl font-bold text-red-600 mb-6">Delete Card</h1>
+        <h1 className="text-2xl font-bold text-amber-600 mb-6">Report Lost Card</h1>
         
-        <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded">
-          <h2 className="font-semibold text-red-700 mb-2">Warning</h2>
-          <p className="text-red-700">
-            Deleting this card will permanently remove all its transaction history. This action cannot be undone.
+        <div className="mb-6 p-4 border border-amber-200 bg-amber-50 rounded">
+          <h2 className="font-semibold text-amber-700 mb-2">Important Notice</h2>
+          <p className="text-amber-700">
+            Marking your card as lost will immediately block all transactions. Please read the restrictions below carefully.
           </p>
         </div>
 
@@ -349,17 +328,28 @@ const CardDeletionPage: React.FC = () => {
           <p><span className="font-medium">Status:</span> {card.cardStatus}</p>
         </div>
 
+        <div className="mb-6 p-4 border border-red-100 bg-red-50 rounded">
+          <h2 className="font-semibold text-red-700 mb-2">What happens when you mark a card as lost?</h2>
+          <ul className="list-disc pl-5 space-y-2 text-red-700">
+            <li>You won't be able to use this card for any transactions</li>
+            <li>Adding money to this card will be disabled</li>
+            <li>All payment and transfer attempts will be blocked</li>
+            <li>You won't be able to receive any transfers or refunds</li>
+            <li>To reactivate this card, you'll need to visit a bank branch in person</li>
+          </ul>
+        </div>
+
         {hasBalance && (
           <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded">
-            <h2 className="font-semibold text-yellow-700 mb-2">Balance Warning</h2>
+            <h2 className="font-semibold text-yellow-700 mb-2">Balance Notice</h2>
             <p className="text-yellow-700 mb-4">
               This card has a balance of {card.balance.toFixed(2)} TL. 
-              Deleting it will result in losing this balance.
+              Consider transferring this amount to another card before marking as lost.
             </p>
             <div className="flex flex-wrap gap-3 mt-3">
               <button
                 onClick={handleTransferFunds}
-                className="btn-primary"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
               >
                 Transfer Balance to Another Card
               </button>
@@ -369,10 +359,10 @@ const CardDeletionPage: React.FC = () => {
 
         {showConfirmation ? (
           <div className="mt-6 p-4 border border-red-200 bg-red-50 rounded">
-            <h2 className="font-semibold text-red-700 mb-4">Are you sure you want to delete this card?</h2>
+            <h2 className="font-semibold text-red-700 mb-4">Are you sure you want to mark this card as lost?</h2>
             <p className="text-red-700 mb-4">
-              This action cannot be undone. All transaction history for this card will be permanently deleted.
-              {hasBalance && ' Any remaining balance will be lost.'}
+              This action is irreversible. The card will be immediately blocked and cannot be used for any transactions.
+              {hasBalance && ' Any remaining balance will be inaccessible until you visit a bank branch.'}
             </p>
             
             <div className="mb-4">
@@ -389,7 +379,7 @@ const CardDeletionPage: React.FC = () => {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isVerifying || isDeleting}
+                  disabled={isVerifying || isMarkingAsLost}
                 />
                 <button
                   type="button"
@@ -407,16 +397,16 @@ const CardDeletionPage: React.FC = () => {
             
             <div className="flex gap-3">
               <button
-                onClick={handleDeactivation}
-                disabled={isVerifying || isDeleting || !password}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed"
+                onClick={handleMarkAsLost}
+                disabled={isVerifying || isMarkingAsLost || !password}
+                className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isVerifying ? 'Verifying...' : isDeleting ? 'Deleting...' : 'Yes, Delete Permanently'}
+                {isVerifying ? 'Verifying...' : isMarkingAsLost ? 'Marking as Lost...' : 'Yes, Mark as Lost'}
               </button>
               <button
                 onClick={() => setShowConfirmation(false)}
-                disabled={isDeleting}
-                className="btn-secondary"
+                disabled={isMarkingAsLost}
+                className="px-4 py-2 border border-gray-300 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -425,16 +415,16 @@ const CardDeletionPage: React.FC = () => {
         ) : (
           <div className="mt-6 flex gap-3">
             <button
-              onClick={handleDeactivation}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed"
-              disabled={isDeleting}
+              onClick={handleMarkAsLost}
+              className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isMarkingAsLost}
             >
-              Delete This Card
+              Mark This Card as Lost
             </button>
             <button
               onClick={handleCancel}
-              className="btn-secondary"
-              disabled={isDeleting}
+              className="px-4 py-2 border border-gray-300 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isMarkingAsLost}
             >
               Cancel
             </button>
@@ -445,4 +435,4 @@ const CardDeletionPage: React.FC = () => {
   );
 };
 
-export default CardDeletionPage;
+export default LostCardPage;

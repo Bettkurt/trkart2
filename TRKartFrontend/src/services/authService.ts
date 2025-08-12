@@ -97,7 +97,7 @@ class AuthService {
       withCredentials: true // Ensure credentials are sent
     });
 
-    console.log('Login response received');
+    console.log('Login response received', response.data);
 
     // Store user session data
     if (response.data) {

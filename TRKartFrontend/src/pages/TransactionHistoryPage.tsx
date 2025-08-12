@@ -1,35 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import transactionService from '@/services/transactionService';
 import { Transaction } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { logger } from '@/utils/logger';
 
 const TransactionHistoryPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    logger.info('TransactionHistory', 'mount', 'Transaction history page loaded', {
+      path: location.pathname,
+      hasUser: !!user,
+      customerId: user?.customerID
+    });
+
     const fetchTransactions = async () => {
-      if (!user?.customerID) return;
+      if (!user?.customerID) {
+        logger.warn('TransactionHistory', 'fetch', 'No user or customer ID found');
+        setIsLoading(false);
+        return;
+      }
       
       try {
+        logger.debug('TransactionHistory', 'fetch', 'Fetching transactions', {
+          customerId: user.customerID
+        });
+        
         const data = await transactionService.getTransactionsByCustomerId(user.customerID);
+        
+        logger.info('TransactionHistory', 'fetch', 'Transactions loaded', {
+          count: data.length,
+          customerId: user.customerID
+        });
+        
         setTransactions(data);
       } catch (err) {
-        setError('Failed to load transactions');
+        const error = err instanceof Error ? err : new Error(String(err));
+        const errorMsg = 'Failed to load transactions';
+        
+        logger.error('TransactionHistory', 'fetch', errorMsg, error, {
+          customerId: user?.customerID
+        });
+        
+        setError(errorMsg);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTransactions();
-  }, [user]);
+
+    return () => {
+      logger.debug('TransactionHistory', 'unmount', 'Transaction history page unmounting');
+    };
+  }, [user, location.pathname]);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    logger.debug('TransactionHistory', 'render', 'Loading spinner shown');
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
@@ -38,7 +76,11 @@ const TransactionHistoryPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/dashboard" className="text-gray-600 hover:text-gray-900 mr-4">
+              <Link 
+                to="/dashboard" 
+                className="text-gray-600 hover:text-gray-900 mr-4"
+                onClick={() => logger.info('TransactionHistory', 'navigation', 'Navigating to dashboard')}
+              >
                 ← Back to Dashboard
               </Link>
               <h1 className="text-xl font-semibold text-gray-900">Transaction History</h1>

@@ -39,6 +39,7 @@ BEGIN
 		FOR UPDATE;
 
         -- Process based on transaction type
+        -- Pay & TransferOut transactions
         IF NEW."TransactionType" = 'Pay' OR NEW."TransactionType" = 'TransferOut' THEN
             -- Check if balance is sufficient
             IF NEW."Amount" > 0 AND v_current_balance >= NEW."Amount" AND v_current_card_status = 'Active' THEN
@@ -52,8 +53,9 @@ BEGIN
             ELSE
                 NEW."TransactionStatus" := 'Denied';
             END IF;
-        ELSIF NEW."TransactionType" = 'Load' THEN
-            -- For load transactions, just need positive amount
+        -- Load transactions, card status must 'Active' or 'Inactive'
+        ELSIF NEW."TransactionType" = 'Load' AND (v_current_card_status = 'Active' OR v_current_card_status = 'Inactive') THEN
+            -- For load transactions, just need positive amount 
             IF NEW."Amount" > 0 THEN
                 -- Update card balance
                 UPDATE "UserCard"
@@ -62,6 +64,7 @@ BEGIN
                 
                 NEW."TransactionStatus" := 'Approved';
                 
+                -- Inactive cards can be activated with a 'Load'
                 -- Cards are created as 'Inactive', so we need to activate them after the first load transaction
                 IF v_current_card_status = 'Inactive' THEN
                     UPDATE "UserCard"
@@ -71,8 +74,9 @@ BEGIN
             ELSE
                 NEW."TransactionStatus" := 'Denied';
             END IF;
+        -- Refund & TransferIn transaction
         ELSIF NEW."TransactionType" = 'Refund' OR NEW."TransactionType" = 'TransferIn' THEN
-            -- For refund transactions, just need positive amount
+            -- For refund & transfer in transactions, just need positive amount and active card
             IF NEW."Amount" > 0 AND v_current_card_status = 'Active' THEN
                 -- Update card balance
                 UPDATE "UserCard"
@@ -81,7 +85,10 @@ BEGIN
                 NEW."TransactionStatus" := 'Approved';
             ELSE
                 NEW."TransactionStatus" := 'Denied';
-            END IF;           
+            END IF;
+        -- Any other transaction type and/or problem
+        ELSE
+            NEW."TransactionStatus" := 'Denied';
         END IF; 
     END IF;
 
