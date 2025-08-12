@@ -402,7 +402,7 @@ const TransactionFormPage: React.FC = () => {
                     <option value="">Select a card</option>
                                          {userCards.map(card => (
                        <option key={card.cardID} value={card.cardID}>
-                         {card.cardNumber} - ${card.balance.toFixed(2)}
+                         {card.cardNumber} - ₺{card.balance.toFixed(2)}
                        </option>
                      ))}
                   </select>

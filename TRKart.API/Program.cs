@@ -101,6 +101,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<ITransferService, TransferService>();
 builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
 builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 

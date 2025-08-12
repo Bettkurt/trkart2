@@ -269,7 +269,7 @@ const TransactionsPage: React.FC = () => {
     const isNegative = ['Pay', 'TransferOut'].includes(transactionType || '');
     const sign = isNegative ? '-' : '+';
     const color = isNegative ? 'text-red-600' : 'text-green-600';
-    return <span className={color}>{sign}${Math.abs(amount).toFixed(2)}</span>;
+    return <span className={color}>{sign}₺{Math.abs(amount).toFixed(2)}</span>;
   };
 
   const formatDate = (dateString: string) => {

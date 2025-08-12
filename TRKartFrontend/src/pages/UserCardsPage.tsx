@@ -197,7 +197,7 @@ const UserCardsPage: React.FC = () => {
                       <div>
                         <label className="text-sm font-medium text-gray-500">Balance</label>
                         <p className="text-xl font-bold text-gray-900">
-                          {card.balance.toFixed(2)} TL
+                          ₺{card.balance.toFixed(2)}
                         </p>
                         <div className="mt-2">
                           <div className="text-sm font-medium text-gray-500 mb-1">Card Status</div>
