@@ -21,6 +21,12 @@ class AuthService {
     return !!this.getUserData();
   }
 
+  // Clear all localStorage data
+  clearLocalStorage(): void {
+    localStorage.clear();
+    console.log('Local storage cleared');
+  }
+
   // Clear auth data while preserving Remember Me and email if needed
   clearAuthData(): void {
     // Save Remember Me and email before clearing
@@ -81,6 +87,9 @@ class AuthService {
     if (!credentials.email) {
       throw new Error('Email is required');
     }
+
+    // Clear localStorage before login
+    this.clearLocalStorage();
 
     this.setRememberMe(rememberMe);
 
