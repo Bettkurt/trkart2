@@ -1,7 +1,31 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 const LandingPage: React.FC = () => {
+  const location = useLocation();
+
+  // Log component mount and page view
+  useEffect(() => {
+    logger.info('LandingPage', 'mount', 'Landing page loaded', { 
+      path: location.pathname,
+      userAgent: navigator.userAgent,
+      screenSize: `${window.innerWidth}x${window.innerHeight}`
+    });
+
+    return () => {
+      logger.debug('LandingPage', 'unmount', 'Landing page unmounting');
+    };
+  }, [location.pathname]);
+
+  const handleNavigation = (target: string) => {
+    logger.info('LandingPage', 'navigation', `Navigating to ${target}`, { from: 'LandingPage' });
+  };
+
+  const handleExternalLink = (url: string, label: string) => {
+    logger.info('LandingPage', 'externalLink', `Opening external link: ${label}`, { url });
+    // The actual navigation will be handled by the default link behavior
+  };
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
@@ -19,16 +43,58 @@ const LandingPage: React.FC = () => {
             {/* Navigation Links */}
             <div className="flex-1 flex justify-center">
               <div className="flex space-x-12">
-                <Link to="/" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Home</Link>
-                <Link to="/about" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">About</Link>
-                <a href="#" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Application & Loading Centers</a>
-                <a href="#" className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors">Contact</a>
+                <Link 
+                  to="/" 
+                  onClick={() => handleNavigation('Home')}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Home
+                </Link>
+                <Link 
+                  to="/about" 
+                  onClick={() => handleNavigation('About')}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  About
+                </Link>
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExternalLink('#', 'Application & Loading Centers');
+                  }}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Application & Loading Centers
+                </a>
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExternalLink('#', 'Contact');
+                  }}
+                  className="text-xl font-bold text-gray-600 hover:text-yellow-600 transition-colors"
+                >
+                  Contact
+                </a>
               </div>
             </div>
             {/* Login/Register Buttons */}
             <div className="flex items-center space-x-4">
-              <a href="/login" className="px-4 py-2 text-base font-medium text-gray-700 hover:text-black-600 transition-colors">Login</a>
-              <a href="/register" className="px-4 py-2 text-base font-medium text-white bg-yellow-600 rounded-md hover:bg-black transition-colors">Register</a>
+              <Link 
+                to="/login" 
+                onClick={() => handleNavigation('Login')}
+                className="px-4 py-2 text-base font-medium text-gray-700 hover:text-black-600 transition-colors"
+              >
+                Login
+              </Link>
+              <Link 
+                to="/register" 
+                onClick={() => handleNavigation('Register')}
+                className="px-4 py-2 text-base font-medium text-white bg-yellow-600 rounded-md hover:bg-black transition-colors"
+              >
+                Register
+              </Link>
             </div>
           </div>
         </div>
@@ -64,14 +130,54 @@ const LandingPage: React.FC = () => {
             <div>
               <h2 className="text-3xl font-bold text-#ca8a04 mb-4">Application Centers</h2>
               <ul className="list-disc list-inside text-gray-800 mb-4">
-                <li>All PTT Branches across Türkiye</li>
-                <li>Türkiye Card Mobile Application or Türkiye Card Website</li>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleExternalLink('#', 'PTT Branches');
+                    }}
+                    className="hover:underline"
+                  >
+                    All PTT Branches across Türkiye
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleExternalLink('#', 'Türkiye Card Mobile App');
+                    }}
+                    className="hover:underline"
+                  >
+                    Türkiye Card Mobile Application or Türkiye Card Website
+                  </a>
+                </li>
               </ul>
-              <a href="#" className="text-#ca8a04 font-medium hover:underline inline-flex items-center">Application Centers <span className="ml-1">&rarr;</span></a>
+              <a 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleExternalLink('#', 'Application Centers');
+                }}
+                className="text-#ca8a04 font-medium hover:underline inline-flex items-center"
+              >
+                Application Centers <span className="ml-1">&rarr;</span>
+              </a>
             </div>
             <div>
               <h2 className="text-3xl font-bold text-#ca8a04 mb-4">Loading/Payment Centers</h2>
-              <a href="#" className="text-#ca8a04 font-medium hover:underline inline-flex items-center mt-2">Loading/Payment Centers <span className="ml-1">&rarr;</span></a>
+              <a 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleExternalLink('#', 'Loading/Payment Centers');
+                }}
+                className="text-#ca8a04 font-medium hover:underline inline-flex items-center mt-2"
+              >
+                Loading/Payment Centers <span className="ml-1">&rarr;</span>
+              </a>
             </div>
           </div>
         </div>
@@ -88,14 +194,44 @@ const LandingPage: React.FC = () => {
           {/* Corporate Section */}
           <div className="flex flex-col gap-2 nav-section items-start md:items-center">
             <h3 className="font-semibold text-3xl text-gray-800 section-title mb-1">Corporate</h3>
-            <a href="#" className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors">About</a>
-            <a href="#" className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors">Press</a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleExternalLink('#', 'About (Footer)');
+              }}
+              className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors"
+            >
+              About
+            </a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                handleExternalLink('#', 'Press');
+              }}
+              className="text-gray-500 text-xl hover:text-yellow-500 nav-link transition-colors"
+            >
+              Press
+            </a>
           </div>
           {/* Online Section */}
           <div className="flex flex-col gap-2 nav-section items-start md:items-center">
             <h3 className="font-semibold text-3xl text-gray-800 section-title mb-1">Online</h3>
-            <Link to="/login" className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2">Login <span className="ml-1">&rarr;</span></Link>
-            <Link to="/register" className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2">Register <span className="ml-1">&rarr;</span></Link>
+            <Link 
+              to="/login" 
+              onClick={() => handleNavigation('Login (Footer)')}
+              className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2"
+            >
+              Login <span className="ml-1">&rarr;</span>
+            </Link>
+            <Link 
+              to="/register" 
+              onClick={() => handleNavigation('Register (Footer)')}
+              className="text-#ca8a04 text-xl font-medium hover:underline inline-flex items-center mt-2"
+            >
+              Register <span className="ml-1">&rarr;</span>
+            </Link>
           </div>
         </div>
       </footer>

@@ -32,6 +32,23 @@ namespace TRKart.API.Controllers
             return Ok("Kayıt başarılı!");
         }
 
+        [HttpPost("verify-password")]
+        public async Task<IActionResult> VerifyPassword([FromBody] LoginDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.Email) || string.IsNullOrEmpty(dto.Password))
+            {
+                return BadRequest("E-posta ve şifre alanları zorunludur.");
+            }
+
+            bool isPasswordValid = await _authService.VerifyPasswordAsync(dto.Email, dto.Password);
+            if (!isPasswordValid)
+            {
+                return Unauthorized(new { message = "Geçersiz e-posta veya şifre.", isValid = false });
+            }
+
+            return Ok(new { message = "Password verified successfully", isValid = true });
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
@@ -80,26 +97,26 @@ namespace TRKart.API.Controllers
         }
 
         [HttpPost("refresh-token")]
-public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request = null)
-{
-    // Try to get refresh token from request body first, then from cookie
-    string? refreshToken = request?.RefreshToken;
-    if (string.IsNullOrEmpty(refreshToken))
-    {
-        refreshToken = Request.Cookies["RefreshToken"];
-    }
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request = null)
+        {
+            // Try to get refresh token from request body first, then from cookie
+            string? refreshToken = request?.RefreshToken;
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                refreshToken = Request.Cookies["RefreshToken"];
+            }
 
-    if (string.IsNullOrEmpty(refreshToken))
-    {
-        return BadRequest("Refresh token is required");
-    }
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return BadRequest("Refresh token is required");
+            }
 
-    // IMPORTANT: Check if refresh token is blacklisted before processing
-    bool isBlacklisted = await _authService.IsRefreshTokenBlacklistedAsync(refreshToken);
-    if (isBlacklisted)
-    {
-        // Clear the blacklisted refresh token cookie
-        Response.Cookies.Delete("RefreshToken", new CookieOptions {
+            // IMPORTANT: Check if refresh token is blacklisted before processing
+            bool isBlacklisted = await _authService.IsRefreshTokenBlacklistedAsync(refreshToken);
+            if (isBlacklisted)
+            {
+                // Clear the blacklisted refresh token cookie
+                Response.Cookies.Delete("RefreshToken", new CookieOptions {
             Path = "/",
             HttpOnly = true,
             Secure = true,

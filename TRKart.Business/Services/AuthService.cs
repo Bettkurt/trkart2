@@ -6,6 +6,7 @@ using TRKart.DataAccess;
 using TRKart.Entities;
 using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
+using TRKart.Core.Interfaces;
 
 namespace TRKart.Business.Services
 {
@@ -14,27 +15,45 @@ namespace TRKart.Business.Services
         private readonly ApplicationDbContext _context;
         private readonly JwtHelper _jwtHelper;
 
-        public AuthService(ApplicationDbContext context, JwtHelper jwtHelper)
+        private readonly IUniqueNumberChecker _uniqueNumberChecker;
+
+        public AuthService(ApplicationDbContext context, JwtHelper jwtHelper, IUniqueNumberChecker uniqueNumberChecker)
         {
-            _context = context;
-            _jwtHelper = jwtHelper;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _jwtHelper = jwtHelper ?? throw new ArgumentNullException(nameof(jwtHelper));
+            _uniqueNumberChecker = uniqueNumberChecker ?? throw new ArgumentNullException(nameof(uniqueNumberChecker));
+        }
+
+        public async Task<bool> VerifyPasswordAsync(string email, string password)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                return false;
+
+            var customer = await _context.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Email == email);
+
+            if (customer == null)
+                return false;
+
+            return BCrypt.Net.BCrypt.Verify(password, customer.PasswordHash);
         }
 
         public async Task<TokenResponse?> LoginAsync(LoginDto dto, string? ipAddress = null, string? deviceInfo = null)
-{
-    var customer = await _context.Customers
-        .FirstOrDefaultAsync(x => x.Email == dto.Email);
+        {
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(x => x.Email == dto.Email);
 
-    if (customer == null)
-        return null;
+            if (customer == null)
+                return null;
 
-    bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, customer.PasswordHash);
-    if (!isValid)
-        return null;
+            bool isValid = await VerifyPasswordAsync(dto.Email, dto.Password);
+            if (!isValid)
+                return null;
 
-    // Check for existing valid refresh token for this user
-    var existingSession = await _context.SessionToken
-        .FirstOrDefaultAsync(s => s.CustomerID == customer.CustomerID &&
+            // Check for existing valid refresh token for this user
+            var existingSession = await _context.SessionToken
+                .FirstOrDefaultAsync(s => s.CustomerID == customer.CustomerID &&
                                 s.RefreshTokenExpiration > DateTime.UtcNow &&
                                 !s.IsRevoked);
 
@@ -286,12 +305,16 @@ namespace TRKart.Business.Services
             if (exists)
                 return false;
 
+            // Generate unique customer number
+            var customerNumber = await CustomerNumberHelper.GenerateCustomerNumberAsync(_uniqueNumberChecker);
+
             // Create new user
             var newCustomer = new Customers
             {
                 Email = dto.Email,
                 FullName = dto.FullName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CustomerNumber = customerNumber
             };
 
             await _context.Customers.AddAsync(newCustomer);

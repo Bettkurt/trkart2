@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace TRKart.Entities.DTOs
 {
@@ -22,24 +18,48 @@ namespace TRKart.Entities.DTOs
     {
         [Required(ErrorMessage = "CustomerID is required")]
         public int CustomerID { get; set; }
+
+        [StringLength(20, ErrorMessage = "Card name cannot exceed 20 characters")]
+        public string? CardName { get; set; }
     }
 
-    // DTO for deleting a user card
-    public class DeleteUserCardDto
+    public class CardStatusUpdateDto
     {
-        [Required(ErrorMessage = "CardNumber is required")]
-        [StringLength(16, MinimumLength = 16, ErrorMessage = "CardNumber must be exactly 16 characters")]
-        public string CardNumber { get; set; }
+        /// <summary>
+        /// The ID of the card to update
+        /// </summary>
+        [Required(ErrorMessage = "Card ID is required")]
+        public int CardId { get; set; }
+
+        /// <summary>
+        /// The new status to set for the card (e.g., 'Deactivated', 'Active', 'Lost')
+        /// </summary>
+        [Required(ErrorMessage = "Status is required")]
+        [StringLength(20, ErrorMessage = "Status cannot be longer than 20 characters")]
+        public string Status { get; set; }
     }
 
     // DTO for returning user card information
     public class UserCardResponseDto
     {
         public int CardID { get; set; }
+        public string CardNumber { get; set; } = string.Empty;
         public int CustomerID { get; set; }
-        public string CardNumber { get; set; }
         public decimal Balance { get; set; }
-        public string CardStatus { get; set; }
+        public string CardStatus { get; set; } = string.Empty;
+        public string? CardName { get; set; }
+        public DateTime CardExpirationDate { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime LastUpdate { get; set; }
+    }
+
+    // DTO for card status change history
+    public class CardStatusHistoryDto
+    {
+        public int UpdateID { get; set; }
+        public int CardID { get; set; }
+        public string PreviousStatus { get; set; } = string.Empty;
+        public string NewStatus { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
     }
 }

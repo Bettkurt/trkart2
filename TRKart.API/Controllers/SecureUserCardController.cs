@@ -141,10 +141,10 @@ namespace TRKart.API.Controllers
         }
 
         /// <summary>
-        /// Delete a card belonging to the authenticated user
+        /// Update card status (e.g., to 'Deactivated' or 'Lost')
         /// </summary>
-        [HttpDelete("user/card")]
-        public async Task<IActionResult> DeleteUserCard([FromBody] DeleteUserCardDto deleteDto)
+        [HttpPut("user/card/status")]
+        public async Task<IActionResult> UpdateCardStatus([FromBody] CardStatusUpdateDto updateDto)
         {
             var customerId = GetCurrentCustomerId();
             if (!customerId.HasValue)
@@ -152,49 +152,47 @@ namespace TRKart.API.Controllers
 
             try
             {
-                // Verify that the card belongs to the authenticated user
+                // Verify the card belongs to the current user
                 var card = await _context.UserCard
-                    .FirstOrDefaultAsync(c => c.CardNumber == deleteDto.CardNumber && c.CustomerID == customerId.Value);
-                
+                    .FirstOrDefaultAsync(uc => uc.CardID == updateDto.CardId && uc.CustomerID == customerId);
+
                 if (card == null)
+                {
                     return NotFound(new { 
                         success = false, 
-                        message = "Card not found or access denied" 
+                        message = "Card not found or you don't have permission to update this card" 
                     });
+                }
 
-                if (!ModelState.IsValid)
+                // Update the card status
+                var success = await _userCardService.UpdateCardStatusAsync(updateDto);
+                
+                if (!success)
                 {
-                    _logger.LogWarning("Invalid model state for card deletion");
                     return BadRequest(new { 
                         success = false, 
-                        message = "Invalid request data",
-                        errors = ModelState
+                        message = "Failed to update card status"
                     });
                 }
 
-                var result = await _userCardService.DeleteUserCardAsync(deleteDto);
-                if (result)
-                {
-                    return Ok(new { 
-                        success = true, 
-                        message = "Card deleted successfully" 
-                    });
-                }
-                else
-                {
-                    return NotFound(new { 
-                        success = false, 
-                        message = "Card not found" 
-                    });
-                }
+                // Return a simplified response without circular references
+                return Ok(new { 
+                    success = true, 
+                    message = "Card status updated successfully",
+                    card = new {
+                        CardID = card.CardID,
+                        CardNumber = card.CardNumber,
+                        CardStatus = updateDto.Status,
+                        LastUpdate = DateTime.UtcNow
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting card {CardNumber} for customer {CustomerId}", deleteDto.CardNumber, customerId.Value);
+                _logger.LogError(ex, "Error updating card status for card {CardId}", updateDto.CardId);
                 return StatusCode(500, new { 
                     success = false, 
-                    message = "Failed to delete card",
-                    error = "INTERNAL_ERROR"
+                    message = "An error occurred while updating card status" 
                 });
             }
         }
@@ -242,4 +240,4 @@ namespace TRKart.API.Controllers
             }
         }
     }
-} 
+}

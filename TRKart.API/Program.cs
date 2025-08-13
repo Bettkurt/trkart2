@@ -43,7 +43,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 4. Swagger + JWT support
+// 4. Register application services
+builder.Services.AddScoped<TRKart.Core.Interfaces.IUniqueNumberChecker, TRKart.DataAccess.Services.UniqueNumberChecker>();
+
+// 5. Swagger + JWT support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -71,7 +74,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// 5. JWT Authentication
+// 6. JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(options =>
@@ -93,7 +96,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 6. DI Services
+// 7. DI Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
@@ -106,14 +109,14 @@ var app = builder.Build();
 // Use custom JWT middleware before authorization
 app.UseJwtMiddleware();
 
-// 7. Swagger only active on development environment
+// 8. Swagger only active on development environment
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 8. Middleware order - CORS before authentication
+// 9. Middleware order - CORS before authentication
 // app.UseHttpsRedirection(); // Disabled for HTTP development
 app.UseCors("AllowedOrigins");
 app.UseAuthenticationMiddleware(); // Custom authentication middleware

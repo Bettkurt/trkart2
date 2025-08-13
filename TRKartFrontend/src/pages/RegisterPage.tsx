@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,24 +14,57 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    logger.info('RegisterPage', 'mount', 'Register page loaded', {
+      path: location.pathname,
+      hasEmail: !!email,
+      hasSession: !!user
+    });
+
+    return () => {
+      logger.debug('RegisterPage', 'unmount', 'Register page unmounting');
+    };
+  }, [location.pathname, email, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      const errorMsg = 'Passwords do not match';
+      logger.warn('RegisterPage', 'validation', errorMsg, {
+        hasPassword: !!password,
+        hasConfirmPassword: !!confirmPassword,
+        passwordsMatch: password === confirmPassword
+      });
+      setError(errorMsg);
       return;
     }
 
     setIsLoading(true);
     setError('');
+    
+    logger.info('RegisterPage', 'register', 'Registration attempt started', {
+      email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null,
+      hasFullName: !!fullName,
+      rememberMe
+    });
 
     try {
       await register(email, password, fullName, rememberMe);
+      logger.info('RegisterPage', 'register', 'Registration successful', {
+        email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null,
+        hasFullName: !!fullName
+      });
       navigate('/dashboard');
     } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('RegisterPage', 'register', 'Registration failed', error, {
+        email: email ? '***' + email.split('@')[0].slice(-4) + '@' + email.split('@')[1] : null
+      });
       setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -38,7 +72,11 @@ const RegisterPage: React.FC = () => {
   };
 
   const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+    const newVisibility = !showPassword;
+    logger.debug('RegisterPage', 'passwordVisibility', 'Toggling password visibility', {
+      visible: newVisibility
+    });
+    setShowPassword(newVisibility);
   };
 
   return (
@@ -73,7 +111,12 @@ const RegisterPage: React.FC = () => {
                 type="text"
                 className="input-field mt-1"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  logger.debug('RegisterPage', 'inputChange', 'Full name updated', {
+                    length: e.target.value.length
+                  });
+                }}
               />
             </div>
             <div>
@@ -87,7 +130,12 @@ const RegisterPage: React.FC = () => {
                 required
                 className="input-field mt-1"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  logger.debug('RegisterPage', 'inputChange', 'Email updated', {
+                    email: e.target.value ? '***' + e.target.value.split('@')[0].slice(-4) + '@' + e.target.value.split('@')[1] : null
+                  });
+                }}
               />
             </div>
             <div>
@@ -102,7 +150,12 @@ const RegisterPage: React.FC = () => {
                   required
                   className="input-field w-full pr-10"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    logger.debug('RegisterPage', 'inputChange', 'Password updated', {
+                      length: e.target.value.length
+                    });
+                  }}
                 />
                 <button
                   type="button"
@@ -126,7 +179,12 @@ const RegisterPage: React.FC = () => {
                   required
                   className="input-field w-full pr-10"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    logger.debug('RegisterPage', 'inputChange', 'Confirm password updated', {
+                      length: e.target.value.length
+                    });
+                  }}
                 />
                 
               </div>
@@ -137,7 +195,12 @@ const RegisterPage: React.FC = () => {
                 name="rememberMe"
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={(e) => {
+                  setRememberMe(e.target.checked);
+                  logger.debug('RegisterPage', 'inputChange', 'Remember me updated', {
+                    checked: e.target.checked
+                  });
+                }}
                 className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
               />
               <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
@@ -161,6 +224,9 @@ const RegisterPage: React.FC = () => {
             <Link 
               to="/login" 
               className="text-cyan-500 font-bold hover:underline transition-all text-lg"
+              onClick={() => {
+                logger.info('RegisterPage', 'navigation', 'Navigating to login page');
+              }}
             >
               Sign in
             </Link>
