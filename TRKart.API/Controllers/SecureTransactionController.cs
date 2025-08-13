@@ -68,6 +68,7 @@ namespace TRKart.API.Controllers
                 {
                     t.TransactionID,
                     t.CardID,
+                    CardNumber = t.UserCard != null ? t.UserCard.CardNumber : "", // Include CardNumber for display
                     t.Amount,
                     t.TransactionType,
                     t.Description,
@@ -244,6 +245,7 @@ namespace TRKart.API.Controllers
                 {
                     t.TransactionID,
                     t.CardID,
+                    CardNumber = t.UserCard != null ? t.UserCard.CardNumber : "", // Include CardNumber for display
                     t.Amount,
                     t.TransactionType,
                     t.Description,

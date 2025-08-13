@@ -42,7 +42,7 @@ namespace TRKart.Business.Services
             var transaction = new Transaction
             {
                 CardID = dto.CardID,
-                Amount = dto.Amount,
+                Amount = dto.Amount, // Always positive amount - direction determined by transaction type
                 TransactionType = dto.TransactionType,
                 Description = dto.Description
             };

@@ -18,9 +18,9 @@ const TransactionsPage: React.FC = () => {
   const [error, setError] = useState('');
   
   // Filtering states
-  const [filterType, setFilterType] = useState<'customerID' | 'cardID'>('customerID');
-  const [selectedCardID, setSelectedCardID] = useState<number | ''>('');
-  const [availableCardIDs, setAvailableCardIDs] = useState<number[]>([]);
+  const [filterType, setFilterType] = useState<'customerID' | 'cardNumber'>('customerID');
+  const [selectedCardNumber, setSelectedCardNumber] = useState<string>('');
+  const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('');
   const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
@@ -32,7 +32,7 @@ const TransactionsPage: React.FC = () => {
   // Apply filters when allTransactions or filter settings change
   useEffect(() => {
     applyFilters();
-  }, [allTransactions, filterType, selectedCardID, transactionTypeFilter, dateRangeFilter]);
+  }, [allTransactions, filterType, selectedCardNumber, transactionTypeFilter, dateRangeFilter]);
 
   // Helper function to save transactions to localStorage (user-specific)
   const saveTransactionsToStorage = (transactions: TransactionWithStatus[], userEmail?: string) => {
@@ -65,9 +65,12 @@ const TransactionsPage: React.FC = () => {
   const applyFilters = () => {
     let filtered = allTransactions;
 
-    // Card ID filter
-    if (filterType === 'cardID' && selectedCardID !== '') {
-      filtered = filtered.filter(transaction => transaction.cardID === selectedCardID);
+    // Card Number filter
+    if (filterType === 'cardNumber' && selectedCardNumber !== '') {
+      filtered = filtered.filter(transaction => 
+        transaction.cardNumber === selectedCardNumber || 
+        (transaction.cardNumber === undefined && transaction.cardID.toString() === selectedCardNumber)
+      );
     }
 
     // Transaction type filter
@@ -98,10 +101,10 @@ const TransactionsPage: React.FC = () => {
     setFilteredTransactions(filtered);
   };
 
-  // Extract available CardIDs
-  const extractAvailableCardIDs = (transactions: TransactionWithStatus[]) => {
-    const cardIDs = [...new Set(transactions.map(t => t.cardID))];
-    setAvailableCardIDs(cardIDs.sort((a, b) => a - b));
+  // Extract available CardNumbers
+  const extractAvailableCardNumbers = (transactions: TransactionWithStatus[]) => {
+    const cardNumbers = [...new Set(transactions.map(t => t.cardNumber || t.cardID.toString()))];
+    setAvailableCardNumbers(cardNumbers.sort());
   };
 
   const loadTransactions = async () => {
@@ -128,7 +131,7 @@ const TransactionsPage: React.FC = () => {
       if (!user?.customerID || user.customerID === 0) {
         console.log('No customerID, using stored transactions');
         setAllTransactions(storedTransactions);
-        extractAvailableCardIDs(storedTransactions);
+        extractAvailableCardNumbers(storedTransactions);
         setLoading(false);
         return;
       }
@@ -146,12 +149,12 @@ const TransactionsPage: React.FC = () => {
         
         console.log('Transactions with status:', transactionsWithStatus);
         setAllTransactions(transactionsWithStatus);
-        extractAvailableCardIDs(transactionsWithStatus);
+        extractAvailableCardNumbers(transactionsWithStatus);
         saveTransactionsToStorage(transactionsWithStatus, user.email);
       } catch (apiError) {
         console.error('API call failed, using stored transactions:', apiError);
         setAllTransactions(storedTransactions);
-        extractAvailableCardIDs(storedTransactions);
+        extractAvailableCardNumbers(storedTransactions);
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -196,7 +199,7 @@ const TransactionsPage: React.FC = () => {
 
   const clearFilters = () => {
     setFilterType('customerID');
-    setSelectedCardID('');
+    setSelectedCardNumber('');
     setTransactionTypeFilter('');
     setDateRangeFilter({ start: '', end: '' });
   };
@@ -266,28 +269,28 @@ const TransactionsPage: React.FC = () => {
                 </label>
                 <select
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as 'customerID' | 'cardID')}
+                  onChange={(e) => setFilterType(e.target.value as 'customerID' | 'cardNumber')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="customerID">All Transactions</option>
-                  <option value="cardID">By Card ID</option>
+                  <option value="cardNumber">By Card Number</option>
                 </select>
               </div>
 
-              {/* Card ID Filter */}
-              {filterType === 'cardID' && (
+              {/* Card Number Filter */}
+              {filterType === 'cardNumber' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Card ID
+                    Card Number
                   </label>
                   <select
-                    value={selectedCardID}
-                    onChange={(e) => setSelectedCardID(e.target.value ? Number(e.target.value) : '')}
+                    value={selectedCardNumber}
+                    onChange={(e) => setSelectedCardNumber(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">All Cards</option>
-                    {availableCardIDs.map(cardID => (
-                      <option key={cardID} value={cardID}>Card {cardID}</option>
+                    {availableCardNumbers.map(cardNumber => (
+                      <option key={cardNumber} value={cardNumber}>{cardNumber}</option>
                     ))}
                   </select>
                 </div>
@@ -380,7 +383,7 @@ const TransactionsPage: React.FC = () => {
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Card ID
+                        Card Number
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Type
@@ -403,7 +406,7 @@ const TransactionsPage: React.FC = () => {
                           {formatDate(transaction.transactionDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {transaction.cardID}
+                          {transaction.cardNumber || transaction.cardID}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {transaction.transactionType}

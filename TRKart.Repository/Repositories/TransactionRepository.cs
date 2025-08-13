@@ -27,7 +27,11 @@ namespace TRKart.Repository.Repositories
 
         public async Task<IEnumerable<Transaction>> GetTransactionsByCardIdAsync(int cardId)
         {
-            return await _context.Transaction.Where(t => t.CardID == cardId).ToListAsync();
+            return await _context.Transaction
+                .Include(t => t.UserCard)
+                .Where(t => t.CardID == cardId)
+                .OrderBy(t => t.UserCard.CardNumber)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Transaction>> GetTransactionsByCustomerIdAsync(int customerId)
@@ -35,6 +39,7 @@ namespace TRKart.Repository.Repositories
             return await _context.Transaction
                 .Include(t => t.UserCard)
                 .Where(t => t.UserCard.CustomerID == customerId)
+                .OrderBy(t => t.UserCard.CardNumber)
                 .ToListAsync();
         }
 
