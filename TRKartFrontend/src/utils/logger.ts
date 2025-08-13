@@ -1,4 +1,16 @@
-import { v4 as uuidv4 } from 'uuid';
+// Using built-in crypto.randomUUID() instead of external uuid package
+const generateUUID = (): string => {
+  // Use crypto.randomUUID() if available (modern browsers)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 interface LogEntry {
   id: string;
@@ -30,7 +42,7 @@ class Logger {
   private getSessionId(): string {
     let sessionId = sessionStorage.getItem('sessionId');
     if (!sessionId) {
-      sessionId = uuidv4();
+      sessionId = generateUUID();
       sessionStorage.setItem('sessionId', sessionId);
     }
     return sessionId;
@@ -52,7 +64,7 @@ class Logger {
   private log(level: LogEntry['level'], component: string, action: string, message: string, data?: any): void {
     const userId = this.getUserId();
     const logEntry: LogEntry = {
-      id: uuidv4(),
+      id: generateUUID(),
       timestamp: new Date().toISOString(),
       level,
       component,
