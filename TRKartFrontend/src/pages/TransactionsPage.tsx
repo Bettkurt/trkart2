@@ -260,10 +260,11 @@ const TransactionsPage: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'API':
+      case 'Approved':
         return '🟢';
-      case 'Demo':
-        return '🟡';
+      case 'Denied':
+        return '🔴';
+     
       default:
         return '⚪';
     }
@@ -324,6 +325,12 @@ const TransactionsPage: React.FC = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 + New Transaction
+              </Link>
+              <Link
+                to="/new-transfer"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                + New Transfer
               </Link>
             </div>
           </div>

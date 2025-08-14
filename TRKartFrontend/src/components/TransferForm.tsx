@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard } from '@/types';
@@ -12,6 +13,7 @@ interface TransferFormProps {
 
 const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     senderCardID: '',
     recipientCardNumber: '',
@@ -35,7 +37,32 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
       try {
         setLoadingCards(true);
         const cards = await userCardService.getUserCards();
-        setUserCards(cards);
+        
+        // Filter out deactivated cards - only show Active, Inactive, and Lost cards
+        const activeCards = cards.filter(card => 
+          card.cardStatus !== 'Deactivated' && card.cardStatus !== 'Expired'
+        );
+        
+        // Log which cards are being filtered out
+        const deactivatedCards = cards.filter(card => 
+          card.cardStatus === 'Deactivated' || card.cardStatus === 'Expired'
+        );
+        
+        if (deactivatedCards.length > 0) {
+          console.log('Filtered out deactivated cards:', deactivatedCards.map(card => ({
+            cardId: card.cardID,
+            cardNumber: card.cardNumber,
+            status: card.cardStatus
+          })));
+        }
+        
+        console.log('Loaded cards:', {
+          total: cards.length,
+          active: activeCards.length,
+          deactivated: deactivatedCards.length
+        });
+        
+        setUserCards(activeCards);
       } catch (error) {
         console.error('Failed to load user cards:', error);
         setValidationMessage('❌ Failed to load your cards. Please try again.');
@@ -138,6 +165,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
         setErrors({});
         
         onSubmit?.(result);
+        
+        // Navigate to transactions page after a short delay to show the success message
+        setTimeout(() => {
+          navigate('/transactions');
+        }, 1500);
       } else {
         setValidationMessage(`❌ Transfer failed: ${result.message}`);
       }
