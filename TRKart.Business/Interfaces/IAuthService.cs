@@ -14,5 +14,6 @@ namespace TRKart.Business.Interfaces
         Task<int?> GetCustomerIdFromAccessTokenAsync(string accessToken);
         Task<string?> GetUserEmailByAccessTokenAsync(string accessToken);
         Task<bool> VerifyPasswordAsync(string email, string password);
+        Task<bool> ChangePasswordAsync(ChangePasswordDto dto);
     }
 }

@@ -237,5 +237,28 @@ namespace TRKart.API.Controllers
                 return StatusCode(500, new { message = "An error occurred during logout", error = ex.Message });
             }
         }
+
+
+        
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] TRKart.Entities.DTOs.ChangePasswordDto dto)
+        {
+            var accessToken = Request.Cookies["AccessToken"];
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return Unauthorized();
+            }
+            var userEmail = await _authService.GetUserEmailByAccessTokenAsync(accessToken);
+            if (userEmail == null || userEmail != dto.Email)
+            {
+                return Unauthorized();
+            }
+            var success = await _authService.ChangePasswordAsync(dto);
+            if (!success)
+            {
+                return BadRequest();
+            }
+            return Ok();
+        }
     }
 }

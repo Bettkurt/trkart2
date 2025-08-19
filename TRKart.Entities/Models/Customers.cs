@@ -36,5 +36,8 @@ namespace TRKart.Entities.Models
 
         // Related UserCards (mandatory one-to-optional many)
         public virtual ICollection<UserCard>? UserCards { get; set; } = new List<UserCard>();
+
+        // Related PasswordHistory (mandatory one-to-optional many)
+        public virtual ICollection<PasswordHistory>? PasswordHistory { get; set; } = new List<PasswordHistory>();
     }
 }

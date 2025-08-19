@@ -313,6 +313,14 @@ class AuthService {
       return [];
     }
   }
+
+  async changePassword(email: string, currentPassword: string, newPassword: string): Promise<void> {
+    await api.post('/Auth/change-password', {
+      email,
+      currentPassword,
+      newPassword
+    });
+  }
 }
 
 export default new AuthService();

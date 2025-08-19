@@ -6,7 +6,6 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
-// import TransactionHistoryPage from '@/pages/TransactionHistoryPage';
 import UserCardsPage from '@/pages/UserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
@@ -16,6 +15,7 @@ import CardDeletionPage from '@/pages/CardDeletionPage';
 import LostCardPage from '@/pages/LostCardPage';
 import NewTransferPage from '@/pages/NewTransferPage';
 import AboutPage from '@/pages/AboutPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -101,6 +101,11 @@ const AppRoutes: React.FC = () => {
         <TransactionTestPage />
       } />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/change-password" element={
+        <ProtectedRoute>
+          <ChangePasswordPage />
+        </ProtectedRoute>
+      } />
       {/* Catch all route - redirect to home instead of dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -379,5 +379,57 @@ namespace TRKart.Business.Services
                 return null;
             }
         }
+        
+        public async Task<bool> ChangePasswordAsync(ChangePasswordDto dto)
+        {
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+        
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == dto.Email);
+
+                if (customer == null)
+                    return false;
+
+                if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, customer.PasswordHash))
+                    return false;
+
+                // Reject if the new password matches the current password
+                if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, customer.PasswordHash))
+                    return false;
+
+                var recentPasswords = await _context.PasswordHistory
+                    .Where(ph => ph.CustomerID == customer.CustomerID)
+                    .OrderByDescending(ph => ph.CreatedAt)
+                    .Take(3)
+                    .Select(ph => ph.PasswordHash)
+                    .ToListAsync();
+
+                foreach (var oldHash in recentPasswords)
+                {
+                    if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, oldHash))
+                        return false;
+                }
+
+                await _context.PasswordHistory.AddAsync(new PasswordHistory
+                {
+                    CustomerID = customer.CustomerID,
+                    PasswordHash = customer.PasswordHash,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }

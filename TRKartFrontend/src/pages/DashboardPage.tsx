@@ -37,7 +37,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20">
             <div className="flex items-center space-x-4">
               <img 
@@ -51,10 +51,17 @@ const DashboardPage: React.FC = () => {
               <span className="text-lg text-gray-700">Welcome, {user?.email}</span>
               <button
                 onClick={handleLogout}
-                className="btn-secondary px-6 py-2 text-base"
+                className="bg-red-700 hover:bg-red-800 text-white px-6 py-2 text-base rounded"
                 data-testid="logout-button"
               >
                 Logout
+              </button>
+              <button
+                onClick={() => window.location.href = '/change-password'}
+                className="btn-secondary px-6 py-2 text-base ml-8"
+                data-testid="change-password-button"
+              >
+                Change Password
               </button>
             </div>
           </div>
