@@ -15,6 +15,7 @@ interface AuthContextType {
   getRememberedEmail: () => string | null;
   setUser: (user: User | null) => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  changeEmail: (password: string, newEmail: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -213,6 +214,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await authService.changePassword(user.email, currentPassword, newPassword);
   };
 
+  const changeEmail = async (password: string, newEmail: string) => {
+    await authService.changeEmail(password, newEmail);
+    // After backend rotates tokens and sets cookies, refresh session/user data
+    const sessionData = await authService.checkSession();
+    if (sessionData.hasValidSession && sessionData.email) {
+      const updatedUser: User = {
+        customerID: sessionData.customerID || 0,
+        email: sessionData.email,
+        fullName: sessionData.fullName || ''
+      };
+      setUser(updatedUser);
+      authService.setUserData(updatedUser);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -226,6 +242,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkSession,
     getRememberedEmail,
     changePassword,
+    changeEmail,
   };
 
   return (

@@ -321,6 +321,15 @@ class AuthService {
       newPassword
     });
   }
+
+  async changeEmail(password: string, newEmail: string): Promise<void> {
+    await api.post('/Auth/change-email', {
+      password,
+      newEmail
+    }, {
+      withCredentials: true
+    });
+  }
 }
 
 export default new AuthService();

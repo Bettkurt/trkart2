@@ -16,6 +16,7 @@ import LostCardPage from '@/pages/LostCardPage';
 import NewTransferPage from '@/pages/NewTransferPage';
 import AboutPage from '@/pages/AboutPage';
 import ChangePasswordPage from '@/pages/ChangePasswordPage';
+import ChangeEmailPage from '@/pages/ChangeEmailPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -104,6 +105,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/change-password" element={
         <ProtectedRoute>
           <ChangePasswordPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/change-email" element={
+        <ProtectedRoute>
+          <ChangeEmailPage />
         </ProtectedRoute>
       } />
       {/* Catch all route - redirect to home instead of dashboard */}

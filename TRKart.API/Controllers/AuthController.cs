@@ -260,5 +260,71 @@ namespace TRKart.API.Controllers
             }
             return Ok();
         }
+
+        [HttpPost("change-email")]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailDto dto)
+        {
+            var accessToken = Request.Cookies["AccessToken"];
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return Unauthorized();
+            }
+
+            var currentEmail = await _authService.GetUserEmailByAccessTokenAsync(accessToken);
+            if (string.IsNullOrEmpty(currentEmail))
+            {
+                return Unauthorized();
+            }
+
+            var success = await _authService.ChangeEmailAsync(currentEmail, dto);
+            if (!success)
+            {
+                return BadRequest();
+            }
+
+            // Implicit login with new email to refresh tokens
+            string? ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string? userAgent = Request.Headers["User-Agent"].ToString();
+
+            var loginDto = new LoginDto { Email = dto.NewEmail, Password = dto.Password };
+            var tokenResponse = await _authService.LoginAsync(loginDto, ipAddress, userAgent);
+            if (tokenResponse == null)
+            {
+                return StatusCode(500, new { message = "Email changed but re-login failed" });
+            }
+
+            // Set new tokens in cookies
+            Response.Cookies.Append(
+                "AccessToken",
+                tokenResponse.AccessToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = tokenResponse.AccessTokenExpiration,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/"
+                });
+
+            Response.Cookies.Append(
+                "RefreshToken",
+                tokenResponse.RefreshToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = tokenResponse.RefreshTokenExpiration,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Path = "/"
+                });
+
+            return Ok(new {
+                message = "Email changed and tokens refreshed",
+                accessToken = tokenResponse.AccessToken,
+                refreshToken = tokenResponse.RefreshToken,
+                accessTokenExpiration = tokenResponse.AccessTokenExpiration,
+                refreshTokenExpiration = tokenResponse.RefreshTokenExpiration
+            });
+        }
     }
 }

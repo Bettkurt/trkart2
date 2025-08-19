@@ -431,5 +431,52 @@ namespace TRKart.Business.Services
                 return false;
             }
         }
+
+        public async Task<bool> ChangeEmailAsync(string currentEmail, ChangeEmailDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(currentEmail))
+                    return false;
+
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Password) || string.IsNullOrWhiteSpace(dto.NewEmail))
+                    return false;
+
+                // Basic email validation: must contain '@' and '.'
+                if (!dto.NewEmail.Contains('@') || !dto.NewEmail.Contains('.'))
+                    return false;
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == currentEmail);
+
+                if (customer == null)
+                    return false;
+
+                // Verify password
+                if (!BCrypt.Net.BCrypt.Verify(dto.Password, customer.PasswordHash))
+                    return false;
+
+                // No-op if same email (case-insensitive)
+                if (string.Equals(customer.Email, dto.NewEmail, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // Ensure new email is unique
+                var emailExists = await _context.Customers.AnyAsync(x => x.Email == dto.NewEmail);
+                if (emailExists)
+                    return false;
+
+                customer.Email = dto.NewEmail;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }
