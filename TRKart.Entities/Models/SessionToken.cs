@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,19 +13,18 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SessionID { get; set; }
 
-
-        [Column("CustomerID")]
+        [Column("CustomerID", TypeName = "INT")]
         [ForeignKey("Customer")]
         public int CustomerID { get; set; }
 
         // Navigation property for the one-to-many relationship with Customer
         public Customers Customer { get; set; }
 
-        [Column("AccessToken")]
+        [Column("AccessToken", TypeName = "VARCHAR(500)")]
         public string? AccessToken { get; set; }
 
         [Required]
-        [Column("RefreshToken")]
+        [Column("RefreshToken", TypeName = "VARCHAR(500)")]
         public string RefreshToken { get; set; }
 
         [Column("AccessTokenExpiration")]
@@ -39,13 +39,17 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime RefreshTokenCreatedAt { get; set; }
 
-        [Column("IsRevoked")]
+        [Required]
+        [Column("IsRevoked", TypeName = "BOOLEAN")]
         public bool IsRevoked { get; set; } = false;
 
-        [Column("DeviceInfo")]
+        [Column("DeviceInfo", TypeName = "TEXT")]
         public string? DeviceInfo { get; set; }
 
-        [Column("IPAddress")]
+        [Column("IPAddress", TypeName = "TEXT")]
         public string? IPAddress { get; set; }
+
+        // Related TokenBlacklist (optional one-to-one)
+        public virtual ICollection<TokenBlacklist> BlacklistedTokens { get; set; }
     }
 }

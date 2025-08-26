@@ -1,14 +1,30 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import TransferForm from '@/components/TransferForm';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 const NewTransferPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [fromCardId, setFromCardId] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    // Get fromCardId from URL if present
+    const searchParams = new URLSearchParams(location.search);
+    const cardIdParam = searchParams.get('fromCardId');
+    
+    if (cardIdParam) {
+      logger.debug('NewTransferPage', 'mount', 'Found fromCardId in URL', { 
+        fromCardId: cardIdParam 
+      });
+      setFromCardId(cardIdParam);
+    }
+  }, [location.search]);
 
   const handleTransferSubmit = (transfer: any) => {
-    console.log('Transfer created:', transfer);
+    logger.info('NewTransferPage', 'handleTransferSubmit', 'Transfer created', { transfer });
     // Optionally navigate to transfer history or dashboard
     // navigate('/transfers');
   };
@@ -70,8 +86,13 @@ const NewTransferPage: React.FC = () => {
           </div>
 
           {/* Transfer Form */}
-          <div className="flex justify-center">
-            <TransferForm onSubmit={handleTransferSubmit} />
+          <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+              <TransferForm 
+                onSubmit={handleTransferSubmit} 
+                initialFromCardId={fromCardId}
+              />
+            </div>
           </div>
 
           {/* Information Section */}

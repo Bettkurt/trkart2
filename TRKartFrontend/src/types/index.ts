@@ -41,18 +41,24 @@ export interface User {
   fullName: string;
 }
 
+import { CardType } from './cardTypes';
+
 // UserCard types
 export interface UserCard {
   cardID: number;
   customerID: number;
   cardNumber: string;
   balance: number;
-  cardStatus: string;
-  createdAt: string;
+  cardStatus: number;
+  cardType: CardType;
+  cardExpirationDate: string;
+  cardName?: string;
 }
 
 export interface CreateUserCardRequest {
   customerID: number;
+  cardType: CardType;
+  cardName?: string;
   // cardNumber and balance are handled by the backend
   cardNumber?: string;
   balance?: number;
@@ -60,7 +66,7 @@ export interface CreateUserCardRequest {
 
 export interface CardStatusUpdateRequest {
   cardId: number;
-  status: string;
+  status: number;
 }
 
 // Transaction types
@@ -117,7 +123,7 @@ export interface CardExistsResponse {
     cardID: number;
     cardNumber: string;
     balance: number;
-    cardStatus: string;
+    cardStatus: number;
     customerID: number;
   };
 }

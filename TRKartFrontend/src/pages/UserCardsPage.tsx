@@ -6,6 +6,22 @@ import { UserCard } from '@/types';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 
+const CARD_STATUS_MAP = {
+  0: { label: 'Deactivated', className: 'bg-red-50 text-red-700 border border-red-200' },
+  1: { label: 'Expired', className: 'bg-gray-50 text-gray-700 border border-gray-200' },
+  2: { label: 'Lost', className: 'bg-red-50 text-red-700 border border-red-200' },
+  // 3: { label: 'Inactive', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  4: { label: 'Active', className: 'bg-green-50 text-green-700 border border-green-200' },
+  // Set the 'Inactive' as default
+  default: { label: 'Inactive', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' }
+} as const;
+
+const CARD_TYPE_MAP = {
+  0: { name: 'Standard', className: 'bg-gray-100 text-gray-900 border border-gray-300' }, // Light gray background, black text
+  1: { name: 'Gold', className: 'bg-yellow-100/80 text-gray-900 border border-yellow-200' }, // Opaque gold background, black text
+  2: { name: 'Platinum', className: 'bg-cyan-100/80 text-gray-900 border border-cyan-200' } // Opaque turquoise background, black text
+} as const;
+
 // Format card number as TRK90 XXXX XXXX XXX
 const formatCardNumber = (cardNumber: string): string => {
   if (!cardNumber) return '';
@@ -65,19 +81,18 @@ const UserCardsPage: React.FC = () => {
         // Try to fetch from API first if we have a customerID
         if (user?.customerID && user.customerID !== 0) {
           try {
-            logger.debug('UserCardsPage', 'fetchCards', 'Fetching cards from API', { customerId: user.customerID });
-            cardsData = await userCardService.getCardsByCustomerId(user.customerID);
+            logger.debug('UserCardsPage', 'fetchCards', 'Fetching cards from secure API');
+            cardsData = await userCardService.getUserCards();
             
             // Log API response
-            logger.info('UserCardsPage', 'fetchCards', `Successfully fetched ${cardsData.length} cards from API`, { 
-              customerId: user.customerID,
+            logger.info('UserCardsPage', 'fetchCards', `Successfully fetched ${cardsData.length} cards from secure API`, { 
               cardCount: cardsData.length 
             });
             
-            // Ensure each card has a cardStatus, default to 'Inactive' if not provided
+            // Ensure each card has a cardStatus, default to 3 (= 'Inactive') if not provided
             cardsData = cardsData.map(card => ({
               ...card,
-              cardStatus: card.cardStatus || 'Inactive'
+              cardStatus: card.cardStatus || 3
             }));
             
             saveCardsToStorage(cardsData);
@@ -111,8 +126,25 @@ const UserCardsPage: React.FC = () => {
           }
         }
         
-        logger.debug('UserCardsPage', 'fetchCards', `Setting ${cardsData.length} cards to state`);
-        setCards(cardsData);
+        // Sort cards: Active (4) → Inactive (3) → Lost (2), then by cardID within each group
+        const sortedCards = [...cardsData].sort((a, b) => {
+          // First sort by status in reverse order (4 > 3 > 2)
+          if (a.cardStatus !== b.cardStatus) {
+            return b.cardStatus - a.cardStatus;
+          }
+          // Then by cardID for same status
+          return a.cardID - b.cardID;
+        });
+        
+        logger.debug('UserCardsPage', 'fetchCards', `Setting ${sortedCards.length} sorted cards to state`, { 
+          cardCount: sortedCards.length,
+          cards: sortedCards.map(c => ({
+            id: c.cardID,
+            status: c.cardStatus,
+            number: c.cardNumber
+          }))
+        });
+        setCards(sortedCards);
       } catch (err) {
         const errorMsg = 'An unexpected error occurred while loading cards.';
         logger.error('UserCardsPage', 'fetchCards', errorMsg, err as Error);
@@ -187,10 +219,21 @@ const UserCardsPage: React.FC = () => {
                 <div key={card.cardID} className="card">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Card Number</label>
-                      <p className="text-base font-mono font-semibold text-gray-900 tracking-wider">
-                        {formatCardNumber(card.cardNumber)}
-                      </p>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Card Number</label>
+                          <p className="text-base font-mono font-semibold text-gray-900 tracking-wider">
+                            {formatCardNumber(card.cardNumber)}
+                          </p>
+                        </div>
+                        <div className="mt-5">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${
+                            CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.className || 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.name || 'Standard'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="flex items-end justify-between">
@@ -201,77 +244,140 @@ const UserCardsPage: React.FC = () => {
                         </p>
                         <div className="mt-2">
                           <div className="text-sm font-medium text-gray-500 mb-1">Card Status</div>
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
-                            card.cardStatus === 'Active'
-                              ? 'bg-green-50 text-green-700 border border-green-200'
-                              : card.cardStatus === 'Lost'
-                                ? 'bg-red-50 text-red-700 border border-red-200'
-                                : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                          }`}>
-                            {card.cardStatus}
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).className}`}>
+                            {(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).label}
                           </span>
                         </div>
                       </div>
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Created</label>
+                      <label className="text-sm font-medium text-gray-500">Expires At</label>
                       <p className="text-sm text-gray-900">
-                        {new Date(card.createdAt).toLocaleDateString()}
+                        {card.cardExpirationDate ? new Date(card.cardExpirationDate).toLocaleDateString('en-US', { month: '2-digit', year: '2-digit' }) : 'N/A'}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-3 mt-4">
+                    {/* Add Balance Button */}
                     <button
                       onClick={(e) => {
-                        if (['Active', 'Inactive'].includes(card.cardStatus)) {
+                        if ([4, 3].includes(card.cardStatus)) {
                           e.preventDefault();
                           logger.info('UserCardsPage', 'addBalance', 'Navigating to new transaction page', { 
                             cardId: card.cardID,
                             cardNumber: card.cardNumber 
                           });
-                          navigate(`/new-transaction`);
+                          navigate(`/new-transaction?cardId=${card.cardID}`);
                         } else {
-                          logger.debug('UserCardsPage', 'addBalance', `Attempted to add balance to ${card.cardStatus?.toLowerCase()} card`, { 
+                          logger.debug('UserCardsPage', 'addBalance', `Attempted to add balance to ${card.cardStatus} card`, { 
                             cardId: card.cardID,
                             cardStatus: card.cardStatus 
                           });
                         }
                       }}
-                      disabled={['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus)}
+                      disabled={[2, 1, 0].includes(card.cardStatus)}
                       className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        ['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus)
+                        [2, 1, 0].includes(card.cardStatus)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
                       }`}
-                      title={['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus) 
-                        ? `You cannot add balance to a ${card.cardStatus?.toLowerCase()} card` 
+                      title={[2, 1, 0].includes(card.cardStatus) 
+                        ? `You cannot add balance to a ${card.cardStatus} card` 
                         : ''}
                     >
-                      {['Lost', 'Expired', 'Deactivated'].includes(card.cardStatus) 
-                        ? `Cannot Add Balance (${card.cardStatus})` 
+                      {[2, 1, 0].includes(card.cardStatus) 
+                        ? `Cannot Add Balance (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label})` 
                         : 'Add Balance'}
                     </button>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
+
+                    {/* New Transfer Button */}
+                    <button
+                      onClick={(e) => {
+                        if (card.cardStatus === 4) {  // Only allow active cards (status 4)
                           e.preventDefault();
-                          logger.info('UserCardsPage', 'viewTransactions', 'Navigating to transactions page', { 
+                          logger.info('UserCardsPage', 'newTransfer', 'Navigating to new transfer page', { 
                             cardId: card.cardID,
                             cardNumber: card.cardNumber 
                           });
-                          navigate(`/transactions?filterType=cardID&selectedCardID=${card.cardID}`);
-                        }}
-                        className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
-                      >
-                        Transactions
-                      </button>
+                          navigate(`/new-transfer?fromCardId=${card.cardID}`);
+                        } else {
+                          e.preventDefault();
+                          logger.debug('UserCardsPage', 'newTransfer', `Attempted to transfer from card with status ${card.cardStatus}`, { 
+                            cardId: card.cardID,
+                            cardStatus: card.cardStatus 
+                          });
+                        }
+                      }}
+                      disabled={card.cardStatus !== 4}  // Only enable for status 4 (active)
+                      className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
+                        card.cardStatus !== 4
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-600 focus:ring-opacity-50'
+                      }`}
+                      title={card.cardStatus !== 4 
+                        ? `You cannot transfer from a ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label?.toLowerCase() || 'non-active'} card` 
+                        : 'Make a new transfer from this card'}
+                    >
+                      {card.cardStatus !== 4 
+                        ? `Cannot Transfer (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label})` 
+                        : 'New Transfer'}
+                    </button>
+
+                    {/* Transactions Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        logger.info('UserCardsPage', 'viewTransactions', 'Navigating to transactions page', { 
+                          cardId: card.cardID,
+                          cardNumber: card.cardNumber 
+                        });
+                        navigate(`/transactions?filterType=cardID&selectedCardID=${card.cardID}`);
+                      }}
+                      className="w-full px-4 py-2 bg-yellow-400 hover:bg-yellow-600 text-white font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis"
+                    >
+                      Transactions
+                    </button>
+
+                    {/* Lost Card and Delete Card Buttons */}
+                    <div className="flex gap-2 pt-1">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          if (card.cardStatus !== 'Deactivated') {
+                          if (![2, 0].includes(card.cardStatus)) {
+                            logger.info('UserCardsPage', 'reportLostCard', 'Navigating to report lost card page', { 
+                              cardId: card.cardID,
+                              cardNumber: card.cardNumber,
+                              currentStatus: card.cardStatus
+                            });
+                            navigate(`/cards/lost/${card.cardID}`);
+                          } else {
+                            logger.debug('UserCardsPage', 'reportLostCard', `Attempted to report ${card.cardStatus} card as lost`, { 
+                              cardId: card.cardID,
+                              cardStatus: card.cardStatus 
+                            });
+                          }
+                        }}
+                        disabled={[2, 0].includes(card.cardStatus)}
+                        className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
+                          [2, 0].includes(card.cardStatus)
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
+                        }`}
+                        title={[2, 0].includes(card.cardStatus) 
+                          ? `This card is already ${card.cardStatus}` 
+                          : 'Report this card as lost'}
+                      >
+                        {[0, 1, 2].includes(card.cardStatus) 
+                          ? `${card.cardStatus === 2 ? 'Marked as' : 'Card is'} ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label}`
+                          : 'Lost Card?'}
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (card.cardStatus !== 0) {
                             logger.info('UserCardsPage', 'deleteCard', 'Navigating to delete card page', { 
                               cardId: card.cardID,
                               cardNumber: card.cardNumber,
@@ -285,51 +391,17 @@ const UserCardsPage: React.FC = () => {
                             });
                           }
                         }}
-                        disabled={card.cardStatus === 'Deactivated'}
-                        className={`flex-1 px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis ${
-                          card.cardStatus === 'Deactivated'
+                        disabled={card.cardStatus === 0}
+                        className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis ${
+                          card.cardStatus === 0
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed focus:ring-gray-400'
                             : 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500'
                         }`}
-                        title={card.cardStatus === 'Deactivated' ? 'Cannot delete a deactivated card' : 'Delete this card'}
+                        title={card.cardStatus === 0 ? 'Cannot delete a deactivated card' : 'Delete this card'}
                       >
                         Delete Card
                       </button>
                     </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!['Lost', 'Deactivated'].includes(card.cardStatus)) {
-                          logger.info('UserCardsPage', 'reportLostCard', 'Navigating to report lost card page', { 
-                            cardId: card.cardID,
-                            cardNumber: card.cardNumber,
-                            currentStatus: card.cardStatus
-                          });
-                          navigate(`/cards/lost/${card.cardID}`);
-                        } else {
-                          logger.debug('UserCardsPage', 'reportLostCard', `Attempted to report ${card.cardStatus?.toLowerCase()} card as lost`, { 
-                            cardId: card.cardID,
-                            cardStatus: card.cardStatus 
-                          });
-                        }
-                      }}
-                      disabled={['Lost', 'Deactivated'].includes(card.cardStatus)}
-                      className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        ['Lost', 'Deactivated'].includes(card.cardStatus)
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
-                      }`}
-                      title={['Lost', 'Deactivated'].includes(card.cardStatus) 
-                        ? `This card is already ${card.cardStatus?.toLowerCase()}` 
-                        : 'Report this card as lost'}
-                    >
-                      {card.cardStatus === 'Lost' 
-                        ? 'Card Marked as Lost' 
-                        : card.cardStatus === 'Deactivated' 
-                          ? 'Card is Deactivated' 
-                          : 'Did You Lose Your Card?'}
-                    </button>
                   </div>
                 </div>
               ))}

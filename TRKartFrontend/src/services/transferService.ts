@@ -24,7 +24,7 @@ export interface TransferValidationResponse {
     cardID: number;
     cardNumber: string;
     balance: number;
-    cardStatus: string;
+    cardStatus: number;
   };
 }
 

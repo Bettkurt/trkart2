@@ -17,10 +17,11 @@ const TransactionsPage: React.FC = () => {
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Filtering states
-  const [filterType, setFilterType] = useState<'customerID' | 'cardNumber'>('customerID');
+  const [filterType, setFilterType] = useState<'customerID' | 'cardNumber' | 'cardID'>('customerID');
   const [selectedCardNumber, setSelectedCardNumber] = useState<string>('');
+  const [selectedCardID, setSelectedCardID] = useState<number | null>(null);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('');
   const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
@@ -38,20 +39,36 @@ const TransactionsPage: React.FC = () => {
     };
   }, [location.pathname, user]);
 
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlFilterType = params.get('filterType');
+    const cardID = params.get('selectedCardID');
+
+    if (urlFilterType === 'cardID' && cardID) {
+      const cardIdNum = parseInt(cardID, 10);
+      if (!isNaN(cardIdNum)) {
+        setFilterType('cardID');
+        setSelectedCardID(cardIdNum);
+        logger.info('TransactionsPage', 'urlParams', 'Filtering by card ID from URL', { cardID: cardIdNum });
+      }
+    }
+  }, [location.search]);
+
   // Apply filters when allTransactions or filter settings change
   useEffect(() => {
     applyFilters();
-  }, [allTransactions, filterType, selectedCardNumber, transactionTypeFilter, dateRangeFilter]);
+  }, [allTransactions, filterType, selectedCardNumber, selectedCardID, transactionTypeFilter, dateRangeFilter]);
 
   // Helper function to save transactions to localStorage (user-specific)
   const saveTransactionsToStorage = (transactions: TransactionWithStatus[], userEmail?: string) => {
     const email = userEmail || user?.email;
     const context = { userEmail: email || 'anonymous', transactionCount: transactions.length };
-    
+
     try {
       const userKey = email ? `trkart_transactions_${email}` : 'trkart_transactions_anonymous';
       localStorage.setItem(userKey, JSON.stringify(transactions));
-      
+
       logger.debug('TransactionsPage', 'storage', 'Saved transactions to localStorage', context);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -63,18 +80,18 @@ const TransactionsPage: React.FC = () => {
   const loadTransactionsFromStorage = (userEmail?: string): TransactionWithStatus[] => {
     const email = userEmail || user?.email;
     const context = { userEmail: email || 'anonymous' };
-    
+
     try {
       const userKey = email ? `trkart_transactions_${email}` : 'trkart_transactions_anonymous';
       const stored = localStorage.getItem(userKey);
       const transactions = stored ? JSON.parse(stored) : [];
-      
+
       logger.debug('TransactionsPage', 'storage', 'Loaded transactions from localStorage', {
         ...context,
         transactionCount: transactions.length,
         hasData: transactions.length > 0
       });
-      
+
       return transactions;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -85,32 +102,35 @@ const TransactionsPage: React.FC = () => {
 
   // Enhanced filtering function with logging
   const applyFilters = () => {
+    const startTime = performance.now();
+    let filtered = [...allTransactions];
     const filterContext = {
       filterType,
       selectedCardNumber,
-      transactionTypeFilter: transactionTypeFilter || 'none',
-      dateRange: {
-        start: dateRangeFilter.start || 'none',
-        end: dateRangeFilter.end || 'none'
-      },
+      selectedCardID,
+      transactionTypeFilter,
+      dateRangeFilter,
       totalTransactions: allTransactions.length
     };
 
-    logger.debug('TransactionsPage', 'filter', 'Applying filters', filterContext);
-    
-    const startTime = performance.now();
-    
     try {
-      let filtered = [...allTransactions];
-
-      // Card Number filter
-      if (filterType === 'cardNumber' && selectedCardNumber !== '') {
+      // Apply card ID filter if active
+      if (filterType === 'cardID' && selectedCardID !== null) {
         const beforeCount = filtered.length;
-        filtered = filtered.filter(transaction => 
-          transaction.cardNumber === selectedCardNumber || 
-          (transaction.cardNumber === undefined && transaction.cardID.toString() === selectedCardNumber)
+        filtered = filtered.filter(tx => tx.cardID === selectedCardID);
+        logger.debug('TransactionsPage', 'filter', 'Applied card ID filter', {
+          cardID: selectedCardID,
+          beforeCount,
+          afterCount: filtered.length,
+          filteredOut: beforeCount - filtered.length
+        });
+      }
+      // Apply card number filter if active
+      else if (filterType === 'cardNumber' && selectedCardNumber) {
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(tx => 
+          tx.cardNumber?.toLowerCase() === selectedCardNumber.toLowerCase()
         );
-
         logger.debug('TransactionsPage', 'filter', 'Applied card number filter', {
           cardNumber: selectedCardNumber,
           beforeCount,
@@ -119,11 +139,11 @@ const TransactionsPage: React.FC = () => {
         });
       }
 
-      // Transaction type filter
+      // Apply transaction type filter
       if (transactionTypeFilter) {
         const beforeCount = filtered.length;
-        filtered = filtered.filter(transaction => 
-          transaction.transactionType.toLowerCase().includes(transactionTypeFilter.toLowerCase())
+        filtered = filtered.filter(tx => 
+          tx.transactionType?.toLowerCase() === transactionTypeFilter.toLowerCase()
         );
         logger.debug('TransactionsPage', 'filter', 'Applied transaction type filter', {
           filter: transactionTypeFilter,
@@ -133,11 +153,11 @@ const TransactionsPage: React.FC = () => {
         });
       }
 
-      // Date range filter
+      // Apply date range filter
       if (dateRangeFilter.start || dateRangeFilter.end) {
         const beforeCount = filtered.length;
-        filtered = filtered.filter(transaction => {
-          const transactionDate = new Date(transaction.transactionDate);
+        filtered = filtered.filter(tx => {
+          const transactionDate = new Date(tx.transactionDate);
           const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
           const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
 
@@ -260,12 +280,12 @@ const TransactionsPage: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'API':
+      case 'Approved':
         return '🟢';
-      case 'Demo':
-        return '🟡';
+      case 'Denied':
+        return '🔴';
       default:
-        return '⚪';
+        return '🟡';
     }
   };
 

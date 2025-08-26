@@ -105,7 +105,8 @@ namespace TRKart.API.Controllers
             try
             {
                 var cards = await _context.UserCard
-                    .Where(c => c.CustomerID == customerId.Value && c.CardStatus != "Deactivated")
+                    // 0 = Deactivated (As far as users concern, it is deleted for them)
+                    .Where(c => c.CustomerID == customerId.Value && c.CardStatus != 0) 
                     .Select(c => new { 
                         c.CardID, 
                         c.CardNumber, 

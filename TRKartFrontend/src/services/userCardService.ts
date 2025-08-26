@@ -1,42 +1,74 @@
 import api from './api';
-import { UserCard, CreateUserCardRequest, CardStatusUpdateRequest } from '@/types';
+import { UserCard, CardStatusUpdateRequest } from '../types';
+import { CardType } from '../types/cardTypes';
+
+export interface CreateUserCardRequest {
+  customerID: number;
+  cardType: CardType;
+  cardName?: string;
+}
 
 class UserCardService {
-  // New secure user-specific methods
+  /**
+   * Get all cards for the current authenticated user
+   */
   async getUserCards(): Promise<UserCard[]> {
     const response = await api.get<{ success: boolean; cards: UserCard[] }>('/SecureUserCard/user/cards');
     return response.data.cards;
   }
 
+  /**
+   * Create a new card for the current user
+   */
   async createUserCard(cardData: CreateUserCardRequest): Promise<UserCard> {
-    const response = await api.post<{ success: boolean; card: UserCard }>('/SecureUserCard/user/card', cardData);
+    const requestData = {
+      customerID: cardData.customerID,
+      cardType: cardData.cardType,
+      ...(cardData.cardName && { cardName: cardData.cardName })
+    };
+    
+    const response = await api.post<{ success: boolean; card: UserCard }>('/SecureUserCard/user/card', requestData);
     return response.data.card;
   }
 
+  /**
+   * Get a specific card by its number
+   */
   async getUserCardByNumber(cardNumber: string): Promise<UserCard> {
     const response = await api.get<{ success: boolean; card: UserCard }>(`/SecureUserCard/user/card/${cardNumber}`);
     return response.data.card;
   }
 
+  /**
+   * Get the current user's profile information
+   */
   async getUserProfile(): Promise<any> {
     const response = await api.get<{ success: boolean; user: any }>('/SecureUserCard/user/profile');
     return response.data.user;
   }
 
-  // Existing methods for backward compatibility
-  async getCardsByCustomerId(customerId: number): Promise<UserCard[]> {
-    const response = await api.get<UserCard[]>(`/UserCard/customer/${customerId}`);
-    return response.data;
+  /**
+   * @deprecated Use getUserCards() instead
+   * Get all cards for the current authenticated user
+   */
+  async getCardsByCustomerId(): Promise<UserCard[]> {
+    return this.getUserCards();
   }
 
+  /**
+   * @deprecated Use getUserCardByNumber() instead
+   * Get a specific card by its number
+   */
   async getCardByNumber(cardNumber: string): Promise<UserCard> {
-    const response = await api.get<UserCard>(`/UserCard/number/${cardNumber}`);
-    return response.data;
+    return this.getUserCardByNumber(cardNumber);
   }
 
+  /**
+   * @deprecated Use createUserCard() instead
+   * Create a new card for the current user
+   */
   async createCard(cardData: CreateUserCardRequest): Promise<UserCard> {
-    const response = await api.post<UserCard>('/UserCard', cardData);
-    return response.data;
+    return this.createUserCard(cardData);
   }
 
   /**
@@ -51,7 +83,10 @@ class UserCardService {
       card: UserCard 
     }>(
       '/SecureUserCard/user/card/status',
-      updateData
+      {
+        cardId: updateData.cardId,
+        status: updateData.status
+      }
     );
     return response.data;
   }

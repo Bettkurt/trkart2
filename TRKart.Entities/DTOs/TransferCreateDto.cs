@@ -10,7 +10,7 @@ namespace TRKart.Entities.DTOs
         public int SenderCardID { get; set; }
 
         [Required(ErrorMessage = "RecipientCardNumber is required")]
-        [StringLength(50, MinimumLength = 8, ErrorMessage = "RecipientCardNumber must be between 8 and 50 characters")]
+        [StringLength(16, ErrorMessage = "RecipientCardNumber must be 16 characters")]
         [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "RecipientCardNumber can only contain letters and numbers")]
         public string RecipientCardNumber { get; set; } = null!;
 

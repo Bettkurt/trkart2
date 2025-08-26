@@ -6,8 +6,8 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
-// import TransactionHistoryPage from '@/pages/TransactionHistoryPage';
 import UserCardsPage from '@/pages/UserCardsPage';
+import NewUserCardsPage from '@/pages/NewUserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
@@ -80,6 +80,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/cards" element={
         <ProtectedRoute>
           <UserCardsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/cards-new" element={
+        <ProtectedRoute>
+          <NewUserCardsPage />
         </ProtectedRoute>
       } />
       <Route path="/create-card" element={

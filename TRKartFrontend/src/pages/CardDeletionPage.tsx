@@ -226,12 +226,12 @@ const CardDeletionPage: React.FC = () => {
       // Update card status to 'Deactivated' using the new endpoint
       logger.debug('CardDeletionPage', 'handleDeactivation', 'Sending status update request to API', { 
         cardId: card.cardID,
-        newStatus: 'Deactivated'
+        newStatus: 0
       });
       
       await userCardService.updateCardStatus({
         cardId: card.cardID,
-        status: 'Deactivated'
+        status: 0
       });
       
       logger.info('CardDeletionPage', 'handleDeactivation', 'Card status updated to Deactivated', { 
@@ -281,7 +281,7 @@ const CardDeletionPage: React.FC = () => {
       transferAmount: card.balance
     });
     
-    navigate('/new-transaction', { 
+    navigate('/new-transfer', { 
       state: { 
         fromCardNumber: card.cardNumber,
         amount: card.balance,
@@ -335,9 +335,9 @@ const CardDeletionPage: React.FC = () => {
       <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
         <h1 className="text-2xl font-bold text-red-600 mb-6">Delete Card</h1>
         
-        <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded">
-          <h2 className="font-semibold text-red-700 mb-2">Warning</h2>
-          <p className="text-red-700">
+        <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded">
+          <h2 className="font-semibold text-yellow-700 mb-2">Warning</h2>
+          <p className="text-yellow-700">
             Deleting this card will permanently remove all its transaction history. This action cannot be undone.
           </p>
         </div>
@@ -350,20 +350,36 @@ const CardDeletionPage: React.FC = () => {
         </div>
 
         {hasBalance && (
-          <div className="mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded">
-            <h2 className="font-semibold text-yellow-700 mb-2">Balance Warning</h2>
-            <p className="text-yellow-700 mb-4">
-              This card has a balance of {card.balance.toFixed(2)} TL. 
-              Deleting it will result in losing this balance.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-3">
-              <button
-                onClick={handleTransferFunds}
-                className="btn-primary"
-              >
-                Transfer Balance to Another Card
-              </button>
-            </div>
+          <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded">
+            <h2 className="font-semibold text-red-700 mb-2">Balance Warning</h2>
+            {card.cardStatus === 2 ? (
+              // Lost card message
+              <div>
+                <p className="text-red-700 mb-4">
+                  This lost card has a balance of <strong>{card.balance.toFixed(2)} TL</strong>.
+                  The remaining balance will be automatically transferred to one of your active cards in 7 business days.
+                </p>
+                <p className="text-red-700 mb-4">
+                  If you choose to proceed with the deletion now, remaining funds will be lost.
+                </p>
+              </div>
+            ) : (
+              // Active/Inactive card message with transfer option
+              <div>
+                <p className="text-red-700 mb-4">
+                  This card has a balance of <strong>{card.balance.toFixed(2)} TL</strong>. 
+                  Deleting it will result in losing this balance.
+                </p>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  <button
+                    onClick={handleTransferFunds}
+                    className="btn-primary"
+                  >
+                    Transfer Balance to Another Card
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

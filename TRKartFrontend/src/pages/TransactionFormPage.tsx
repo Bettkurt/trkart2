@@ -35,9 +35,34 @@ const TransactionFormPage: React.FC = () => {
   useEffect(() => {
     logger.info('TransactionForm', 'mount', 'Transaction form page loaded', {
       path: location.pathname,
+      search: location.search,
       hasUser: !!user,
       customerId: user?.customerID
     });
+
+    // Get cardId from URL if present and valid
+    let cardIdFromUrl: string | null = null;
+    let cardIdNum: number | null = null;
+    
+    const searchParams = new URLSearchParams(location.search);
+    const cardIdParam = searchParams.get('cardId');
+    
+    if (cardIdParam) {
+      const parsedId = parseInt(cardIdParam, 10);
+      if (!isNaN(parsedId)) {
+        cardIdFromUrl = cardIdParam; // Keep original string for form state
+        cardIdNum = parsedId; // Number for comparison with card IDs
+        
+        logger.debug('TransactionForm', 'mount', 'Found valid cardId in URL', { 
+          cardId: cardIdFromUrl,
+          cardIdNum
+        });
+      } else {
+        logger.warn('TransactionForm', 'mount', 'Invalid cardId in URL', { 
+          cardId: cardIdParam 
+        });
+      }
+    }
 
     const loadUserCards = async () => {
       if (!user?.customerID) {
@@ -56,6 +81,27 @@ const TransactionFormPage: React.FC = () => {
         });
         
         setUserCards(cards);
+        
+        // If we have a valid cardId in the URL and it exists in the user's cards, select it
+        if (cardIdNum !== null && cardIdFromUrl !== null) {
+          const cardExists = cards.some(card => card.cardID === cardIdNum);
+          if (cardExists) {
+            logger.debug('TransactionForm', 'loadCards', 'Auto-selecting card from URL', { 
+              cardId: cardIdNum,
+              cardIdStr: cardIdFromUrl
+            });
+            setFormData(prev => ({
+              ...prev,
+              cardID: cardIdFromUrl // This is guaranteed to be a string here
+            }));
+          } else {
+            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in user cards', { 
+              cardId: cardIdNum,
+              cardIdStr: cardIdFromUrl,
+              availableCardIds: cards.map(c => c.cardID) 
+            });
+          }
+        }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         logger.error('TransactionForm', 'loadCards', 'Failed to load user cards', err);
@@ -473,7 +519,6 @@ const TransactionFormPage: React.FC = () => {
                     errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter description (letters and numbers only)"
-                  required
                 />
                 {errors.description && (
                   <p className="text-red-500 text-sm mt-1">{errors.description}</p>
