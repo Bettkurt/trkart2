@@ -390,17 +390,18 @@ EXECUTE FUNCTION revoke_previous_tokens();
 -------------------------------------------------------------------------------------------
 
 -- Indexes for faster queries
-CREATE INDEX IDX_CUSTOMER_CUSTOMERNUMBER ON "Customers"("CustomerNumber");
-CREATE INDEX IDX_CUSTOMER_EMAIL ON "Customers"("Email");
-CREATE INDEX IDX_USERCARD_CUSTOMERID ON "UserCard"("CustomerID");
-CREATE INDEX IDX_USERCARD_CARDNUMBER ON "UserCard"("CardNumber");
-CREATE INDEX IDX_TRANSACTION_CARDID ON "Transaction"("CardID");
-CREATE INDEX IDX_TRANSACTION_TRANSFERTRANSACTIONID ON "Transaction"("TransferTransactionID");
+CREATE INDEX IDX_Customer_CustomerNumber ON "Customers"("CustomerNumber");
+CREATE INDEX IDX_Customer_Email ON "Customers"("Email");
+CREATE INDEX IDX_UserCard_CustomerID ON "UserCard"("CustomerID");
+CREATE INDEX IDX_UserCard_CardNumber ON "UserCard"("CardNumber");
+CREATE INDEX IDX_Transaction_CardID ON "Transaction"("CardID");
+CREATE INDEX IDX_Transaction_TransferTransactionID ON "Transaction"("TransferTransactionID");
 CREATE INDEX IDX_SessionToken_CustomerID ON "SessionToken" ("CustomerID");
 CREATE INDEX IDX_SessionToken_RefreshToken ON "SessionToken" ("RefreshToken");
 CREATE INDEX IDX_SessionToken_AccessToken ON "SessionToken" ("AccessToken");
 CREATE INDEX IDX_SessionToken_Expirations ON "SessionToken" ("AccessTokenExpiration", "RefreshTokenExpiration");
-CREATE INDEX IDX_TOKENBLACKLIST_REFRESHTOKEN ON "TokenBlacklist"("RefreshToken");
-CREATE INDEX IDX_TOKENBLACKLIST_BLACKLISTEDAT ON "TokenBlacklist"("BlacklistedAt");
-CREATE INDEX IDX_CARDUPDATES_CARDID ON "CardUpdates"("CardID");
-CREATE INDEX IDX_CARDUPDATES_UPDATEDAT ON "CardUpdates"("UpdatedAt");
+CREATE INDEX IDX_TokenBlacklist_SessionID ON "TokenBlacklist" ("SessionID");
+CREATE INDEX IDX_TokenBlacklist_RefreshToken ON "TokenBlacklist"("RefreshToken");
+CREATE INDEX IDX_TokenBlacklist_BlacklistedAt ON "TokenBlacklist"("BlacklistedAt");
+CREATE INDEX IDX_CardUpdates_CardID ON "CardUpdates"("CardID");
+CREATE INDEX IDX_CardUpdates_UpdatedAt ON "CardUpdates"("UpdatedAt");

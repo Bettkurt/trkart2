@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard } from '@/types';
@@ -8,12 +9,14 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface TransferFormProps {
   onSubmit?: (transfer: any) => void;
+  initialFromCardId?: string | null;
 }
 
-const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
+const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    senderCardID: '',
+    senderCardID: initialFromCardId || '',
     recipientCardNumber: '',
     amount: ''
   });
@@ -24,7 +27,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
 
-  // Load user cards on component mount
+  // Load user cards and handle initial card selection
   useEffect(() => {
     const loadUserCards = async () => {
       if (!user?.customerID) {
@@ -36,6 +39,20 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
         setLoadingCards(true);
         const cards = await userCardService.getUserCards();
         setUserCards(cards);
+
+        // If we have an initial card ID, verify it exists in the user's cards
+        if (initialFromCardId) {
+          const cardId = parseInt(initialFromCardId, 10);
+          if (!isNaN(cardId)) {
+            const cardExists = cards.some(card => card.cardID === cardId);
+            if (cardExists) {
+              setFormData(prev => ({
+                ...prev,
+                senderCardID: initialFromCardId
+              }));
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to load user cards:', error);
         setValidationMessage('❌ Failed to load your cards. Please try again.');
@@ -45,7 +62,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
     };
 
     loadUserCards();
-  }, [user]);
+  }, [user, initialFromCardId]);
 
   // Real-time validation handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,6 +155,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
         setErrors({});
         
         onSubmit?.(result);
+        
+        // Navigate to transactions page after a short delay to show the success message
+        setTimeout(() => {
+          navigate('/transactions');
+        }, 1500);
       } else {
         setValidationMessage(`❌ Transfer failed: ${result.message}`);
       }

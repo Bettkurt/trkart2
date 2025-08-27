@@ -35,9 +35,34 @@ const TransactionFormPage: React.FC = () => {
   useEffect(() => {
     logger.info('TransactionForm', 'mount', 'Transaction form page loaded', {
       path: location.pathname,
+      search: location.search,
       hasUser: !!user,
       customerId: user?.customerID
     });
+
+    // Get cardId from URL if present and valid
+    let cardIdFromUrl: string | null = null;
+    let cardIdNum: number | null = null;
+    
+    const searchParams = new URLSearchParams(location.search);
+    const cardIdParam = searchParams.get('cardId');
+    
+    if (cardIdParam) {
+      const parsedId = parseInt(cardIdParam, 10);
+      if (!isNaN(parsedId)) {
+        cardIdFromUrl = cardIdParam; // Keep original string for form state
+        cardIdNum = parsedId; // Number for comparison with card IDs
+        
+        logger.debug('TransactionForm', 'mount', 'Found valid cardId in URL', { 
+          cardId: cardIdFromUrl,
+          cardIdNum
+        });
+      } else {
+        logger.warn('TransactionForm', 'mount', 'Invalid cardId in URL', { 
+          cardId: cardIdParam 
+        });
+      }
+    }
 
     const loadUserCards = async () => {
       if (!user?.customerID) {
@@ -51,11 +76,55 @@ const TransactionFormPage: React.FC = () => {
         logger.debug('TransactionForm', 'loadCards', 'Loading user cards');
         
         const cards = await userCardService.getUserCards();
+        
+        // Filter out deactivated cards - only show Active, Inactive, and Lost cards
+        const activeCards = cards.filter(card => 
+          card.cardStatus !== 'Deactivated' && card.cardStatus !== 'Expired'
+        );
+        
+        // Log which cards are being filtered out
+        const deactivatedCards = cards.filter(card => 
+          card.cardStatus === 'Deactivated' || card.cardStatus === 'Expired'
+        );
+        
+        if (deactivatedCards.length > 0) {
+          logger.info('TransactionForm', 'loadCards', 'Filtered out deactivated cards', {
+            deactivatedCards: deactivatedCards.map(card => ({
+              cardId: card.cardID,
+              cardNumber: card.cardNumber,
+              status: card.cardStatus
+            }))
+          });
+        }
+        
         logger.info('TransactionForm', 'loadCards', 'Successfully loaded user cards', {
-          cardCount: cards.length
+          totalCardCount: cards.length,
+          activeCardCount: activeCards.length,
+          deactivatedCardCount: deactivatedCards.length
         });
         
         setUserCards(cards);
+        
+        // If we have a valid cardId in the URL and it exists in the user's cards, select it
+        if (cardIdNum !== null && cardIdFromUrl !== null) {
+          const cardExists = cards.some(card => card.cardID === cardIdNum);
+          if (cardExists) {
+            logger.debug('TransactionForm', 'loadCards', 'Auto-selecting card from URL', { 
+              cardId: cardIdNum,
+              cardIdStr: cardIdFromUrl
+            });
+            setFormData(prev => ({
+              ...prev,
+              cardID: cardIdFromUrl // This is guaranteed to be a string here
+            }));
+          } else {
+            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in user cards', { 
+              cardId: cardIdNum,
+              cardIdStr: cardIdFromUrl,
+              availableCardIds: cards.map(c => c.cardID) 
+            });
+          }
+        }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         logger.error('TransactionForm', 'loadCards', 'Failed to load user cards', err);
@@ -366,11 +435,11 @@ const TransactionFormPage: React.FC = () => {
       <main className="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* User Status */}
-          {user?.email && (
+          {!!user?.email && (
             <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-6 text-sm">
               <div className="flex items-center justify-between">
                 <span>Logged in as: {user.email}</span>
-                {user.customerID && user.customerID > 0 && (
+                {!!user.customerID && user.customerID > 0 && (
                   <span className="text-xs">Customer ID: {user.customerID}</span>
                 )}
               </div>
@@ -473,7 +542,6 @@ const TransactionFormPage: React.FC = () => {
                     errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter description (letters and numbers only)"
-                  required
                 />
                 {errors.description && (
                   <p className="text-red-500 text-sm mt-1">{errors.description}</p>

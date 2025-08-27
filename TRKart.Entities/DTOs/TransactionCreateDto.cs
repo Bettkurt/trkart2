@@ -18,10 +18,9 @@ namespace TRKart.Entities.DTOs
         [RegularExpression(@"^(Pay|Load|Refund|TransferIn|TransferOut)$", ErrorMessage = "TransactionType must be one of: Pay, Load, Refund, TransferIn, TransferOut")]
         public string TransactionType { get; set; } = null!;
 
-        [Required(ErrorMessage = "Description is required")]
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Description can only contain letters and numbers. No special characters allowed.")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; } = null!;
     }
 
     public class TransactionFeasibilityResponse
