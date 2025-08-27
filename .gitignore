@@ -38,11 +38,14 @@ Migrations/
 .env
 .env.*
 
+# SonarQube
+.sonarqube/
+
 # node_modules
 node_modules/
 
-# Other files
-Quick_Register_Login/
+# Sonarqube
+.sonarqube/
 
 # Sensitive Information
 TRKart.API/appsettings.json

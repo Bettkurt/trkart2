@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '@/types';
 import authService from '@/services/authService';
+import tokenService from '@/services/tokenService';
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +15,8 @@ interface AuthContextType {
   checkSession: () => Promise<void>;
   getRememberedEmail: () => string | null;
   setUser: (user: User | null) => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  changeEmail: (password: string, newEmail: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +36,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [hasValidSession, setHasValidSession] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
@@ -40,7 +44,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[Auth] Checking session with backend...');
       const sessionData = await authService.checkSession();
-      console.log('[Auth] Session check result:', sessionData);
+      console.log('[Auth] Session check result:', sessionData.hasValidSession, sessionData.email
+        ,sessionData.customerID, sessionData.fullName);
       
       setHasValidSession(sessionData.hasValidSession);
       
@@ -58,7 +63,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Store user data in localStorage for quick access
         authService.setUserData(userData);
       } else {
-        console.log('[Auth] No valid session or email found');
+        console.log('[Auth] No valid session or email found, checking for refresh token???');
+        // If no valid session but we have a refresh token, try to refresh
+        console.log('[Auth] GİRDİ A');
+        const refreshToken = document.cookie.split('; ').find(row => row.startsWith('refreshToken='))?.split('=')[1];
+        console.log('BURAYA GİRDİ B',refreshToken);
+        if (refreshToken) {
+          console.log('[Auth] Found refresh token, attempting to refresh...');
+          try {
+            console.log('BURAYA GİRDİ 0');
+           const test = await tokenService.refreshToken();
+            // If refresh was successful, check session again
+            console.log('BURAYA GİRDİ 1',test);
+            const sessionData1 = await authService.checkSession();
+            console.log('BURAYA GİRDİ 2',sessionData1);
+            setHasValidSession(sessionData1.hasValidSession);
+            console.log('BURAYA GİRDİ 3',sessionData1.hasValidSession);
+            console.log('BURAYA GİRDİ 4',sessionData1.email);
+            console.log('BURAYA GİRDİ 5',sessionData1.customerID);
+            console.log('BURAYA GİRDİ 6',sessionData1.fullName);
+          
+            if (sessionData1.hasValidSession && sessionData1.email) {
+              // Create a user object from the session data
+              const userData: User = {
+                customerID: sessionData1.customerID || 0,
+                email: sessionData1.email,
+                fullName: sessionData1.fullName || '',
+              };
+              console.log('BURAYA GİRDİ 7',userData.customerID);
+              console.log('BURAYA GİRDİ 8',userData.email);
+              console.log('BURAYA GİRDİ 9',userData.fullName);  
+
+              console.log('[Auth] Setting user data:', userData);
+              setUser(userData);
+              setSessionEmail(sessionData1.email);
+              authService.setUserData(userData);
+            } 
+          } catch (error) {
+            console.error('[Auth] Token refresh failed:', error);
+            // Clear invalid tokens
+
+            authService.clearAuthData();
+          }
+        }
         setSessionEmail(null);
         setUser(null);
       }
@@ -77,19 +124,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Check for existing session on app load
     const initializeAuth = async () => {
-      // First check if we have user data in localStorage
-      const storedUser = authService.getUserData();
-      if (storedUser) {
-        setUser(storedUser);
-        setSessionEmail(storedUser.email);
+      try {
+        setIsLoading(true);
+        // First check if we have user data in localStorage
+        const storedUser = authService.getUserData();
+        if (storedUser) {
+          setUser(storedUser);
+          setSessionEmail(storedUser.email);
+        }
+        
+        // Then verify with the server
+        await checkSession();
+      } catch (error) {
+        console.error('[Auth] Initialization error:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Then verify with the server
-      await checkSession();
-      setIsLoading(false);
     };
 
     initializeAuth();
+
+    // Set up a timer to check session periodically (e.g., every 5 minutes)
+    const sessionCheckInterval = setInterval(checkSession, 5 * 60 * 1000);
+
+    // Clean up interval on unmount
+    return () => clearInterval(sessionCheckInterval);
   }, []);
 
   const login = async (credentials: { email: string; password: string; rememberMe: boolean }) => {
@@ -207,6 +266,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user?.email) throw new Error('No user email');
+    await authService.changePassword(user.email, currentPassword, newPassword);
+  };
+
+  const changeEmail = async (password: string, newEmail: string) => {
+    await authService.changeEmail(password, newEmail);
+    // After backend rotates tokens and sets cookies, refresh session/user data
+    const sessionData = await authService.checkSession();
+    if (sessionData.hasValidSession && sessionData.email) {
+      const updatedUser: User = {
+        customerID: sessionData.customerID || 0,
+        email: sessionData.email,
+        fullName: sessionData.fullName || ''
+      };
+      setUser(updatedUser);
+      authService.setUserData(updatedUser);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -219,6 +298,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser,
     checkSession,
     getRememberedEmail,
+    changePassword,
+    changeEmail,
   };
 
   return (

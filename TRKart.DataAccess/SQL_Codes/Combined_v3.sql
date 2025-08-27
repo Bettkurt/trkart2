@@ -312,17 +312,90 @@ FOR EACH ROW
 WHEN (NEW."TransactionStatus" = 'Pending')
 EXECUTE FUNCTION process_transaction_trigger();
 
+
+-------------------------------------------------------------------------------------------
+-------------------------------------PasswordHistory---------------------------------------
+-------------------------------------------------------------------------------------------
+
+CREATE TABLE "PasswordHistory" (
+    "ID" SERIAL PRIMARY KEY,
+    "CustomerID" INTEGER NOT NULL,
+    "PasswordHash" VARCHAR(200) NOT NULL,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "FK_PasswordHistory_Customers_CustomerID" 
+        FOREIGN KEY ("CustomerID") 
+        REFERENCES "Customers"("CustomerID")
+        ON DELETE CASCADE
+);
+
+-- Create index for faster queries
+CREATE INDEX IDX_PASSWORDHISTORY_CUSTOMERID ON "PasswordHistory"("CustomerID");
+CREATE INDEX IDX_PASSWORDHISTORY_CREATEDAT ON "PasswordHistory"("CreatedAt");
+
+-- Function to manage password history
+CREATE OR REPLACE FUNCTION manage_password_history()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Delete oldest password history if customer has 3 or more entries
+    DELETE FROM "PasswordHistory"
+    WHERE "ID" IN (
+        SELECT "ID"
+        FROM "PasswordHistory"
+        WHERE "CustomerID" = NEW."CustomerID"
+        ORDER BY "CreatedAt" ASC
+        LIMIT 1
+    )
+    AND (
+        SELECT COUNT(*)
+        FROM "PasswordHistory"
+        WHERE "CustomerID" = NEW."CustomerID"
+    ) >= 3;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER trg_manage_password_history
+BEFORE INSERT ON "PasswordHistory"
+FOR EACH ROW
+EXECUTE FUNCTION manage_password_history();
+
+-------------------------------------------------------------------------------------------
+-----------------------------------Revoke Previous Tokens Function--------------------------
+
+-- Create function to revoke previous tokens for a customer
+CREATE OR REPLACE FUNCTION revoke_previous_tokens()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update all previous active tokens for this customer to be revoked
+    UPDATE "SessionToken"
+    SET "IsRevoked" = true
+    WHERE "CustomerID" = NEW."CustomerID"
+    AND "SessionID" != NEW."SessionID"
+    AND "IsRevoked" = false;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger to revoke previous tokens
+CREATE TRIGGER revoke_previous_tokens_trigger
+AFTER INSERT ON "SessionToken"
+FOR EACH ROW
+EXECUTE FUNCTION revoke_previous_tokens();
+
 -------------------------------------------------------------------------------------------
 ---------------------------------------Indexes---------------------------------------------
 -------------------------------------------------------------------------------------------
 
 -- Indexes for faster queries
-CREATE INDEX IDX_CUSTOMER_CUSTOMERNUMBER ON "Customers"("CustomerNumber");
-CREATE INDEX IDX_CUSTOMER_EMAIL ON "Customers"("Email");
-CREATE INDEX IDX_USERCARD_CUSTOMERID ON "UserCard"("CustomerID");
-CREATE INDEX IDX_USERCARD_CARDNUMBER ON "UserCard"("CardNumber");
-CREATE INDEX IDX_TRANSACTION_CARDID ON "Transaction"("CardID");
-CREATE INDEX IDX_TRANSACTION_TRANSFERTRANSACTIONID ON "Transaction"("TransferTransactionID");
+CREATE INDEX IDX_Customer_CustomerNumber ON "Customers"("CustomerNumber");
+CREATE INDEX IDX_Customer_Email ON "Customers"("Email");
+CREATE INDEX IDX_UserCard_CustomerID ON "UserCard"("CustomerID");
+CREATE INDEX IDX_UserCard_CardNumber ON "UserCard"("CardNumber");
+CREATE INDEX IDX_Transaction_CardID ON "Transaction"("CardID");
+CREATE INDEX IDX_Transaction_TransferTransactionID ON "Transaction"("TransferTransactionID");
 CREATE INDEX IDX_SessionToken_CustomerID ON "SessionToken" ("CustomerID");
 CREATE INDEX IDX_SessionToken_RefreshToken ON "SessionToken" ("RefreshToken");
 CREATE INDEX IDX_SessionToken_AccessToken ON "SessionToken" ("AccessToken");
@@ -752,3 +825,8 @@ BEGIN
 END $$;
 
 
+CREATE INDEX IDX_TokenBlacklist_SessionID ON "TokenBlacklist" ("SessionID");
+CREATE INDEX IDX_TokenBlacklist_RefreshToken ON "TokenBlacklist"("RefreshToken");
+CREATE INDEX IDX_TokenBlacklist_BlacklistedAt ON "TokenBlacklist"("BlacklistedAt");
+CREATE INDEX IDX_CardUpdates_CardID ON "CardUpdates"("CardID");
+CREATE INDEX IDX_CardUpdates_UpdatedAt ON "CardUpdates"("UpdatedAt");

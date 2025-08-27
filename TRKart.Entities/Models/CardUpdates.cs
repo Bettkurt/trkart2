@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Entities.Models
 {
@@ -8,29 +9,34 @@ namespace TRKart.Entities.Models
     public class CardUpdates
     {
         [Key]
-        [Column("UpdateID", TypeName = "int")]
+        [Column("UpdateID")]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UpdateID { get; set; }
 
         [Required]
-        [Column("CardID", TypeName = "int")]
+        [Column("CardID", TypeName = "INT")]
         [ForeignKey("UserCard")]
         public int CardID { get; set; }
 
         // Navigation property
         public UserCard Card { get; set; }
 
-        [Required]
-        [Column("PreviousStatus", TypeName = "varchar(20)")]
-        public string PreviousStatus { get; set; }
+        [Column("PreviousStatus")]
+        public CardStatus? PreviousStatus { get; set; }
 
-        [Required]
-        [Column("NewStatus", TypeName = "varchar(20)")]
-        public string NewStatus { get; set; }
+        [Column("NewStatus")]
+        public CardStatus? NewStatus { get; set; }
 
-        [Required]
-        [Column("UpdatedAt", TypeName = "timestamp")]
-        public DateTime UpdatedAt { get; set; }
+        [Column("StatusUpdatedAt")]
+        public DateTime? StatusUpdatedAt { get; set; }
+
+        [Column("PreviousType")]
+        public CardType? PreviousType { get; set; }
+
+        [Column("NewType")]
+        public CardType? NewType { get; set; }
+
+        [Column("TypeUpdatedAt")]
+        public DateTime? TypeUpdatedAt { get; set; }
     }
 }
-

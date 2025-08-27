@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,30 +13,33 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TransactionID { get; set; }
 
-        [Column("CardID")]
+        [Column("CardID", TypeName = "INT")]
         [ForeignKey("UserCard")]
         public int CardID { get; set; }
+
         // Navigation property for the one-to-many relationship with UserCard
         public UserCard UserCard { get; set; }
 
         // In case of a transfer transaction between cards and/or customers, this will point to the
         // counterpart of a transfer transaction. E.g., if a TransferOut transaction is done, this
-        // will point to the TransferIn transaction and vice versa.
-        [Column("TransferTransactionID")]
+        // will point to the corresponding TransferIn transaction and vice versa.
+        // Otherwise, it will be null.
+        [Column("TransferTransactionID", TypeName = "INT")]
         [ForeignKey("TransferTransaction")]
         public int? TransferTransactionID { get; set; }
+
         // Navigation property for the one-to-one relationship with TransferTransaction
         public Transaction? TransferTransaction { get; set; }
 
-        [Column("Amount", TypeName = "decimal(18, 2)")]
         [Required]
+        [Column("Amount", TypeName = "DECIMAL(10, 2)")]
         public decimal Amount { get; set; } 
 
-        [Column("TransactionType")]
         [Required]
+        [Column("TransactionType", TypeName = "VARCHAR(20)")]
         public string TransactionType { get; set; }
 
-        [Column("Description")]
+        [Column("Description", TypeName = "TEXT")]
         public string? Description { get; set; }
 
         [Column("ExternalRef")]
@@ -54,7 +58,7 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime TransactionDate { get; set; }
 
-        [Column("TransactionStatus")]
+        [Column("TransactionStatus", TypeName = "VARCHAR(20)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public string TransactionStatus { get; set; }
 

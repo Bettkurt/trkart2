@@ -7,6 +7,7 @@ import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
 import UserCardsPage from '@/pages/UserCardsPage';
+import NewUserCardsPage from '@/pages/NewUserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
@@ -16,6 +17,8 @@ import CardDeletionPage from '@/pages/CardDeletionPage';
 import LostCardPage from '@/pages/LostCardPage';
 import NewTransferPage from '@/pages/NewTransferPage';
 import AboutPage from '@/pages/AboutPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage';
+import ChangeEmailPage from '@/pages/ChangeEmailPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -87,6 +90,11 @@ const AppRoutes: React.FC = () => {
           <UserCardsPage />
         </ProtectedRoute>
       } />
+      <Route path="/cards-new" element={
+        <ProtectedRoute>
+          <NewUserCardsPage />
+        </ProtectedRoute>
+      } />
       <Route path="/create-card" element={
         <ProtectedRoute>
           <CardCreationPage />
@@ -106,6 +114,16 @@ const AppRoutes: React.FC = () => {
         <TransactionTestPage />
       } />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/change-password" element={
+        <ProtectedRoute>
+          <ChangePasswordPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/change-email" element={
+        <ProtectedRoute>
+          <ChangeEmailPage />
+        </ProtectedRoute>
+      } />
       {/* Catch all route - redirect to home instead of dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

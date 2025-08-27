@@ -1,42 +1,76 @@
 import api from './api';
-import { UserCard, CreateUserCardRequest, CardStatusUpdateRequest } from '@/types';
+import { logger } from '../utils/logger';
+import { UserCard, CardStatusUpdateRequest } from '../types';
+import { CardType } from '../types/cardTypes';
+import { CardStatus } from '../types/cardStatus';
+
+export interface CreateUserCardRequest {
+  customerID: number;
+  cardType: CardType;
+  cardName?: string;
+}
 
 class UserCardService {
-  // New secure user-specific methods
+  /**
+   * Get all cards for the current authenticated user
+   */
   async getUserCards(): Promise<UserCard[]> {
     const response = await api.get<{ success: boolean; cards: UserCard[] }>('/SecureUserCard/user/cards');
     return response.data.cards;
   }
 
+  /**
+   * Create a new card for the current user
+   */
   async createUserCard(cardData: CreateUserCardRequest): Promise<UserCard> {
-    const response = await api.post<{ success: boolean; card: UserCard }>('/SecureUserCard/user/card', cardData);
+    const requestData = {
+      customerID: cardData.customerID,
+      cardType: cardData.cardType,
+      ...(cardData.cardName && { cardName: cardData.cardName })
+    };
+    
+    const response = await api.post<{ success: boolean; card: UserCard }>('/SecureUserCard/user/card', requestData);
     return response.data.card;
   }
 
+  /**
+   * Get a specific card by its number
+   */
   async getUserCardByNumber(cardNumber: string): Promise<UserCard> {
     const response = await api.get<{ success: boolean; card: UserCard }>(`/SecureUserCard/user/card/${cardNumber}`);
     return response.data.card;
   }
 
+  /**
+   * Get the current user's profile information
+   */
   async getUserProfile(): Promise<any> {
     const response = await api.get<{ success: boolean; user: any }>('/SecureUserCard/user/profile');
     return response.data.user;
   }
 
-  // Existing methods for backward compatibility
-  async getCardsByCustomerId(customerId: number): Promise<UserCard[]> {
-    const response = await api.get<UserCard[]>(`/UserCard/customer/${customerId}`);
-    return response.data;
+  /**
+   * @deprecated Use getUserCards() instead
+   * Get all cards for the current authenticated user
+   */
+  async getCardsByCustomerId(): Promise<UserCard[]> {
+    return this.getUserCards();
   }
 
+  /**
+   * @deprecated Use getUserCardByNumber() instead
+   * Get a specific card by its number
+   */
   async getCardByNumber(cardNumber: string): Promise<UserCard> {
-    const response = await api.get<UserCard>(`/UserCard/number/${cardNumber}`);
-    return response.data;
+    return this.getUserCardByNumber(cardNumber);
   }
 
+  /**
+   * @deprecated Use createUserCard() instead
+   * Create a new card for the current user
+   */
   async createCard(cardData: CreateUserCardRequest): Promise<UserCard> {
-    const response = await api.post<UserCard>('/UserCard', cardData);
-    return response.data;
+    return this.createUserCard(cardData);
   }
 
   /**
@@ -44,6 +78,11 @@ class UserCardService {
    * @param updateData Object containing cardId and the new status
    */
   async updateCardStatus(updateData: CardStatusUpdateRequest) {
+    // Validate status against CardStatus enum
+    if (!Object.values(CardStatus).includes(updateData.status)) {
+      throw new Error(`Invalid card status: ${updateData.status}`);
+    }
+    
     // Using the secure endpoint which requires authentication
     const response = await api.put<{
       success: boolean; 
@@ -51,8 +90,24 @@ class UserCardService {
       card: UserCard 
     }>(
       '/SecureUserCard/user/card/status',
-      updateData
+      {
+        cardId: updateData.cardId,
+        status: updateData.status
+      }
     );
+    
+    // Get status name safely from CardStatus enum
+    const statusName = Object.entries(CardStatus).find(
+      ([key, value]) => value === updateData.status
+    )?.[0] || 'Unknown';
+    
+    // Log the status update for debugging
+    logger.debug('userCardService', 'updateCardStatus', 'Card status updated', {
+      cardId: updateData.cardId,
+      status: updateData.status,
+      statusName
+    });
+    
     return response.data;
   }
 }

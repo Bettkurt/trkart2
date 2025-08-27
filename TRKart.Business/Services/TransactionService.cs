@@ -39,13 +39,13 @@ namespace TRKart.Business.Services
                 throw new InvalidOperationException($"Transaction denied: {feasibilityCheck.Message}");
             }
 
-            var transaction = new Transaction
-            {
-                CardID = dto.CardID,
-                Amount = dto.Amount, // Always positive amount - direction determined by transaction type
-                TransactionType = dto.TransactionType,
-                Description = dto.Description
-            };
+            			var transaction = new Transaction
+			{
+				CardID = dto.CardID,
+				Amount = dto.Amount, // Always positive amount - direction determined by transaction type
+				TransactionType = dto.TransactionType,
+				Description = dto.Description
+			};
             return await _transactionRepository.AddTransactionAsync(transaction);
         }
 

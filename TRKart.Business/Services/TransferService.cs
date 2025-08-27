@@ -1,10 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using TRKart.Business.Interfaces;
+using TRKart.DataAccess;
 using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
+using TRKart.Entities.Enums;
 using TRKart.Repository.Interfaces;
-using TRKart.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
@@ -14,13 +15,11 @@ namespace TRKart.Business.Services
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly ApplicationDbContext _context;
-        private readonly IInputValidationService _inputValidationService;
 
-        public TransferService(ITransactionRepository transactionRepository, ApplicationDbContext context, IInputValidationService inputValidationService)
+        public TransferService(ITransactionRepository transactionRepository, ApplicationDbContext context)
         {
             _transactionRepository = transactionRepository;
             _context = context;
-            _inputValidationService = inputValidationService;
         }
 
         public async Task<TransferResponse> CreateTransferAsync(TransferCreateDto dto)
@@ -191,7 +190,7 @@ namespace TRKart.Business.Services
                         CardID = c.CardID,
                         CardNumber = c.CardNumber,
                         Balance = c.Balance,
-                        CardStatus = c.CardStatus,
+                        CardStatus = (CardStatus)c.CardStatus,
                         CustomerID = c.CustomerID
                     })
                     .FirstOrDefaultAsync();
@@ -202,7 +201,7 @@ namespace TRKart.Business.Services
                     response.IsValid = false;
                     response.Message = "Card not found";
                 }
-                else if (card.CardStatus != "Active")
+                else if (card.CardStatus != CardStatus.Active) // Active = 4
                 {
                     response.Success = true;
                     response.IsValid = false;

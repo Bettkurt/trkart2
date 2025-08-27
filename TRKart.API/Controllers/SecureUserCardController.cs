@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TRKart.Business.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
+using TRKart.Entities.Enums;
 
 namespace TRKart.API.Controllers
 {
@@ -109,13 +110,23 @@ namespace TRKart.API.Controllers
                 if (createDto.CustomerID != customerId.Value)
                     return ForbiddenResponse("Access denied. Cannot create card for another user.");
 
-                if (!ModelState.IsValid)
+               /* if (!ModelState.IsValid)
                 {
                     _logger.LogWarning("Invalid model state for card creation");
                     return BadRequest(new { 
                         success = false, 
                         message = "Invalid request data",
                         errors = ModelState
+                    });
+                } */
+
+                // Validate CardType is within valid range
+                if (!Enum.IsDefined(typeof(CardType), createDto.CardType))
+                {
+                    return BadRequest(new {
+                        success = false,
+                        message = "Invalid card type",
+                        error = "INVALID_CARD_TYPE"
                     });
                 }
 
@@ -148,24 +159,34 @@ namespace TRKart.API.Controllers
         {
             var customerId = GetCurrentCustomerId();
             if (!customerId.HasValue)
+            {
+                _logger.LogWarning("No customer ID found in the current session");
                 return UnauthorizedResponse();
+            }
 
             try
             {
                 // Verify the card belongs to the current user
                 var card = await _context.UserCard
-                    .FirstOrDefaultAsync(uc => uc.CardID == updateDto.CardId && uc.CustomerID == customerId);
+                    .FirstOrDefaultAsync(uc => uc.CardID == updateDto.CardID && uc.CustomerID == customerId);
+                    
+                Console.WriteLine($"[UpdateCardStatus] Card found 1: {card}");
 
                 if (card == null)
                 {
+                    Console.WriteLine($"[UpdateCardStatus] Card not found or you don't have permission to update this card");
                     return NotFound(new { 
                         success = false, 
                         message = "Card not found or you don't have permission to update this card" 
                     });
                 }
 
+                Console.WriteLine($"[UpdateCardStatus] Card found 2: {card}");
+
                 // Update the card status
                 var success = await _userCardService.UpdateCardStatusAsync(updateDto);
+                
+                Console.WriteLine($"[UpdateCardStatus] Card updated: {success}");
                 
                 if (!success)
                 {
@@ -183,13 +204,13 @@ namespace TRKart.API.Controllers
                         CardID = card.CardID,
                         CardNumber = card.CardNumber,
                         CardStatus = updateDto.Status,
-                        LastUpdate = DateTime.UtcNow
+                        //LastUpdate = DateTime.UtcNow  // Set by DB
                     }
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating card status for card {CardId}", updateDto.CardId);
+                _logger.LogError(ex, "Error updating card status for card {CardID}", updateDto.CardID);
                 return StatusCode(500, new { 
                     success = false, 
                     message = "An error occurred while updating card status" 

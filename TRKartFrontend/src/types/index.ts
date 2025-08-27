@@ -1,6 +1,10 @@
+// Import enums
+import { CardType } from './cardTypes';
+import { CardStatus } from './cardStatus';
+
 // Auth types
 export interface LoginRequest {
-    email: string | null;
+  email: string | null;
   password: string;
   rememberMe: boolean;
 }
@@ -9,14 +13,14 @@ export interface SessionCheckResponse {
   hasValidSession: boolean;
   email: string | null;
   customerID: number | null;
-  fullName: string | null;
+  fullName?: string | null;
 }
 
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
-  accessTokenExpiration: string;
-  refreshTokenExpiration: string;
+  accessTokenExpiration?: string;
+  refreshTokenExpiration?: string;
   message?: string;
 }
 
@@ -24,21 +28,23 @@ export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
-export interface AuthResponse extends TokenResponse {
+export interface AuthResponse extends Omit<TokenResponse, 'message'> {
   message: string;
+  customerID?: number;
+  fullName?: string;
 }
 
 export interface RegisterRequest {
   email: string;
   password: string;
-  fullName: string;
+  fullName?: string;
 }
 
 // User types
 export interface User {
   customerID: number;
   email: string;
-  fullName: string;
+  fullName?: string;
 }
 
 // UserCard types
@@ -47,20 +53,24 @@ export interface UserCard {
   customerID: number;
   cardNumber: string;
   balance: number;
-  cardStatus: string;
-  createdAt: string;
+  cardStatus: CardStatus;
+  cardType: CardType;
+  cardExpirationDate: string;
+  cardName?: string;
 }
 
 export interface CreateUserCardRequest {
   customerID: number;
+  cardType: CardType;
+  cardName?: string;
   // cardNumber and balance are handled by the backend
-  cardNumber?: string;
-  balance?: number;
+  //a cardNumber?: string;
+  //a balance?: number;
 }
 
 export interface CardStatusUpdateRequest {
   cardId: number;
-  status: string;
+  status: CardStatus;
 }
 
 // Transaction types
@@ -117,7 +127,7 @@ export interface CardExistsResponse {
     cardID: number;
     cardNumber: string;
     balance: number;
-    cardStatus: string;
+    cardStatus: CardStatus;
     customerID: number;
   };
 }

@@ -12,6 +12,8 @@ using TRKart.Repository.Repositories;
 using TRKart.API.Middleware;
 using Serilog;
 using Serilog.Events;
+using TRKart.API.Services;
+using TRKart.API.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,8 +43,10 @@ builder.Services.AddControllers()
 // 3. CORS configuration for local development
 var allowedOrigins = new[] 
 {
-    "http://localhost:3000",  // Frontend
-    "https://localhost:7037"  // Swagger/API interface
+    "http://localhost:3000",   // Frontend (HTTP)
+    "https://localhost:3000",  // Frontend (HTTPS)
+    "http://localhost:7037",   // API (HTTP)
+    "https://localhost:7037"   // API (HTTPS)
 };
 
 builder.Services.AddCors(options =>
@@ -60,13 +64,21 @@ builder.Services.AddCors(options =>
 // 4. Register application services
 builder.Services.AddScoped<TRKart.Core.Interfaces.IUniqueNumberChecker, TRKart.DataAccess.Services.UniqueNumberChecker>();
 
+// 4.1. Register card expiration services
+builder.Services.AddScoped<ICardExpirationService, CardExpirationService>();
+builder.Services.AddHostedService<CardExpirationBackgroundService>();
+
+// 4.2. Register card balance transfer services
+builder.Services.AddScoped<ICardBalanceTransferService, CardBalanceTransferService>();
+builder.Services.AddHostedService<CardBalanceTransferBackgroundService>();
+
 // 5. Swagger + JWT support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "TRKart API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "TRKart API", Version = "v1" });
 
-    var jwtSecurityScheme = new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    var jwtSecurityScheme = new OpenApiSecurityScheme
     {
         BearerFormat = "JWT",
         Name = "Authorization",
@@ -106,11 +118,19 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
+       
     };
 });
 
-// 7. DI Services
+// 7. Configure Token Cleanup Settings
+builder.Services.Configure<TokenCleanupSettings>(
+    builder.Configuration.GetSection("TokenCleanup"));
+
+// 8. Register Background Services
+builder.Services.AddHostedService<TokenCleanupService>();
+
+// 9. DI Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
@@ -121,6 +141,7 @@ builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositorie
 builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 
 var app = builder.Build();
+
 // Use custom JWT middleware before authorization
 app.UseJwtMiddleware();
 

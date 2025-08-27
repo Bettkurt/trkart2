@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Security.Claims;
 using TRKart.Business.Interfaces;
 using TRKart.Core.Helpers;
@@ -61,115 +62,46 @@ namespace TRKart.Business.Services
         {
             _logger.LogInformation("Login attempt for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
 
-            try
-            {
-                var customer = await _context.Customers
-                    .FirstOrDefaultAsync(x => x.Email == dto.Email);
-
-                if (customer == null)
-                {
-                    _logger.LogWarning("Login failed - customer not found for email: {Email}", dto.Email);
-                    return null;
-                }
-
-                bool isValid = await VerifyPasswordAsync(dto.Email, dto.Password);
-                if (!isValid)
-                {
-                    _logger.LogWarning("Login failed - invalid password for email: {Email}", dto.Email);
-                    return null;
-                }
-
-                // Check for existing valid refresh token for this user
-                var existingSession = await _context.SessionToken
-                    .FirstOrDefaultAsync(s => s.CustomerID == customer.CustomerID &&
-                                    s.RefreshTokenExpiration > DateTime.UtcNow &&
-                                    !s.IsRevoked);
-
-                if (existingSession != null)
-                {
-                    _logger.LogDebug("Found existing session for customer: {CustomerID}", customer.CustomerID);
-                    
-                    // IMPORTANT: Check if the existing refresh token is blacklisted
-                    bool isBlacklisted = await IsRefreshTokenBlacklistedAsync(existingSession.RefreshToken);
-
-                    if (isBlacklisted)
-                    {
-                        _logger.LogWarning("Existing session has blacklisted refresh token for customer: {CustomerID}", customer.CustomerID);
-                        
-                        // Mark the session as revoked since its refresh token is blacklisted
-                        existingSession.IsRevoked = true;
-                        await _context.SaveChangesAsync();
-
-                        // Continue to create new tokens instead of using the blacklisted one
-                    }
-                    else
-                    {
-                        _logger.LogDebug("Using existing session for customer: {CustomerID}", customer.CustomerID);
-                        
-                        // We have a valid existing session, just generate a new access token
-                        string newAccessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-                        DateTime newAccessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
-
-                        // Update the existing session with new access token
-                        existingSession.AccessToken = newAccessToken;
-                        existingSession.AccessTokenExpiration = newAccessTokenExpiration;
-                        existingSession.IPAddress = ipAddress ?? existingSession.IPAddress;
-                        existingSession.DeviceInfo = deviceInfo ?? existingSession.DeviceInfo;
-
-                        await _context.SaveChangesAsync();
-
-                        _logger.LogInformation("Login successful - reused existing session for customer: {CustomerID}", customer.CustomerID);
-                        return new TokenResponse
-                        {
-                            AccessToken = newAccessToken,
-                            RefreshToken = existingSession.RefreshToken, // Keep the existing refresh token
-                            AccessTokenExpiration = newAccessTokenExpiration,
-                            RefreshTokenExpiration = existingSession.RefreshTokenExpiration
-                        };
-                    }
-                }
-
-                // No valid existing session found OR existing session had blacklisted token, create new tokens
-                _logger.LogDebug("Creating new session for customer: {CustomerID}", customer.CustomerID);
-                
-                string accessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-                string refreshToken = _jwtHelper.GenerateRefreshToken();
-
-                // Get token expiration times
-                DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
-                DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
-
-                // Create and save new session
-                var session = new SessionToken
-                {
-                    CustomerID = customer.CustomerID,
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    AccessTokenExpiration = accessTokenExpiration,
-                    RefreshTokenExpiration = refreshTokenExpiration,
-                    RefreshTokenCreatedAt = DateTime.UtcNow,
-                    IsRevoked = false,
-                    DeviceInfo = deviceInfo,
-                    IPAddress = ipAddress
-                };
-
-                await _context.SessionToken.AddAsync(session);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Login successful - created new session for customer: {CustomerID}", customer.CustomerID);
-                return new TokenResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    AccessTokenExpiration = accessTokenExpiration,
-                    RefreshTokenExpiration = refreshTokenExpiration
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Login failed for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
+            if (customer == null)
                 return null;
-            }
+
+            bool isValid = await VerifyPasswordAsync(dto.Email, dto.Password);
+            if (!isValid)
+                return null;
+
+
+            // No valid existing session found OR existing session had blacklisted token, create new tokens
+            string accessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
+            string refreshToken = _jwtHelper.GenerateRefreshToken();
+
+            // Get token expiration times
+            DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
+            DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
+
+            // Create and save new session
+            var session = new SessionToken
+            {
+                CustomerID = customer.CustomerID,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiration = accessTokenExpiration,
+                RefreshTokenExpiration = refreshTokenExpiration,
+                // RefreshTokenCreatedAt = DateTime.UtcNow, // Set by DB
+                IsRevoked = false,
+                DeviceInfo = deviceInfo,
+                IPAddress = ipAddress
+            };
+
+            await _context.SessionToken.AddAsync(session);
+            await _context.SaveChangesAsync();
+
+            return new TokenResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiration = accessTokenExpiration,
+                RefreshTokenExpiration = refreshTokenExpiration
+            };
         }
 
         public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, string? ipAddress = null)
@@ -219,30 +151,51 @@ namespace TRKart.Business.Services
                 session.IsRevoked = true;
                 await _context.SaveChangesAsync();
 
-                // For financial applications, we might want to trigger additional security measures here
+                // TODO: We might want to trigger additional security measures here
                 // such as requiring re-authentication or notifying the user
 
                 _logger.LogWarning("Refresh token revoked due to suspicious activity for token: {RefreshToken}", refreshToken);
                 return null; // Don't allow refresh from suspicious activity
             }
 
-            // Generate a new access token and refresh token
+            // Generate a new access token
             string newAccessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-            string newRefreshToken = _jwtHelper.GenerateRefreshToken();
-
-            // Get token expiration times
             DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
-            DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
+            
+            // Only rotate refresh token if it's close to expiration (e.g., within 1 day)
+            bool shouldRotateRefreshToken = session.RefreshTokenExpiration < DateTime.UtcNow.AddDays(1);
+            
+            string newRefreshToken = shouldRotateRefreshToken 
+                ? _jwtHelper.GenerateRefreshToken()
+                : refreshToken;
+                
+            DateTime refreshTokenExpiration = shouldRotateRefreshToken 
+                ? _jwtHelper.GetRefreshTokenExpiration()
+                : session.RefreshTokenExpiration;
 
-            // Add the old refresh token to blacklist to prevent reuse (refresh token rotation)
-            await BlacklistRefreshTokenAsync(refreshToken, "Refresh token rotation");
+            if (shouldRotateRefreshToken)
+            {
+                // Only blacklist the old refresh token if we're rotating to a new one
+                await BlacklistRefreshTokenAsync(refreshToken, "Refresh token rotation");
+            }
 
-            // Update the session with new tokens
+            // Update the session with new access token and expiration
+            // Keep the same refresh token if not rotating
             session.AccessToken = newAccessToken;
-            session.RefreshToken = newRefreshToken;
             session.AccessTokenExpiration = accessTokenExpiration;
-            session.RefreshTokenExpiration = refreshTokenExpiration;
-            session.IPAddress = ipAddress ?? session.IPAddress;
+            
+            // Only update refresh token if we're rotating it
+            if (shouldRotateRefreshToken)
+            {
+                session.RefreshToken = newRefreshToken;
+                session.RefreshTokenExpiration = refreshTokenExpiration;
+            }
+            
+            // Update IP address if provided
+            if (!string.IsNullOrEmpty(ipAddress))
+            {
+                session.IPAddress = ipAddress;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -365,10 +318,22 @@ namespace TRKart.Business.Services
                 return;
             }
 
-            // Add to blacklist
+            // Find the session with this refresh token
+            var session = await _context.SessionToken
+                .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken);
+
+            if (session == null)
+            {
+                Console.WriteLine("Attempted to blacklist a refresh token with no associated session");
+                return;
+            }
+
+            // Add to blacklist with SessionID
             var blacklistEntry = new TokenBlacklist
             {
+                SessionID = session.SessionID,
                 RefreshToken = refreshToken,
+                IPAddress = session.IPAddress,
                 BlacklistedAt = DateTime.UtcNow,
                 Reason = reason
             };
@@ -391,6 +356,8 @@ namespace TRKart.Business.Services
 
             // Generate unique customer number
             var customerNumber = await CustomerNumberHelper.GenerateCustomerNumberAsync(_uniqueNumberChecker);
+            if (string.IsNullOrEmpty(customerNumber))
+                return false;
 
             // Create new user
             var newCustomer = new Customers
@@ -485,6 +452,141 @@ namespace TRKart.Business.Services
             {
                 _logger.LogError(ex, "Error getting user email from access token: {AccessToken}", accessToken);
                 return null;
+            }
+        }
+
+        public async Task<(bool IsValid, string? Email, int? CustomerID, string? FullName)> ValidateRefreshTokenAsync(string refreshToken)
+        {
+            if (string.IsNullOrEmpty(refreshToken))
+                return (false, null, null, null);
+
+            // Check if token is blacklisted
+            var isBlacklisted = await IsRefreshTokenBlacklistedAsync(refreshToken);
+            if (isBlacklisted)
+                return (false, null, null, null);
+
+            // Get the token from database
+            var token = await _context.SessionToken
+                .Include(rt => rt.Customer)
+                .FirstOrDefaultAsync(rt => rt.RefreshToken == refreshToken && 
+                                       rt.RefreshTokenExpiration > DateTime.UtcNow && 
+                                       !rt.IsRevoked);
+
+            if (token == null || token.Customer == null)
+                return (false, null, null, null);
+
+            return (true, token.Customer.Email, token.Customer.CustomerID, token.Customer.FullName);
+        }
+        
+        public async Task<bool> ChangePasswordAsync(ChangePasswordDto dto)
+        {
+            try
+            {
+                IDbContextTransaction? transaction = null;
+                var isInMemory = _context.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) == true;
+                if (!isInMemory)
+                {
+                    transaction = await _context.Database.BeginTransactionAsync();
+                }
+        
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == dto.Email);
+
+                if (customer == null)
+                    return false;
+
+                if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, customer.PasswordHash))
+                    return false;
+
+                // Reject if the new password matches the current password
+                if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, customer.PasswordHash))
+                    return false;
+
+                var recentPasswords = await _context.PasswordHistory
+                    .Where(ph => ph.CustomerID == customer.CustomerID)
+                    .OrderByDescending(ph => ph.CreatedAt)
+                    .Take(3)
+                    .Select(ph => ph.PasswordHash)
+                    .ToListAsync();
+
+                if (recentPasswords.Any(oldHash => BCrypt.Net.BCrypt.Verify(dto.NewPassword, oldHash)))
+                    return false;
+
+                await _context.PasswordHistory.AddAsync(new PasswordHistory
+                {
+                    CustomerID = customer.CustomerID,
+                    PasswordHash = customer.PasswordHash,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        
+                await _context.SaveChangesAsync();
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> ChangeEmailAsync(string currentEmail, ChangeEmailDto dto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(currentEmail))
+                    return false;
+
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Password) || string.IsNullOrWhiteSpace(dto.NewEmail))
+                    return false;
+
+                // Basic email validation: must contain '@' and '.'
+                if (!dto.NewEmail.Contains('@') || !dto.NewEmail.Contains('.'))
+                    return false;
+
+                IDbContextTransaction? transaction = null;
+                var isInMemory = _context.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) == true;
+                if (!isInMemory)
+                {
+                    transaction = await _context.Database.BeginTransactionAsync();
+                }
+
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == currentEmail);
+
+                if (customer == null)
+                    return false;
+
+                // Verify password
+                if (!BCrypt.Net.BCrypt.Verify(dto.Password, customer.PasswordHash))
+                    return false;
+
+                // No-op if same email (case-insensitive)
+                if (string.Equals(customer.Email, dto.NewEmail, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // Ensure new email is unique
+                var emailExists = await _context.Customers.AnyAsync(x => x.Email == dto.NewEmail);
+                if (emailExists)
+                    return false;
+
+                customer.Email = dto.NewEmail;
+                await _context.SaveChangesAsync();
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
     }
