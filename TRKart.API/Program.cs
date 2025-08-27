@@ -27,8 +27,10 @@ builder.Services.AddControllers()
 // 3. CORS configuration for local development
 var allowedOrigins = new[] 
 {
-    "http://localhost:3000",  // Frontend
-    "https://localhost:7037"  // Swagger/API interface
+    "http://localhost:3000",   // Frontend (HTTP)
+    "https://localhost:3000",  // Frontend (HTTPS)
+    "http://localhost:7037",   // API (HTTP)
+    "https://localhost:7037"   // API (HTTPS)
 };
 
 builder.Services.AddCors(options =>
@@ -92,7 +94,8 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
+       
     };
 });
 

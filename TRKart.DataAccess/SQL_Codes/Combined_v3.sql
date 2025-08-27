@@ -361,6 +361,29 @@ BEFORE INSERT ON "PasswordHistory"
 FOR EACH ROW
 EXECUTE FUNCTION manage_password_history();
 
+-------------------------------------------------------------------------------------------
+-----------------------------------Revoke Previous Tokens Function--------------------------
+
+-- Create function to revoke previous tokens for a customer
+CREATE OR REPLACE FUNCTION revoke_previous_tokens()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update all previous active tokens for this customer to be revoked
+    UPDATE "SessionToken"
+    SET "IsRevoked" = true
+    WHERE "CustomerID" = NEW."CustomerID"
+    AND "SessionID" != NEW."SessionID"
+    AND "IsRevoked" = false;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger to revoke previous tokens
+CREATE TRIGGER revoke_previous_tokens_trigger
+AFTER INSERT ON "SessionToken"
+FOR EACH ROW
+EXECUTE FUNCTION revoke_previous_tokens();
 
 -------------------------------------------------------------------------------------------
 ---------------------------------------Indexes---------------------------------------------

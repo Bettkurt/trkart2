@@ -1,6 +1,7 @@
 import api from './api';
-import sessionService from './sessionService';
 import { TokenResponse } from '@/types';
+import { getCookie, setCookie, deleteCookie, isTokenExpired } from '@/utils/cookieUtils';
+import authService from './authService';
 
 class TokenService {
   private isRefreshing = false;
@@ -19,7 +20,7 @@ class TokenService {
       // Create a new promise for the refresh
       this.refreshPromise = new Promise<TokenResponse>(async (resolve, reject) => {
         try {
-          const refreshToken = sessionService.getRefreshToken();
+          const refreshToken = getCookie('refreshToken');
 
           if (!refreshToken) {
             throw new Error('No refresh token available');
@@ -30,22 +31,30 @@ class TokenService {
             refreshToken
           });
 
-          /* Update the session with the new tokens
+          // Update cookies with the new tokens
           if (response.data) {
-            sessionService.setUserSession({
-              accessToken: response.data.accessToken,
-              refreshToken: response.data.refreshToken,
-              accessTokenExpiration: response.data.accessTokenExpiration,
-              refreshTokenExpiration: response.data.refreshTokenExpiration,
-              email: sessionService.getSessionData('userEmail') || ''
-            });
-          } */
+            const { accessToken, refreshToken} = response.data;
+            
+            // Update cookies
+            setCookie('accessToken', accessToken);
+            setCookie('refreshToken', refreshToken);
+            
+            // Update auth service with the new tokens
+            const userData = authService.getUserData();
+            if (userData) {
+              // Update the auth state with the new tokens
+              authService.setUserData(userData);
+            }
+          }
 
           resolve(response.data);
         } catch (error) {
           console.error('Failed to refresh token:', error);
           // Clear session on refresh failure
-          sessionService.clearSession();
+          // Clear all auth cookies
+          ['accessToken', 'refreshToken', 'accessTokenExpiration', 'refreshTokenExpiration'].forEach(cookie => {
+            deleteCookie(cookie);
+          });
           reject(error);
         } finally {
           this.isRefreshing = false;
@@ -63,25 +72,31 @@ class TokenService {
 
   // Check if we need to refresh the token and do so if needed
   async ensureValidToken(): Promise<string | null> {
-    // If the access token is not expired, return it
-    if (!sessionService.isAccessTokenExpired()) {
-      return sessionService.getAccessToken();
-    }
+    // First check if refresh token exists and is not expired
+    const refreshToken = getCookie('refreshToken');
+    const isRefreshTokenValid = refreshToken && !isTokenExpired('refreshTokenExpiration');
 
-    // If the refresh token is expired, clear the session and return null
-    if (sessionService.isRefreshTokenExpired()) {
-      sessionService.clearSession();
+    if (!isRefreshTokenValid) {
+      // Clear all auth cookies if refresh token is invalid
+      ['accessToken', 'refreshToken', 'accessTokenExpiration', 'refreshTokenExpiration'].forEach(cookie => {
+        deleteCookie(cookie);
+      });
       return null;
     }
 
-    // Refresh the token
-    try {
-      const response = await this.refreshToken();
-      return response.accessToken;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      return null;
+    // If we have a valid refresh token but no access token or it's expired, refresh it
+    const accessToken = getCookie('accessToken');
+    if (!accessToken || isTokenExpired('accessTokenExpiration')) {
+      try {
+        const response = await this.refreshToken();
+        return response.accessToken;
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        return null;
+      }
     }
+
+    return accessToken;
   }
 }
 

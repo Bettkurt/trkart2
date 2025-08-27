@@ -61,38 +61,34 @@ namespace TRKart.API.Controllers
                 return Unauthorized("Geçersiz e-posta veya şifre.");
             }
 
-            // Set access token in cookie
+            // Set access token in cookie (without explicit expiration, will be session-based)
             Response.Cookies.Append(
                 "AccessToken",
                 tokenResponse.AccessToken,
                 new CookieOptions
                 {
                     HttpOnly = true,
-                    Expires = tokenResponse.AccessTokenExpiration,
                     Secure = true,
                     SameSite = SameSiteMode.Strict,
                     Path = "/"
                 });
 
-            // Set refresh token in cookie with longer expiration
+            // Set refresh token in cookie (long-lived, managed by server)
             Response.Cookies.Append(
                 "RefreshToken",
                 tokenResponse.RefreshToken,
                 new CookieOptions
                 {
                     HttpOnly = true,
-                    Expires = tokenResponse.RefreshTokenExpiration,
                     Secure = true,
                     SameSite = SameSiteMode.Strict,
                     Path = "/"
                 });
 
             return Ok(new { 
-                message = "Giriş başarılı!", 
+                message = "Giriş başarılı!",
                 accessToken = tokenResponse.AccessToken,
-                refreshToken = tokenResponse.RefreshToken,
-                accessTokenExpiration = tokenResponse.AccessTokenExpiration,
-                refreshTokenExpiration = tokenResponse.RefreshTokenExpiration
+                refreshToken = tokenResponse.RefreshToken
             });
         }
 
@@ -134,27 +130,25 @@ namespace TRKart.API.Controllers
         return Unauthorized("Invalid or expired refresh token");
     }
 
-    // Set new access token in cookie
+    // Set new access token in cookie (without explicit expiration)
     Response.Cookies.Append(
         "AccessToken",
         tokenResponse.AccessToken,
         new CookieOptions
         {
             HttpOnly = true,
-            Expires = tokenResponse.AccessTokenExpiration,
             Secure = true,
             SameSite = SameSiteMode.Strict,
             Path = "/"
         });
 
-    // Set new refresh token in cookie
+    // Set new refresh token in cookie (long-lived, managed by server)
     Response.Cookies.Append(
         "RefreshToken",
         tokenResponse.RefreshToken,
         new CookieOptions
         {
             HttpOnly = true,
-            Expires = tokenResponse.RefreshTokenExpiration,
             Secure = true,
             SameSite = SameSiteMode.Strict,
             Path = "/"
@@ -162,21 +156,55 @@ namespace TRKart.API.Controllers
 
     return Ok(new {
         accessToken = tokenResponse.AccessToken,
-        refreshToken = tokenResponse.RefreshToken,
-        accessTokenExpiration = tokenResponse.AccessTokenExpiration,
-        refreshTokenExpiration = tokenResponse.RefreshTokenExpiration
+        refreshToken = tokenResponse.RefreshToken
     });
 }
 
         [HttpGet("check-session")]
         public async Task<IActionResult> CheckSession()
         {
-            var accessToken = Request.Cookies["AccessToken"];
-            if (string.IsNullOrEmpty(accessToken))
+            // First check if we have a refresh token
+            var refreshToken = Request.Cookies["RefreshToken"];
+            if (string.IsNullOrEmpty(refreshToken))
                 return Ok(new { hasValidSession = false, email = (string?)null, customerID = (int?)null, fullName = (string?)null });
 
-            var (isValid, email, customerID, fullName) = await _authService.ValidateAccessTokenAsync(accessToken);
-            return Ok(new { hasValidSession = isValid, email, customerID, fullName });
+            // If we have a refresh token, try to validate it
+            var (isValid, email, customerID, fullName) = await _authService.ValidateRefreshTokenAsync(refreshToken);
+            
+            // If refresh token is valid but access token is missing/expired, issue new tokens
+            if (isValid && (string.IsNullOrEmpty(Request.Cookies["AccessToken"]) || 
+                           !(await _authService.ValidateAccessTokenAsync(Request.Cookies["AccessToken"])).IsValid))
+            {
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var tokenResponse = await _authService.RefreshTokenAsync(refreshToken, ipAddress);
+                
+                if (tokenResponse != null)
+                {
+                    // Set new access token in cookie
+                    Response.Cookies.Append("AccessToken", tokenResponse.AccessToken, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.Strict,
+                        Path = "/"
+                    });
+                    
+                    return Ok(new { 
+                        hasValidSession = true, 
+                        email, 
+                        customerID, 
+                        fullName,
+                        newAccessToken = tokenResponse.AccessToken
+                    });
+                }
+            }
+
+            return Ok(new { 
+                hasValidSession = isValid, 
+                email, 
+                customerID, 
+                fullName 
+            });
         }
 
         [HttpGet("user-email")]

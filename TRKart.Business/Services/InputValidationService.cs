@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Globalization;
 using TRKart.Business.Interfaces;
 using TRKart.Entities.DTOs;
 
@@ -18,8 +19,8 @@ namespace TRKart.Business.Services
                 errors.AddRange(cardIdValidation.Errors);
             }
 
-            // Validate Amount
-            var amountValidation = ValidateAmount(dto.Amount.ToString());
+            // Validate Amount (use invariant culture to keep '.' as decimal separator)
+            var amountValidation = ValidateAmount(dto.Amount.ToString(CultureInfo.InvariantCulture));
             if (!amountValidation.IsValid)
             {
                 errors.AddRange(amountValidation.Errors);
@@ -129,8 +130,8 @@ namespace TRKart.Business.Services
                 }
             }
 
-            // Try to parse as decimal
-            if (!decimal.TryParse(amountString, out decimal amount))
+            // Try to parse as decimal using invariant culture (expects '.' as decimal separator)
+            if (!decimal.TryParse(amountString, NumberStyles.Number | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out decimal amount))
             {
                 errors.Add(new ValidationError
                 {
