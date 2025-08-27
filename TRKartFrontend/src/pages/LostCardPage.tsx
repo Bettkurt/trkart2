@@ -196,12 +196,12 @@ const LostCardPage: React.FC = () => {
       // Update card status to 'Lost' using the API
       logger.debug('LostCardPage', 'handleMarkAsLost', 'Sending status update request to API', { 
         cardId: card.cardID,
-        newStatus: 'Lost'
+        newStatus: 2
       });
       
       await userCardService.updateCardStatus({
         cardId: card.cardID,
-        status: 'Lost'
+        status: 2
       });
       
       logger.info('LostCardPage', 'handleMarkAsLost', 'Card status updated to Lost', { 
@@ -216,12 +216,12 @@ const LostCardPage: React.FC = () => {
         if (storedCards) {
           const cards: UserCard[] = JSON.parse(storedCards);
           const updatedCards = cards.map(c => 
-            c.cardID === card.cardID ? { ...c, cardStatus: 'Lost' } : c
+            c.cardID === card.cardID ? { ...c, cardStatus: 2 } : c
           );
           localStorage.setItem(userKey, JSON.stringify(updatedCards));
           logger.debug('LostCardPage', 'handleMarkAsLost', 'Updated card status in localStorage', { 
             cardId: card.cardID,
-            newStatus: 'Lost'
+            newStatus: 2
           });
         }
       }
@@ -259,7 +259,7 @@ const LostCardPage: React.FC = () => {
       transferAmount: card.balance
     });
     
-    navigate('/new-transaction', { 
+    navigate('/new-transfer', { 
       state: { 
         fromCardNumber: card.cardNumber,
         amount: card.balance,

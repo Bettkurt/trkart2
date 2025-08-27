@@ -69,11 +69,6 @@ namespace TRKart.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateCardStatus([FromBody] CardStatusUpdateDto updateDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             try
             {
                 var result = await _userCardService.UpdateCardStatusAsync(updateDto);
@@ -87,7 +82,7 @@ namespace TRKart.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating card status for card ID: {CardId}", updateDto?.CardId);
+                _logger.LogError(ex, "Error updating card status for card ID: {CardID}", updateDto?.CardID);
                 return StatusCode(500, new { message = "An error occurred while updating the card status" });
             }
         }
@@ -104,12 +99,6 @@ namespace TRKart.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<UserCardResponseDto>> CreateCard([FromBody] CreateUserCardDto createDto)
         {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid model state for card creation");
-                return BadRequest(ModelState);
-            }
-
             try
             {
                 var createdCard = await _userCardService.CreateUserCardAsync(createDto);

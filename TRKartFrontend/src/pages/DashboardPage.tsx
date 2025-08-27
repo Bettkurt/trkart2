@@ -72,7 +72,7 @@ const DashboardPage: React.FC = () => {
                 <Link to="/new-transaction" className="btn-primary w-full block text-center py-3 text-base">New Transaction</Link>
                 <Link to="/create-card" className="btn-secondary w-full block text-center py-3 text-base">Add New Card</Link>
                 <Link to="/new-transfer" className="btn-primary w-full block text-center py-3 text-base">New Transfer</Link>
-               
+                <Link to="/cards-new" className="btn-secondary w-full block text-center py-3 text-base">View New Card Design</Link>
               </div>
             </div>
             

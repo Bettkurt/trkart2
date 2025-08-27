@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using TRKart.Entities.Models;
-using TRKart.Repository.Interfaces;
 using TRKart.DataAccess;
+using TRKart.Entities.Models;
+using TRKart.Entities.Enums;
+using TRKart.Repository.Interfaces;
 
 namespace TRKart.Repository.Repositories
 {
@@ -60,7 +61,7 @@ namespace TRKart.Repository.Repositories
                 .Select(c => c.CardStatus)
                 .FirstOrDefaultAsync();
             
-            return card == "Active";
+            return card == CardStatus.Active;
         }
     }
 } 

@@ -14,7 +14,6 @@ namespace TRKart.Business.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly JwtHelper _jwtHelper;
-
         private readonly IUniqueNumberChecker _uniqueNumberChecker;
 
         public AuthService(ApplicationDbContext context, JwtHelper jwtHelper, IUniqueNumberChecker uniqueNumberChecker)
@@ -57,76 +56,76 @@ namespace TRKart.Business.Services
                                 s.RefreshTokenExpiration > DateTime.UtcNow &&
                                 !s.IsRevoked);
 
-    if (existingSession != null)
-    {
-        // IMPORTANT: Check if the existing refresh token is blacklisted
-        bool isBlacklisted = await IsRefreshTokenBlacklistedAsync(existingSession.RefreshToken);
+            if (existingSession != null)
+            {
+                // IMPORTANT: Check if the existing refresh token is blacklisted
+                bool isBlacklisted = await IsRefreshTokenBlacklistedAsync(existingSession.RefreshToken);
 
-        if (isBlacklisted)
-        {
-            // Mark the session as revoked since its refresh token is blacklisted
-            existingSession.IsRevoked = true;
-            await _context.SaveChangesAsync();
+                if (isBlacklisted)
+                {
+                    // Mark the session as revoked since its refresh token is blacklisted
+                    existingSession.IsRevoked = true;
+                    await _context.SaveChangesAsync();
 
-            // Continue to create new tokens instead of using the blacklisted one
-        }
-        else
-        {
-            // We have a valid existing session, just generate a new access token
-            string newAccessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-            DateTime newAccessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
+                    // Continue to create new tokens instead of using the blacklisted one
+                }
+                else
+                {
+                    // We have a valid existing session, just generate a new access token
+                    string newAccessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
+                    DateTime newAccessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
 
-            // Update the existing session with new access token
-            existingSession.AccessToken = newAccessToken;
-            existingSession.AccessTokenExpiration = newAccessTokenExpiration;
-            existingSession.IPAddress = ipAddress ?? existingSession.IPAddress;
-            existingSession.DeviceInfo = deviceInfo ?? existingSession.DeviceInfo;
+                    // Update the existing session with new access token
+                    existingSession.AccessToken = newAccessToken;
+                    existingSession.AccessTokenExpiration = newAccessTokenExpiration;
+                    existingSession.IPAddress = ipAddress ?? existingSession.IPAddress;
+                    existingSession.DeviceInfo = deviceInfo ?? existingSession.DeviceInfo;
 
+                    await _context.SaveChangesAsync();
+
+                    return new TokenResponse
+                    {
+                        AccessToken = newAccessToken,
+                        RefreshToken = existingSession.RefreshToken, // Keep the existing refresh token
+                        AccessTokenExpiration = newAccessTokenExpiration,
+                        RefreshTokenExpiration = existingSession.RefreshTokenExpiration
+                    };
+                }
+            }
+
+            // No valid existing session found OR existing session had blacklisted token, create new tokens
+            string refreshToken = _jwtHelper.GenerateRefreshToken();
+            string accessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
+
+            // Get token expiration times
+            DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
+            DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
+
+            // Create and save new session
+            var session = new SessionToken
+            {
+                CustomerID = customer.CustomerID,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiration = accessTokenExpiration,
+                RefreshTokenExpiration = refreshTokenExpiration,
+                // RefreshTokenCreatedAt = DateTime.UtcNow, // Set by DB
+                IsRevoked = false,
+                DeviceInfo = deviceInfo,
+                IPAddress = ipAddress
+            };
+
+            await _context.SessionToken.AddAsync(session);
             await _context.SaveChangesAsync();
 
             return new TokenResponse
             {
-                AccessToken = newAccessToken,
-                RefreshToken = existingSession.RefreshToken, // Keep the existing refresh token
-                AccessTokenExpiration = newAccessTokenExpiration,
-                RefreshTokenExpiration = existingSession.RefreshTokenExpiration
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiration = accessTokenExpiration,
+                RefreshTokenExpiration = refreshTokenExpiration
             };
         }
-    }
-
-    // No valid existing session found OR existing session had blacklisted token, create new tokens
-    string accessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-    string refreshToken = _jwtHelper.GenerateRefreshToken();
-
-    // Get token expiration times
-    DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
-    DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
-
-    // Create and save new session
-    var session = new SessionToken
-    {
-        CustomerID = customer.CustomerID,
-        AccessToken = accessToken,
-        RefreshToken = refreshToken,
-        AccessTokenExpiration = accessTokenExpiration,
-        RefreshTokenExpiration = refreshTokenExpiration,
-        RefreshTokenCreatedAt = DateTime.UtcNow,
-        IsRevoked = false,
-        DeviceInfo = deviceInfo,
-        IPAddress = ipAddress
-    };
-
-    await _context.SessionToken.AddAsync(session);
-    await _context.SaveChangesAsync();
-
-    return new TokenResponse
-    {
-        AccessToken = accessToken,
-        RefreshToken = refreshToken,
-        AccessTokenExpiration = accessTokenExpiration,
-        RefreshTokenExpiration = refreshTokenExpiration
-    };
-}
 
         public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken, string? ipAddress = null)
         {
@@ -166,7 +165,7 @@ namespace TRKart.Business.Services
                 session.IsRevoked = true;
                 await _context.SaveChangesAsync();
 
-                // For financial applications, we might want to trigger additional security measures here
+                // TODO: We might want to trigger additional security measures here
                 // such as requiring re-authentication or notifying the user
 
                 return null; // Don't allow refresh from suspicious activity
@@ -286,10 +285,22 @@ namespace TRKart.Business.Services
             if (await IsRefreshTokenBlacklistedAsync(refreshToken))
                 return;
 
-            // Add to blacklist
+            // Find the session with this refresh token
+            var session = await _context.SessionToken
+                .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken);
+
+            if (session == null)
+            {
+                Console.WriteLine("Attempted to blacklist a refresh token with no associated session");
+                return;
+            }
+
+            // Add to blacklist with SessionID
             var blacklistEntry = new TokenBlacklist
             {
+                SessionID = session.SessionID,
                 RefreshToken = refreshToken,
+                IPAddress = session.IPAddress,
                 BlacklistedAt = DateTime.UtcNow,
                 Reason = reason
             };
@@ -307,6 +318,8 @@ namespace TRKart.Business.Services
 
             // Generate unique customer number
             var customerNumber = await CustomerNumberHelper.GenerateCustomerNumberAsync(_uniqueNumberChecker);
+            if (string.IsNullOrEmpty(customerNumber))
+                return false;
 
             // Create new user
             var newCustomer = new Customers
