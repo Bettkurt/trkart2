@@ -42,6 +42,18 @@ namespace TRKart.Entities.Models
         [Column("Description", TypeName = "TEXT")]
         public string? Description { get; set; }
 
+        [Column("ExternalRef")]
+        public string? ExternalRef { get; set; }
+
+        [Column("PaymentMethod")]
+        public string? PaymentMethod { get; set; }
+
+        [Column("FeeAmount", TypeName = "decimal(18, 2)")]
+        public decimal? FeeAmount { get; set; }
+
+        [Column("Note")]
+        public string? Note { get; set; }
+
         [Column("TransactionDate")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime TransactionDate { get; set; }

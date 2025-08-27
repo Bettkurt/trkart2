@@ -10,10 +10,24 @@ using TRKart.DataAccess;
 using TRKart.Repository.Interfaces;
 using TRKart.Repository.Repositories;
 using TRKart.API.Middleware;
+using Serilog;
+using Serilog.Events;
 using TRKart.API.Services;
 using TRKart.API.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog from configuration
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting TRKart API...");
+
+    // Add Serilog to the application
+    builder.Host.UseSerilog();
 
 // 1. PostgreSQL connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -29,17 +43,10 @@ builder.Services.AddControllers()
 // 3. CORS configuration for local development
 var allowedOrigins = new[] 
 {
-<<<<<<< HEAD
     "http://localhost:3000",   // Frontend (HTTP)
     "https://localhost:3000",  // Frontend (HTTPS)
     "http://localhost:7037",   // API (HTTP)
     "https://localhost:7037"   // API (HTTPS)
-=======
-    "http://localhost:3000",
-    "https://localhost:3000",  // Frontend
-    "http://localhost:7037",
-    "https://localhost:7037"  // Swagger/API interface
->>>>>>> 53db9f761283b17a8324600e848bbee12233a169
 };
 
 builder.Services.AddCors(options =>
@@ -129,6 +136,7 @@ builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserCardService, UserCardService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ITransferService, TransferService>();
+builder.Services.AddScoped<ITopUpService, TopUpService>();
 builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
 builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
 
@@ -158,3 +166,12 @@ app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).Allow
 
 // Force HTTP for development
 app.Run("http://localhost:7037");
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

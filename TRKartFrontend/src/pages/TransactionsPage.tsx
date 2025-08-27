@@ -291,9 +291,11 @@ const TransactionsPage: React.FC = () => {
 
   const formatAmount = (amount: number, transactionType?: string) => {
     const isNegative = ['Pay', 'TransferOut'].includes(transactionType || '');
+    const isTopUp = transactionType === 'TopUp';
     const sign = isNegative ? '-' : '+';
-    const color = isNegative ? 'text-red-600' : 'text-green-600';
-    return <span className={color}>{sign}₺{Math.abs(amount).toFixed(2)}</span>;
+    const color = isNegative ? 'text-red-600' : isTopUp ? 'text-green-700' : 'text-green-600';
+    const icon = isTopUp ? '💳 ' : '';
+    return <span className={color}>{icon}{sign}₺{Math.abs(amount).toFixed(2)}</span>;
   };
 
   const formatDate = (dateString: string) => {
@@ -344,6 +346,12 @@ const TransactionsPage: React.FC = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 + New Transaction
+              </Link>
+              <Link
+                to="/top-up"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                💳 Top-Up
               </Link>
               <Link
                 to="/new-transfer"
@@ -484,12 +492,20 @@ const TransactionsPage: React.FC = () => {
                     : "No transactions match your current filters."}
                 </p>
                 {allTransactions.length === 0 && (
-                  <Link
-                    to="/new-transaction"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Create Your First Transaction
-                  </Link>
+                  <div className="space-x-4">
+                    <Link
+                      to="/new-transaction"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Create Your First Transaction
+                    </Link>
+                    <Link
+                      to="/top-up"
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      💳 Top-Up Your Card
+                    </Link>
+                  </div>
                 )}
               </div>
             ) : (
@@ -530,7 +546,17 @@ const TransactionsPage: React.FC = () => {
                           {transaction.cardNumber || transaction.cardID}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {transaction.transactionType}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            transaction.transactionType === 'TopUp' 
+                              ? 'bg-green-100 text-green-800' 
+                              : transaction.transactionType === 'Pay' 
+                                ? 'bg-red-100 text-red-800'
+                                : transaction.transactionType === 'Load' 
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {transaction.transactionType === 'TopUp' ? '💳 Top-Up' : transaction.transactionType}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {formatAmount(transaction.amount, transaction.transactionType)}

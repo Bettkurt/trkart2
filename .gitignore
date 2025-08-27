@@ -49,3 +49,6 @@ node_modules/
 
 # Sensitive Information
 TRKart.API/appsettings.json
+
+# SonarQube
+.sonarqube/

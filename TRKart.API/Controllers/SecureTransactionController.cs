@@ -13,15 +13,18 @@ namespace TRKart.API.Controllers
     {
         private readonly ITransactionService _transactionService;
         private readonly IInputValidationService _inputValidationService;
+        private readonly ITopUpService _topUpService;
         private readonly ApplicationDbContext _context;
 
         public SecureTransactionController(
             ITransactionService transactionService,
             IInputValidationService inputValidationService,
+            ITopUpService topUpService,
             ApplicationDbContext context)
         {
             _transactionService = transactionService;
             _inputValidationService = inputValidationService;
+            _topUpService = topUpService;
             _context = context;
         }
 
@@ -302,6 +305,173 @@ namespace TRKart.API.Controllers
                     success = false, 
                     message = "An error occurred while checking transaction feasibility",
                     error = "INTERNAL_ERROR"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Process a top-up request for the authenticated user
+        /// </summary>
+        [HttpPost("topup")]
+        public async Task<IActionResult> TopUp([FromBody] TopUpRequestDto request)
+        {
+            var customerId = GetCurrentCustomerId();
+            if (!customerId.HasValue)
+                return UnauthorizedResponse();
+
+            var correlationId = Guid.NewGuid().ToString();
+
+            try
+            {
+                var result = await _topUpService.TopUpAsync(request, customerId.Value, correlationId);
+                
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    // Determine appropriate status code based on error type
+                    var statusCode = result.Error switch
+                    {
+                        "INPUT_VALIDATION_ERROR" => 400,
+                        "BUSINESS_VALIDATION_ERROR" => 400,
+                        "CARD_NOT_FOUND" => 404,
+                        "CARD_NOT_ACTIVE" => 409,
+                        "AUTHORIZATION_ERROR" => 403,
+                        "DUPLICATE_EXTERNAL_REF" => 409,
+                        "INTERNAL_ERROR" => 500,
+                        _ => 400
+                    };
+
+                    return StatusCode(statusCode, result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new TopUpResponseDto
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while processing the top-up request",
+                    Error = "INTERNAL_ERROR",
+                    CorrelationId = correlationId
+                });
+            }
+        }
+
+        /// <summary>
+        /// Validate a top-up request for the authenticated user
+        /// </summary>
+        [HttpPost("topup/validate")]
+        public async Task<IActionResult> ValidateTopUp([FromBody] TopUpRequestDto request)
+        {
+            var customerId = GetCurrentCustomerId();
+            if (!customerId.HasValue)
+                return UnauthorizedResponse();
+
+            try
+            {
+                var validation = await _topUpService.ValidateTopUpRequestAsync(request, customerId.Value);
+                
+                return Ok(new { 
+                    success = true, 
+                    validation = validation 
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "An error occurred while validating the top-up request",
+                    error = "INTERNAL_ERROR"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get top-up transactions for the authenticated user
+        /// </summary>
+        [HttpGet("topups")]
+        public async Task<IActionResult> GetUserTopUps([FromQuery] int pageSize = 50, [FromQuery] int pageNumber = 1)
+        {
+            var customerId = GetCurrentCustomerId();
+            if (!customerId.HasValue)
+                return UnauthorizedResponse();
+
+            try
+            {
+                var topUps = await _topUpService.GetCustomerTopUpsAsync(customerId.Value, pageSize, pageNumber);
+                
+                return Ok(new { 
+                    success = true, 
+                    topUps = topUps,
+                    count = topUps.Count(),
+                    pageSize = pageSize,
+                    pageNumber = pageNumber
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "An error occurred while retrieving top-up transactions",
+                    error = "INTERNAL_ERROR"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Simulate top-up approval for development/testing
+        /// </summary>
+        [HttpPost("topup/{transactionId}/simulate-approval")]
+        public async Task<IActionResult> SimulateTopUpApproval(int transactionId)
+        {
+            var customerId = GetCurrentCustomerId();
+            if (!customerId.HasValue)
+                return UnauthorizedResponse();
+
+            var correlationId = Guid.NewGuid().ToString();
+
+            try
+            {
+                // Verify the transaction belongs to the authenticated user
+                var transaction = await _context.Transaction
+                    .Include(t => t.UserCard)
+                    .FirstOrDefaultAsync(t => t.TransactionID == transactionId 
+                                            && t.TransactionType == "TopUp" 
+                                            && t.UserCard.CustomerID == customerId.Value);
+
+                if (transaction == null)
+                    return ForbiddenResponse("Access denied. Top-up transaction does not belong to authenticated user.");
+
+                var success = await _topUpService.SimulateTopUpApprovalAsync(transactionId, correlationId);
+                
+                if (success)
+                {
+                    return Ok(new { 
+                        success = true, 
+                        message = "Top-up transaction approved successfully",
+                        transactionId = transactionId,
+                        correlationId = correlationId
+                    });
+                }
+                else
+                {
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "Failed to approve top-up transaction",
+                        transactionId = transactionId,
+                        correlationId = correlationId
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "An error occurred while simulating top-up approval",
+                    error = "INTERNAL_ERROR",
+                    correlationId = correlationId
                 });
             }
         }
