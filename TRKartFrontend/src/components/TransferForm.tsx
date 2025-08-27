@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard } from '@/types';
@@ -13,6 +14,7 @@ interface TransferFormProps {
 
 const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     senderCardID: initialFromCardId || '',
     recipientCardNumber: '',
@@ -153,6 +155,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
         setErrors({});
         
         onSubmit?.(result);
+        
+        // Navigate to transactions page after a short delay to show the success message
+        setTimeout(() => {
+          navigate('/transactions');
+        }, 1500);
       } else {
         setValidationMessage(`❌ Transfer failed: ${result.message}`);
       }

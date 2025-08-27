@@ -76,8 +76,31 @@ const TransactionFormPage: React.FC = () => {
         logger.debug('TransactionForm', 'loadCards', 'Loading user cards');
         
         const cards = await userCardService.getUserCards();
+        
+        // Filter out deactivated cards - only show Active, Inactive, and Lost cards
+        const activeCards = cards.filter(card => 
+          card.cardStatus !== 'Deactivated' && card.cardStatus !== 'Expired'
+        );
+        
+        // Log which cards are being filtered out
+        const deactivatedCards = cards.filter(card => 
+          card.cardStatus === 'Deactivated' || card.cardStatus === 'Expired'
+        );
+        
+        if (deactivatedCards.length > 0) {
+          logger.info('TransactionForm', 'loadCards', 'Filtered out deactivated cards', {
+            deactivatedCards: deactivatedCards.map(card => ({
+              cardId: card.cardID,
+              cardNumber: card.cardNumber,
+              status: card.cardStatus
+            }))
+          });
+        }
+        
         logger.info('TransactionForm', 'loadCards', 'Successfully loaded user cards', {
-          cardCount: cards.length
+          totalCardCount: cards.length,
+          activeCardCount: activeCards.length,
+          deactivatedCardCount: deactivatedCards.length
         });
         
         setUserCards(cards);
