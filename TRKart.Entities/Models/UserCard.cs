@@ -26,8 +26,8 @@ namespace TRKart.Entities.Models
         // Navigation property for the one-to-many relationship with Customer
         public Customers Customer { get; set; }
 
-        // Maps to Balance DECIMAL(10, 2) NOT NULL DEFAULT 0.00
-        [Column("Balance", TypeName = "decimal(10, 2)")]
+        // Maps to Balance DECIMAL(18, 2) NOT NULL DEFAULT 0.00
+        [Column("Balance", TypeName = "decimal(18, 2)")]
         public decimal Balance { get; set; }
 
         // Maps to CardStatus VARCHAR(20) NOT NULL DEFAULT 'Inactive'

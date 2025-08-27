@@ -10,6 +10,7 @@ import UserCardsPage from '@/pages/UserCardsPage';
 import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
+import TopUpPage from '@/pages/TopUpPage';
 import CardCreationPage from '@/pages/CardCreationPage';
 import CardDeletionPage from '@/pages/CardDeletionPage';
 import LostCardPage from '@/pages/LostCardPage';
@@ -69,6 +70,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/new-transaction" element={
         <ProtectedRoute>
           <TransactionFormPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/top-up" element={
+        <ProtectedRoute>
+          <TopUpPage />
         </ProtectedRoute>
       } />
       <Route path="/new-transfer" element={

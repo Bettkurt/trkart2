@@ -140,6 +140,78 @@ export interface InputValidationApiResponse {
   validation: InputValidationResponse;
 }
 
+// Top-Up types
+export interface TopUpRequest {
+  targetCardNumber: string;
+  amount: number;
+  paymentMethod: string;
+  externalRef?: string;
+  feeAmount?: number;
+  note?: string;
+}
+
+export interface TopUpTransaction {
+  transactionID: number;
+  cardID: number;
+  cardNumber: string;
+  amount: number;
+  transactionType: string;
+  paymentMethod: string;
+  feeAmount?: number;
+  netAmount: number;
+  externalRef?: string;
+  note?: string;
+  transactionDate: string;
+  transactionStatus: string;
+  newBalance?: number;
+}
+
+export interface TopUpResponse {
+  success: boolean;
+  message: string;
+  transaction?: TopUpTransaction;
+  error?: string;
+  correlationId?: string;
+}
+
+export interface TopUpValidation {
+  isValid: boolean;
+  message: string;
+  cardNumber?: string;
+  cardStatus?: string;
+  currentBalance?: number;
+  projectedBalance?: number;
+  duplicateExternalRef: boolean;
+  existingTransactionId?: number;
+}
+
+export interface TopUpValidationResponse {
+  success: boolean;
+  validation: TopUpValidation;
+}
+
+export interface TopUpStatusUpdate {
+  transactionId: number;
+  newStatus: string;
+  reason?: string;
+  updatedBy?: string;
+}
+
+export interface TopUpSimulationResponse {
+  success: boolean;
+  message: string;
+  transactionId: number;
+  correlationId: string;
+}
+
+export interface TopUpListResponse {
+  success: boolean;
+  topUps: TopUpTransaction[];
+  count: number;
+  pageSize: number;
+  pageNumber: number;
+}
+
 // API Response types
 export interface ApiResponse<T> {
   data: T;

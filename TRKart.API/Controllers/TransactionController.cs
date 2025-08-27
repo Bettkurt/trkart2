@@ -7,6 +7,7 @@ using TRKart.DataAccess;
 using TRKart.Entities.Models;
 using TRKart.Repository.Repositories;
 using TRKart.Entities.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace TRKart.API.Controllers
 {
@@ -17,20 +18,26 @@ namespace TRKart.API.Controllers
         private readonly ITransactionService _transactionService;
         private readonly IInputValidationService _inputValidationService;
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<TransactionController> _logger;
 
-        public TransactionController(ITransactionService transactionService, IInputValidationService inputValidationService, ApplicationDbContext context)
+        public TransactionController(ITransactionService transactionService, IInputValidationService inputValidationService, ApplicationDbContext context, ILogger<TransactionController> logger)
         {
             _transactionService = transactionService;
             _inputValidationService = inputValidationService;
             _context = context;
+            _logger = logger;
         }
 
         [HttpPost]
         public async Task<IActionResult> AddTransaction([FromBody] TransactionCreateDto dto)
         {
+            _logger.LogInformation("Transaction creation attempt for card ID: {CardID}, amount: {Amount}", dto.CardID, dto.Amount);
+            
             try
             {
                 var result = await _transactionService.AddTransactionAsync(dto);
+                _logger.LogInformation("Transaction completed successfully for card ID: {CardID}, amount: {Amount}", dto.CardID, dto.Amount);
+                
                 return Ok(new { 
                     success = true, 
                     message = "Transaction completed successfully", 
@@ -39,14 +46,18 @@ namespace TRKart.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogWarning("Transaction failed - validation error for card ID: {CardID}, amount: {Amount}, error: {Error}", dto.CardID, dto.Amount, ex.Message);
+                
                 return BadRequest(new { 
                     success = false, 
                     message = ex.Message,
                     error = ex.Message.Contains("Input validation failed") ? "INPUT_VALIDATION_ERROR" : "TRANSACTION_DENIED"
                 });
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                _logger.LogError(ex, "Transaction failed - internal error for card ID: {CardID}, amount: {Amount}", dto.CardID, dto.Amount);
+                
                 return StatusCode(500, new { 
                     success = false, 
                     message = "An error occurred while processing the transaction",
@@ -60,11 +71,14 @@ namespace TRKart.API.Controllers
         [HttpGet("validate-amount")]
         public IActionResult ValidateAmount([FromQuery] string value)
         {
+            _logger.LogDebug("Amount validation request for value: {Value}", value);
+            
             try
             {
                 // Simple validation: check if amount is a positive number
                 if (string.IsNullOrWhiteSpace(value))
                 {
+                    _logger.LogDebug("Amount validation failed - empty value");
                     return Ok(new { 
                         success = true, 
                         isValid = false, 
@@ -74,6 +88,7 @@ namespace TRKart.API.Controllers
 
                 if (!decimal.TryParse(value, out decimal amount))
                 {
+                    _logger.LogDebug("Amount validation failed - invalid number format: {Value}", value);
                     return Ok(new { 
                         success = true, 
                         isValid = false, 
@@ -83,6 +98,7 @@ namespace TRKart.API.Controllers
 
                 if (amount <= 0)
                 {
+                    _logger.LogDebug("Amount validation failed - non-positive amount: {Amount}", amount);
                     return Ok(new { 
                         success = true, 
                         isValid = false, 
@@ -90,18 +106,20 @@ namespace TRKart.API.Controllers
                     });
                 }
 
+                _logger.LogDebug("Amount validation successful for value: {Value}", value);
                 return Ok(new { 
                     success = true, 
                     isValid = true, 
                     message = "Amount is valid" 
                 });
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                _logger.LogError(ex, "Amount validation error for value: {Value}", value);
                 return StatusCode(500, new { 
                     success = false, 
-                    message = "An error occurred while validating amount",
-                    error = "INTERNAL_ERROR"
+                    message = "An error occurred while validating the amount",
+                    error = "VALIDATION_ERROR"
                 });
             }
         }

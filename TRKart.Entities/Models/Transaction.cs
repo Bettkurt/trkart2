@@ -27,7 +27,7 @@ namespace TRKart.Entities.Models
         // Navigation property for the one-to-one relationship with TransferTransaction
         public Transaction? TransferTransaction { get; set; }
 
-        [Column("Amount")]
+        [Column("Amount", TypeName = "decimal(18, 2)")]
         [Required]
         public decimal Amount { get; set; } 
 
@@ -37,6 +37,18 @@ namespace TRKart.Entities.Models
 
         [Column("Description")]
         public string? Description { get; set; }
+
+        [Column("ExternalRef")]
+        public string? ExternalRef { get; set; }
+
+        [Column("PaymentMethod")]
+        public string? PaymentMethod { get; set; }
+
+        [Column("FeeAmount", TypeName = "decimal(18, 2)")]
+        public decimal? FeeAmount { get; set; }
+
+        [Column("Note")]
+        public string? Note { get; set; }
 
         [Column("TransactionDate")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]

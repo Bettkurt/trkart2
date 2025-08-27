@@ -46,3 +46,6 @@ Quick_Register_Login/
 
 # Sensitive Information
 TRKart.API/appsettings.json
+
+# SonarQube
+.sonarqube/
