@@ -58,19 +58,26 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                // Get recipient card by card number
-                Console.WriteLine($"TransferService: Looking up recipient card number {dto.RecipientCardNumber}");
-                var recipientCard = await _context.UserCard
-                    .FirstOrDefaultAsync(c => c.CardNumber == dto.RecipientCardNumber);
+                // Validate recipient card using the dedicated validation method
+                Console.WriteLine($"TransferService: Validating recipient card number {dto.RecipientCardNumber}");
+                var recipientValidation = await ValidateRecipientCardAsync(dto.RecipientCardNumber);
 
-                if (recipientCard == null)
+                if (!recipientValidation.Success || !recipientValidation.IsValid)
                 {
                     response.Success = false;
-                    response.Message = "Recipient card not found";
+                    response.Message = recipientValidation.Message ?? "Recipient card validation failed";
                     return response;
                 }
 
-                Console.WriteLine($"TransferService: Recipient card found - CardID: {recipientCard.CardID}");
+                var recipientCard = recipientValidation.RecipientCard;
+                if (recipientCard == null)
+                {
+                    response.Success = false;
+                    response.Message = "Recipient card validation failed";
+                    return response;
+                }
+
+                Console.WriteLine($"TransferService: Recipient card validated - CardID: {recipientCard.CardID}");
 
                 if (senderCard.CardID == recipientCard.CardID)
                 {

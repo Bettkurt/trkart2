@@ -34,7 +34,7 @@ namespace TRKart.Core.Helpers
                 issuer: jwtSection["Issuer"],
                 audience: jwtSection["Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "15")),
+                expires: DateTime.UtcNow.AddSeconds(/*double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "5")*/ 5),
                 signingCredentials: creds
             );
 

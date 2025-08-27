@@ -38,6 +38,9 @@ Migrations/
 .env
 .env.*
 
+# SonarQube
+.sonarqube/
+
 # node_modules
 node_modules/
 

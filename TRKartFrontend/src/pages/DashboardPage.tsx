@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
@@ -34,10 +34,12 @@ const DashboardPage: React.FC = () => {
     logger.info('DashboardPage', 'navigation', `Navigating to ${target}`, { from: 'DashboardPage' });
   };
 
+  const [showSettings, setShowSettings] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20">
             <div className="flex items-center space-x-4">
               <img 
@@ -49,9 +51,37 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-6">
               <span className="text-lg text-gray-700">Welcome, {user?.email}</span>
+              {/* Settings button with dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSettings(s => !s)}
+                  className="btn-secondary px-6 py-2 text-base"
+                  data-testid="settings-button"
+                >
+                  Settings
+                </button>
+                {showSettings && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-md z-50">
+                    <Link
+                      to="/change-password"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowSettings(false)}
+                    >
+                      Change Password
+                    </Link>
+                    <Link
+                      to="/change-email"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowSettings(false)}
+                    >
+                      Change Email
+                    </Link>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleLogout}
-                className="btn-secondary px-6 py-2 text-base"
+                className="bg-red-700 hover:bg-red-800 text-white px-6 py-2 text-base rounded"
                 data-testid="logout-button"
               >
                 Logout

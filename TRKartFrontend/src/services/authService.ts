@@ -84,70 +84,88 @@ class AuthService {
 
   // Auth methods
   async login(credentials: LoginRequest, rememberMe: boolean): Promise<AuthResponse> {
-    if (!credentials.email) {
-      throw new Error('Email is required');
+    // First try to check for existing valid session
+    try {
+      console.log('[Auth] Checking for existing session...');
+      const sessionCheck = await this.checkSession();
+      
+      if (sessionCheck.hasValidSession && sessionCheck.email) {
+        console.log('[Auth] Found valid session');
+        
+        // If we have a new access token from the session check, use it
+        if ((sessionCheck as any).newAccessToken) {
+          console.log('[Auth] Using new access token from session check');
+          api.defaults.headers.common['Authorization'] = `Bearer ${(sessionCheck as any).newAccessToken}`;
+        }
+        
+        // Update user data
+        const userData: User = {
+          email: sessionCheck.email,
+          customerID: sessionCheck.customerID || 0,
+          fullName: sessionCheck.fullName || ''
+        };
+        
+        this.setUserData(userData);
+        
+        return {
+          accessToken: (sessionCheck as any).newAccessToken || '',
+          refreshToken: '', // Not needed as it's httpOnly
+          message: 'Session restored successfully'
+        };
+      }
+    } catch (error) {
+      console.log('[Auth] No valid session found, proceeding with credentials login:', error);
+      // Continue with normal login if refresh fails
     }
 
-    // Clear localStorage before login
-    this.clearLocalStorage();
+    // If we get here, either no valid session or refresh failed
+    if (!credentials.email || !credentials.password) {
+      throw new Error('Email and password are required for login');
+    }
 
+    // Clear any existing auth data before new login
+    this.clearAuthData();
     this.setRememberMe(rememberMe);
 
-    console.log('Making login request with credentials:', {
-      email: credentials.email,
-      rememberMe: rememberMe
-    });
+    console.log('[Auth] Attempting login with credentials for:', credentials.email);
 
-    const response = await api.post<AuthResponse>('/Auth/login', {
-      email: credentials.email,
-      password: credentials.password,
-      rememberMe: rememberMe
-    }, {
-      withCredentials: true // Ensure credentials are sent
-    });
-
-    console.log('Login response received', response.data);
-
-    // Store user session data
-    if (response.data) {
-      const { accessToken, refreshToken, accessTokenExpiration, refreshTokenExpiration } = response.data;
-      
-      // Validate required token fields
-      if (!accessToken || !refreshToken || !accessTokenExpiration || !refreshTokenExpiration) {
-        console.error('Invalid token data in login response:', response.data);
-        throw new Error('Invalid token data received from server');
-      }
-      
-      /* Update session storage with token data
-      sessionService.setUserSession({
-        accessToken,
-        refreshToken,
-        accessTokenExpiration,
-        refreshTokenExpiration,
-        email: credentials.email
-      }); */
-
-      // Set up user data object with default values
-      const userData: User = {
+    const response = await api.post<AuthResponse>(
+      '/Auth/login',
+      {
         email: credentials.email,
-        customerID: 0, // Will be populated from session check
-        fullName: '' // Will be populated from session check
-      };
+        password: credentials.password,
+        rememberMe: rememberMe
+      },
+      { withCredentials: true }
+    );
 
-      // Store user data
-      this.setUserData(userData);
+    if (!response.data) {
+      throw new Error('No response data received from server');
+    }
 
-      // Try to get additional user details
-      try {
-        const sessionCheck = await this.checkSession();
-        if (sessionCheck.hasValidSession && sessionCheck.customerID) {
-          userData.customerID = sessionCheck.customerID;
-          //userData.fullName = sessionCheck.fullName;
-          this.setUserData(userData);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch additional user details:', error);
+    const { accessToken, refreshToken } = response.data;
+    
+    if (!accessToken || !refreshToken) {
+      throw new Error('Invalid token data received from server');
+    }
+
+    // Set the authorization header for subsequent requests
+    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+    // Update user data after successful login
+    try {
+      const sessionCheck = await this.checkSession();
+      if (sessionCheck.hasValidSession && sessionCheck.email) {
+        const userData: User = {
+          email: sessionCheck.email,
+          customerID: sessionCheck.customerID || 0,
+          fullName: sessionCheck.fullName || ''
+        };
+        this.setUserData(userData);
       }
+    } catch (error) {
+      console.warn('[Auth] Failed to fetch user details after login:', error);
+      // Don't fail the login if we can't get user details
     }
 
     // Update stored email based on preference
@@ -231,26 +249,30 @@ class AuthService {
   }
 
   async checkSession(): Promise<SessionCheckResponse> {
-    console.log('[AuthService] Checking session with server...');
+    console.log('[Auth] Checking session with server...');
     
     try {
       const response = await api.get<SessionCheckResponse>('/Auth/check-session', {
         withCredentials: true
       });
       
-      console.log('[AuthService] Session check response:', {
-        status: response.status,
+      console.log('[Auth] Session check response:', {
         hasValidSession: response.data?.hasValidSession,
         email: response.data?.email
       });
       
       return response.data;
     } catch (error: any) {
-      console.error('[AuthService] Session check error:', {
+      console.error('[Auth] Session check error:', {
         message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
+        status: error.response?.status
       });
+      
+      // If we get a 401, clear auth data as the session is invalid
+      if (error.response?.status === 401) {
+        this.clearAuthData();
+      }
+      
       throw error;
     }
   }
@@ -312,6 +334,23 @@ class AuthService {
       console.error('Failed to get active sessions:', error);
       return [];
     }
+  }
+
+  async changePassword(email: string, currentPassword: string, newPassword: string): Promise<void> {
+    await api.post('/Auth/change-password', {
+      email,
+      currentPassword,
+      newPassword
+    });
+  }
+
+  async changeEmail(password: string, newEmail: string): Promise<void> {
+    await api.post('/Auth/change-email', {
+      password,
+      newEmail
+    }, {
+      withCredentials: true
+    });
   }
 }
 

@@ -19,8 +19,8 @@ export interface SessionCheckResponse {
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
-  accessTokenExpiration: string;
-  refreshTokenExpiration: string;
+  accessTokenExpiration?: string;
+  refreshTokenExpiration?: string;
   message?: string;
 }
 
@@ -28,8 +28,10 @@ export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
-export interface AuthResponse extends TokenResponse {
+export interface AuthResponse extends Omit<TokenResponse, 'message'> {
   message: string;
+  customerID?: number;
+  fullName?: string;
 }
 
 export interface RegisterRequest {
