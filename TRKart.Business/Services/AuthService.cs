@@ -109,7 +109,7 @@ namespace TRKart.Business.Services
                 RefreshToken = refreshToken,
                 AccessTokenExpiration = accessTokenExpiration,
                 RefreshTokenExpiration = refreshTokenExpiration,
-                RefreshTokenCreatedAt = DateTime.UtcNow,
+                // RefreshTokenCreatedAt = DateTime.UtcNow, // Set by DB
                 IsRevoked = false,
                 DeviceInfo = deviceInfo,
                 IPAddress = ipAddress

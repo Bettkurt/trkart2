@@ -3,16 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import userCardService from '@/services/userCardService';
 import { UserCard } from '@/types';
+import { CardStatus } from '@/types/cardStatus';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 
 const CARD_STATUS_MAP = {
-  0: { label: 'Deactivated', className: 'bg-red-50 text-red-700 border border-red-200' },
-  1: { label: 'Expired', className: 'bg-gray-50 text-gray-700 border border-gray-200' },
-  2: { label: 'Lost', className: 'bg-red-50 text-red-700 border border-red-200' },
-  // 3: { label: 'Inactive', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
-  4: { label: 'Active', className: 'bg-green-50 text-green-700 border border-green-200' },
-  // Set the 'Inactive' as default
+  [CardStatus.Deactivated]: { label: 'Deactivated', className: 'bg-red-50 text-red-700 border border-red-200' },
+  [CardStatus.Expired]: { label: 'Expired', className: 'bg-gray-50 text-gray-700 border border-gray-200' },
+  [CardStatus.Lost]: { label: 'Lost', className: 'bg-red-50 text-red-700 border border-red-200' },
+  [CardStatus.Inactive]: { label: 'Inactive', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  [CardStatus.Active]: { label: 'Active', className: 'bg-green-50 text-green-700 border border-green-200' },
   default: { label: 'Inactive', className: 'bg-yellow-50 text-yellow-700 border border-yellow-200' }
 } as const;
 
@@ -89,10 +89,10 @@ const UserCardsPage: React.FC = () => {
               cardCount: cardsData.length 
             });
             
-            // Ensure each card has a cardStatus, default to 3 (= 'Inactive') if not provided
+            // Ensure each card has a cardStatus, default to Inactive (3) if not provided
             cardsData = cardsData.map(card => ({
               ...card,
-              cardStatus: card.cardStatus || 3
+              cardStatus: card.cardStatus || CardStatus.Inactive
             }));
             
             saveCardsToStorage(cardsData);
@@ -263,7 +263,7 @@ const UserCardsPage: React.FC = () => {
                     {/* Add Balance Button */}
                     <button
                       onClick={(e) => {
-                        if ([4, 3].includes(card.cardStatus)) {
+                        if ([CardStatus.Active, CardStatus.Inactive].includes(card.cardStatus)) {
                           e.preventDefault();
                           logger.info('UserCardsPage', 'addBalance', 'Navigating to new transaction page', { 
                             cardId: card.cardID,
@@ -277,25 +277,25 @@ const UserCardsPage: React.FC = () => {
                           });
                         }
                       }}
-                      disabled={[2, 1, 0].includes(card.cardStatus)}
+                      disabled={[CardStatus.Lost, CardStatus.Expired, CardStatus.Deactivated].includes(card.cardStatus)}
                       className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        [2, 1, 0].includes(card.cardStatus)
+                        [CardStatus.Lost, CardStatus.Expired, CardStatus.Deactivated].includes(card.cardStatus)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
                       }`}
-                      title={[2, 1, 0].includes(card.cardStatus) 
+                      title={[CardStatus.Lost, CardStatus.Expired, CardStatus.Deactivated].includes(card.cardStatus) 
                         ? `You cannot add balance to a ${card.cardStatus} card` 
                         : ''}
                     >
-                      {[2, 1, 0].includes(card.cardStatus) 
-                        ? `Cannot Add Balance (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label})` 
+                      {[CardStatus.Lost, CardStatus.Expired, CardStatus.Deactivated].includes(card.cardStatus) 
+                        ? `Cannot Add Balance (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).label})` 
                         : 'Add Balance'}
                     </button>
 
                     {/* New Transfer Button */}
                     <button
                       onClick={(e) => {
-                        if (card.cardStatus === 4) {  // Only allow active cards (status 4)
+                        if (card.cardStatus === CardStatus.Active) {  // Only allow active cards (status 4)
                           e.preventDefault();
                           logger.info('UserCardsPage', 'newTransfer', 'Navigating to new transfer page', { 
                             cardId: card.cardID,
@@ -310,18 +310,18 @@ const UserCardsPage: React.FC = () => {
                           });
                         }
                       }}
-                      disabled={card.cardStatus !== 4}  // Only enable for status 4 (active)
+                      disabled={card.cardStatus !== CardStatus.Active}  // Only enable for card's with status Active (4)
                       className={`w-full px-4 py-2 font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                        card.cardStatus !== 4
+                        card.cardStatus !== CardStatus.Active
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-600 focus:ring-opacity-50'
                       }`}
-                      title={card.cardStatus !== 4 
-                        ? `You cannot transfer from a ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label?.toLowerCase() || 'non-active'} card` 
+                      title={card.cardStatus !== CardStatus.Active 
+                        ? `You cannot transfer from a ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).label || 'non-active'} card` 
                         : 'Make a new transfer from this card'}
                     >
-                      {card.cardStatus !== 4 
-                        ? `Cannot Transfer (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label})` 
+                      {card.cardStatus !== CardStatus.Active 
+                        ? `Cannot Transfer (${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).label})` 
                         : 'New Transfer'}
                     </button>
 
@@ -345,7 +345,7 @@ const UserCardsPage: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          if (![2, 0].includes(card.cardStatus)) {
+                          if (![CardStatus.Lost, CardStatus.Deactivated].includes(card.cardStatus)) {
                             logger.info('UserCardsPage', 'reportLostCard', 'Navigating to report lost card page', { 
                               cardId: card.cardID,
                               cardNumber: card.cardNumber,
@@ -359,25 +359,25 @@ const UserCardsPage: React.FC = () => {
                             });
                           }
                         }}
-                        disabled={[2, 0].includes(card.cardStatus)}
+                        disabled={[CardStatus.Lost, CardStatus.Deactivated].includes(card.cardStatus)}
                         className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 whitespace-nowrap overflow-hidden text-ellipsis ${
-                          [2, 0].includes(card.cardStatus)
+                          [CardStatus.Lost, CardStatus.Deactivated].includes(card.cardStatus)
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-yellow-400 hover:bg-yellow-600 text-white focus:ring-yellow-500 focus:ring-opacity-50'
                         }`}
-                        title={[2, 0].includes(card.cardStatus) 
-                          ? `This card is already ${card.cardStatus}` 
+                        title={[CardStatus.Lost, CardStatus.Deactivated].includes(card.cardStatus) 
+                          ? `This card is already ${CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP]?.label.toLowerCase() || 'in an invalid state'}` 
                           : 'Report this card as lost'}
                       >
-                        {[0, 1, 2].includes(card.cardStatus) 
-                          ? `${card.cardStatus === 2 ? 'Marked as' : 'Card is'} ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP[0]).label}`
+                        {[CardStatus.Deactivated, CardStatus.Expired, CardStatus.Lost].includes(card.cardStatus)
+                          ? `${card.cardStatus === CardStatus.Lost ? 'Marked as' : 'Card is'} ${(CARD_STATUS_MAP[card.cardStatus as keyof typeof CARD_STATUS_MAP] || CARD_STATUS_MAP.default).label}`
                           : 'Lost Card?'}
                       </button>
                       
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          if (card.cardStatus !== 0) {
+                          if (card.cardStatus !== CardStatus.Deactivated) {
                             logger.info('UserCardsPage', 'deleteCard', 'Navigating to delete card page', { 
                               cardId: card.cardID,
                               cardNumber: card.cardNumber,
@@ -391,13 +391,13 @@ const UserCardsPage: React.FC = () => {
                             });
                           }
                         }}
-                        disabled={card.cardStatus === 0}
+                        disabled={card.cardStatus === CardStatus.Deactivated}
                         className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md shadow-md text-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 whitespace-nowrap overflow-hidden text-ellipsis ${
-                          card.cardStatus === 0
+                          card.cardStatus === CardStatus.Deactivated
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed focus:ring-gray-400'
                             : 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500'
                         }`}
-                        title={card.cardStatus === 0 ? 'Cannot delete a deactivated card' : 'Delete this card'}
+                        title={card.cardStatus === CardStatus.Deactivated ? 'Cannot delete a deactivated card' : 'Delete this card'}
                       >
                         Delete Card
                       </button>

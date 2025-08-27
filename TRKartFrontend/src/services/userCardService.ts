@@ -1,6 +1,8 @@
 import api from './api';
+import { logger } from '../utils/logger';
 import { UserCard, CardStatusUpdateRequest } from '../types';
 import { CardType } from '../types/cardTypes';
+import { CardStatus } from '../types/cardStatus';
 
 export interface CreateUserCardRequest {
   customerID: number;
@@ -76,6 +78,11 @@ class UserCardService {
    * @param updateData Object containing cardId and the new status
    */
   async updateCardStatus(updateData: CardStatusUpdateRequest) {
+    // Validate status against CardStatus enum
+    if (!Object.values(CardStatus).includes(updateData.status)) {
+      throw new Error(`Invalid card status: ${updateData.status}`);
+    }
+    
     // Using the secure endpoint which requires authentication
     const response = await api.put<{
       success: boolean; 
@@ -88,6 +95,19 @@ class UserCardService {
         status: updateData.status
       }
     );
+    
+    // Get status name safely from CardStatus enum
+    const statusName = Object.entries(CardStatus).find(
+      ([key, value]) => value === updateData.status
+    )?.[0] || 'Unknown';
+    
+    // Log the status update for debugging
+    logger.debug('userCardService', 'updateCardStatus', 'Card status updated', {
+      cardId: updateData.cardId,
+      status: updateData.status,
+      statusName
+    });
+    
     return response.data;
   }
 }

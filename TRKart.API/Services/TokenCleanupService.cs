@@ -12,7 +12,7 @@ namespace TRKart.API.Services
         private readonly ILogger<TokenCleanupService> _logger;
         private const int BatchSize = 1000;
         private readonly int _deleteOlderThanDays;
-        private readonly int _cleanupIntervalHours;
+        private readonly int _cleanupIntervalDays;
 
         public TokenCleanupService(
             IServiceProvider serviceProvider, 
@@ -24,12 +24,12 @@ namespace TRKart.API.Services
             var settingsValue = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
             
             _deleteOlderThanDays = settingsValue.DeleteOlderThanDays;
-            _cleanupIntervalHours = settingsValue.CleanupIntervalHours;
+            _cleanupIntervalDays = settingsValue.CleanupIntervalDays;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Token Cleanup Service is starting with interval: {Interval} hours", _cleanupIntervalHours);
+            _logger.LogInformation("Token Cleanup Service is starting with interval: {Interval} days", _cleanupIntervalDays);
 
             // Initial delay to prevent blocking application startup
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
@@ -55,8 +55,8 @@ namespace TRKart.API.Services
                 try
                 {
                     await Task.Delay(
-                        //a Must be FromHours for prod, FromMinutes for testing
-                        TimeSpan.FromMinutes(_cleanupIntervalHours), 
+                        //a Must be FromDays for prod, FromMinutes for testing
+                        TimeSpan.FromDays(_cleanupIntervalDays), 
                         stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -213,7 +213,7 @@ namespace TRKart.API.Services
     // Token cleanup default values if not specified in appsettings.json
     public class TokenCleanupSettings
     {
-        public int CleanupIntervalHours { get; set; } = 1;
+        public int CleanupIntervalDays { get; set; } = 1;
         public int DeleteOlderThanDays { get; set; } = 90;
     }
 }

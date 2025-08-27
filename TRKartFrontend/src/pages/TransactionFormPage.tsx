@@ -412,11 +412,11 @@ const TransactionFormPage: React.FC = () => {
       <main className="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* User Status */}
-          {user?.email && (
+          {!!user?.email && (
             <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-6 text-sm">
               <div className="flex items-center justify-between">
                 <span>Logged in as: {user.email}</span>
-                {user.customerID && user.customerID > 0 && (
+                {!!user.customerID && user.customerID > 0 && (
                   <span className="text-xs">Customer ID: {user.customerID}</span>
                 )}
               </div>

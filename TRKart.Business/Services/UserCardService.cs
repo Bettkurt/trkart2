@@ -20,7 +20,7 @@ namespace TRKart.Business.Services
         private readonly IUniqueNumberChecker _uniqueNumberChecker;
 
         public UserCardService(ApplicationDbContext context, 
-                             IUniqueNumberChecker uniqueNumberChecker)
+                               IUniqueNumberChecker uniqueNumberChecker)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _uniqueNumberChecker = uniqueNumberChecker ?? throw new ArgumentNullException(nameof(uniqueNumberChecker));
@@ -40,6 +40,7 @@ namespace TRKart.Business.Services
 
             // Generate card number with TRK prefix and proper validation
             var cardNumber = await CardNumberHelper.GenerateCardNumberAsync(_uniqueNumberChecker);
+            // Set by DB
             //a var expirationDate = DateTime.UtcNow.AddYears(5).AddMonths(1).AddDays(-1);
             
             var newCard = new UserCard
@@ -50,6 +51,7 @@ namespace TRKart.Business.Services
                 CardStatus = CardStatus.Inactive, // Default status
                 CardType = createDto.CardType,
                 CardName = createDto.CardName,
+                // Set by DB
                 //a CardExpirationDate = expirationDate,
                 //a CreatedAt = DateTime.UtcNow
             };
@@ -121,15 +123,15 @@ namespace TRKart.Business.Services
                 }
 
                 // Save the old status for logging and blacklist check
-                var oldStatus = card.CardStatus;
+                //a var oldStatus = card.CardStatus;
                 
                 // Update the card status first
                 card.CardStatus = updateDto.Status;
                 
                 // Create status update record with explicit UTC timestamps
-                var utcNow = DateTime.UtcNow;
+                //a var utcNow = DateTime.UtcNow;
 
-                // DB handles CardStatus entry creations
+                // DB handles CardUpdates entry creations
                 /* var statusUpdate = new CardUpdates
                 {
                     CardID = card.CardID,
@@ -143,8 +145,9 @@ namespace TRKart.Business.Services
                 _context.CardUpdates.Add(statusUpdate); */
                 
                 // Check if we need to blacklist the card
+                // Expired (1) card blacklistings are handled by background services
                 // Only blacklist if the new status is Deactivated (0) or Lost (2)
-                bool shouldBlacklist = (updateDto.Status <= CardStatus.Lost);
+                bool shouldBlacklist = (updateDto.Status == CardStatus.Deactivated || updateDto.Status == CardStatus.Lost);
                 
                 Console.WriteLine($"[UpdateCardStatusAsync] Should blacklist: {shouldBlacklist}");
                 
@@ -203,7 +206,9 @@ namespace TRKart.Business.Services
         public async Task<List<UserCardResponseDto>> GetUserCardsByCustomerIdAsync(int customerId)
         {
             return await _context.UserCard
-                .Where(c => c.CustomerID == customerId && c.CardStatus > CardStatus.Expired) // 0 = Deactivated (It is deleted from user's perspective), 1 = Expired 
+                // 0 = Deactivated (It is deleted from user's perspective), 1 = Expired 
+                // We show cards that are not deactivated or expired
+                .Where(c => c.CustomerID == customerId && c.CardStatus > CardStatus.Expired)
                 .Select(c => MapToResponseDto(c))
                 .ToListAsync();
         }
@@ -214,7 +219,9 @@ namespace TRKart.Business.Services
                 throw new ArgumentException("Card number cannot be empty", nameof(cardNumber));
 
             var card = await _context.UserCard
-                .FirstOrDefaultAsync(c => c.CardNumber == cardNumber && c.CardStatus > CardStatus.Expired); // 0 = Deactivated (It is deleted from user's perspective), 1 = Expired 
+                // 0 = Deactivated (It is deleted from user's perspective), 1 = Expired 
+                // We show cards that are not deactivated or expired
+                .FirstOrDefaultAsync(c => c.CardNumber == cardNumber && c.CardStatus > CardStatus.Expired);
 
             return card != null ? MapToResponseDto(card) : null;
         }
@@ -226,7 +233,7 @@ namespace TRKart.Business.Services
 
             // First get the card ID, excluding deactivated and expired cards
             var card = await _context.UserCard
-                .Where(c => c.CardNumber == cardNumber && c.CardStatus > CardStatus.Expired) // 0 = Deactivated (It is deleted from user's perspective), 1 = Expired 
+                .Where(c => c.CardNumber == cardNumber && c.CardStatus > CardStatus.Expired)
                 .Select(c => new { c.CardID })
                 .FirstOrDefaultAsync();
 
@@ -269,7 +276,7 @@ namespace TRKart.Business.Services
             };
             
             // Ensure all DateTime values are properly specified as UTC
-            var utcNow = DateTime.UtcNow;
+            //a var utcNow = DateTime.UtcNow;
             var cardExpirationDate = card.CardExpirationDate.Kind == DateTimeKind.Unspecified 
                 ? DateTime.SpecifyKind(card.CardExpirationDate, DateTimeKind.Utc)
                 : card.CardExpirationDate.ToUniversalTime();
@@ -305,7 +312,7 @@ namespace TRKart.Business.Services
                 CustomerID = card.CustomerID,
                 CardNumber = card.CardNumber,
                 Balance = card.Balance,
-                CardStatus = (CardStatus)card.CardStatus,
+                CardStatus = card.CardStatus,
                 CardType = card.CardType,
                 CardName = card.CardName,
                 CardExpirationDate = card.CardExpirationDate,

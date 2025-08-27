@@ -42,7 +42,7 @@ namespace TRKart.Entities.Models
         public DateTime? PasswordChangedAt { get; set; }
 
         // Related SessionTokens (mandatory one-to-mandatory many)
-        public virtual ICollection<SessionToken> SessionTokens { get; set; } = new List<SessionToken>();
+        public virtual ICollection<SessionToken>? SessionTokens { get; set; } = new List<SessionToken>();
 
         // Related UserCards (mandatory one-to-optional many)
         public virtual ICollection<UserCard>? UserCards { get; set; } = new List<UserCard>();

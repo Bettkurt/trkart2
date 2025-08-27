@@ -1,4 +1,5 @@
 import api from './api';
+import { CardStatus } from '@/types/cardStatus';
 
 export interface CreateTransferRequest {
   senderCardID: number;
@@ -24,7 +25,7 @@ export interface TransferValidationResponse {
     cardID: number;
     cardNumber: string;
     balance: number;
-    cardStatus: number;
+    cardStatus: CardStatus;
   };
 }
 

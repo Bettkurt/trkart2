@@ -20,7 +20,7 @@ namespace TRKart.Entities.DTOs
 
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Description can only contain letters and numbers. No special characters allowed.")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; } = null!;
     }
 
     public class TransactionFeasibilityResponse

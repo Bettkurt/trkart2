@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TRKart.Business.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
+using TRKart.Entities.Enums;
 
 namespace TRKart.API.Controllers
 {
@@ -106,7 +107,7 @@ namespace TRKart.API.Controllers
             {
                 var cards = await _context.UserCard
                     // 0 = Deactivated (As far as users concern, it is deleted for them)
-                    .Where(c => c.CustomerID == customerId.Value && c.CardStatus != 0) 
+                    .Where(c => c.CustomerID == customerId.Value && c.CardStatus != CardStatus.Deactivated) 
                     .Select(c => new { 
                         c.CardID, 
                         c.CardNumber, 

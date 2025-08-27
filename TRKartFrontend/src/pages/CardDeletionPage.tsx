@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import userCardService from '@/services/userCardService';
 import { UserCard } from '@/types';
+import { CardStatus } from '@/types/cardStatus';
 import { logger } from '@/utils/logger';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -226,12 +227,12 @@ const CardDeletionPage: React.FC = () => {
       // Update card status to 'Deactivated' using the new endpoint
       logger.debug('CardDeletionPage', 'handleDeactivation', 'Sending status update request to API', { 
         cardId: card.cardID,
-        newStatus: 0
+        newStatus: CardStatus.Deactivated
       });
       
       await userCardService.updateCardStatus({
         cardId: card.cardID,
-        status: 0
+        status: CardStatus.Deactivated
       });
       
       logger.info('CardDeletionPage', 'handleDeactivation', 'Card status updated to Deactivated', { 
