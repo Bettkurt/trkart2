@@ -6,6 +6,7 @@ using TRKart.Entities.DTOs;
 using TRKart.Repository.Interfaces;
 using TRKart.DataAccess;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace TRKart.Business.Services
 {
@@ -30,11 +31,12 @@ namespace TRKart.Business.Services
             {
                 Console.WriteLine($"TransferService: Starting transfer for senderCardID={dto.SenderCardID}, recipientCardNumber={dto.RecipientCardNumber}, amount={dto.Amount}");
                 
-                // Validate input
-                if (dto.Amount <= 0)
+                // Validate input format using InputValidationService
+                var inputValidation = _inputValidationService.ValidateTransferInput(dto);
+                if (!inputValidation.IsValid)
                 {
                     response.Success = false;
-                    response.Message = "Transfer amount must be positive";
+                    response.Message = $"Input validation failed: {string.Join("; ", inputValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
 
@@ -43,51 +45,21 @@ namespace TRKart.Business.Services
                 var senderCard = await _context.UserCard
                     .FirstOrDefaultAsync(c => c.CardID == dto.SenderCardID);
 
-                if (senderCard == null)
-                {
-                    response.Success = false;
-                    response.Message = "Sender card not found";
-                    return response;
-                }
-
-                Console.WriteLine($"TransferService: Sender card found - Balance: {senderCard.Balance}");
-
-                if (senderCard.Balance < dto.Amount)
-                {
-                    response.Success = false;
-                    response.Message = "Insufficient balance for transfer";
-                    return response;
-                }
-
                 // Get recipient card by card number
                 Console.WriteLine($"TransferService: Looking up recipient card number {dto.RecipientCardNumber}");
                 var recipientCard = await _context.UserCard
                     .FirstOrDefaultAsync(c => c.CardNumber == dto.RecipientCardNumber);
 
-                if (recipientCard == null)
+                // Validate business rules using InputValidationService
+                var businessValidation = _inputValidationService.ValidateTransferBusinessRules(dto, senderCard, recipientCard);
+                if (!businessValidation.IsValid)
                 {
                     response.Success = false;
-                    response.Message = "Recipient card not found";
+                    response.Message = $"Business validation failed: {string.Join("; ", businessValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
 
-                Console.WriteLine($"TransferService: Recipient card found - CardID: {recipientCard.CardID}");
-
-                if (senderCard.CardID == recipientCard.CardID)
-                {
-                    response.Success = false;
-                    response.Message = "Cannot transfer to the same card";
-                    return response;
-                }
-
-                // Validate recipient card status - must be Active for transfers
-                Console.WriteLine($"TransferService: Validating recipient card status: {recipientCard.CardStatus}");
-                if (recipientCard.CardStatus != "Active")
-                {
-                    response.Success = false;
-                    response.Message = "Transfer can not be completed. Card not found.";
-                    return response;
-                }
+                Console.WriteLine($"TransferService: Business validation passed - Sender balance: {senderCard.Balance}, Recipient status: {recipientCard.CardStatus}");
 
                 // Validate both transactions before creating any
                 Console.WriteLine($"TransferService: Validating both transactions before creation");
@@ -107,21 +79,21 @@ namespace TRKart.Business.Services
                     Description = $"Transfer from card {senderCard.CardNumber}"
                 };
 
-                // Validate TransferOut transaction feasibility
-                var transferOutFeasibility = await CheckTransactionFeasibilityAsync(transferOutDto);
-                if (!transferOutFeasibility.IsFeasible)
+                // Validate TransferOut transaction feasibility using InputValidationService
+                var transferOutFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferOutDto, senderCard.Balance);
+                if (!transferOutFeasibility.IsValid)
                 {
                     response.Success = false;
-                    response.Message = $"TransferOut validation failed: {transferOutFeasibility.Message}";
+                    response.Message = $"TransferOut validation failed: {string.Join("; ", transferOutFeasibility.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
 
-                // Validate TransferIn transaction feasibility
-                var transferInFeasibility = await CheckTransactionFeasibilityAsync(transferInDto);
-                if (!transferInFeasibility.IsFeasible)
+                // Validate TransferIn transaction feasibility using InputValidationService
+                var transferInFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferInDto, recipientCard.Balance);
+                if (!transferInFeasibility.IsValid)
                 {
                     response.Success = false;
-                    response.Message = $"TransferIn validation failed: {transferInFeasibility.Message}";
+                    response.Message = $"TransferIn validation failed: {string.Join("; ", transferInFeasibility.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
 
@@ -292,70 +264,6 @@ namespace TRKart.Business.Services
                 response.Error = ex.Message;
             }
 
-            return response;
-        }
-
-        private async Task<TransactionFeasibilityResponse> CheckTransactionFeasibilityAsync(TransactionCreateDto dto)
-        {
-            var response = new TransactionFeasibilityResponse();
-
-            // Check if card exists and get current balance
-            var card = await _context.UserCard
-                .Where(c => c.CardID == dto.CardID)
-                .Select(c => new { c.Balance, c.CardStatus, c.CardNumber })
-                .FirstOrDefaultAsync();
-
-            if (card == null)
-            {
-                response.IsFeasible = false;
-                response.Message = "Card not found";
-                return response;
-            }
-
-            response.CardNumber = card.CardNumber;
-            response.CurrentBalance = card.Balance;
-
-            // Calculate projected balance based on transaction type
-            decimal projectedBalance = card.Balance;
-            
-            switch (dto.TransactionType.ToLower())
-            {
-                case "transferout":
-                case "pay":
-                    projectedBalance -= dto.Amount;
-                    break;
-                case "load":
-                case "transferin":
-                case "refund":
-                    projectedBalance += dto.Amount;
-                    break;
-                default:
-                    response.IsFeasible = false;
-                    response.Message = $"Invalid transaction type: {dto.TransactionType}";
-                    return response;
-            }
-
-            response.ProjectedBalance = projectedBalance;
-
-            // Check if transaction would result in negative balance
-            if (projectedBalance < 0)
-            {
-                response.IsFeasible = false;
-                response.Message = $"Insufficient funds. Current balance: {card.Balance:C}, Required: {dto.Amount:C}, Projected balance: {projectedBalance:C}";
-                return response;
-            }
-
-            // Check for reasonable transaction amount (optional business rule)
-            if (dto.Amount <= 0)
-            {
-                response.IsFeasible = false;
-                response.Message = "Transaction amount must be greater than zero";
-                return response;
-            }
-
-            // All checks passed
-            response.IsFeasible = true;
-            response.Message = "Transaction is feasible";
             return response;
         }
 

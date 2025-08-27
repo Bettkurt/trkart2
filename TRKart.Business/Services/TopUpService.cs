@@ -35,7 +35,7 @@ namespace TRKart.Business.Services
             try
             {
                 // 1. Validate input format
-                var inputValidation = ValidateTopUpInput(request);
+                var inputValidation = _inputValidationService.ValidateTopUpInput(request);
                 if (!inputValidation.IsValid)
                 {
                     _logger.LogWarning("[{CorrelationId}] TopUp input validation failed: {Errors}", 
@@ -503,29 +503,6 @@ namespace TRKart.Business.Services
         }
 
         #region Private Helper Methods
-
-        private InputValidationResponse ValidateTopUpInput(TopUpRequestDto request)
-        {
-            var errors = new List<ValidationError>();
-
-            // Use existing validation service if available
-            // For now, implement basic validation
-            if (string.IsNullOrWhiteSpace(request.TargetCardNumber))
-                errors.Add(new ValidationError { Field = "TargetCardNumber", Error = "Card number is required", Value = request.TargetCardNumber ?? "" });
-
-            if (request.Amount <= 0)
-                errors.Add(new ValidationError { Field = "Amount", Error = "Amount must be greater than zero", Value = request.Amount.ToString() });
-
-            if (string.IsNullOrWhiteSpace(request.PaymentMethod))
-                errors.Add(new ValidationError { Field = "PaymentMethod", Error = "Payment method is required", Value = request.PaymentMethod ?? "" });
-
-            return new InputValidationResponse
-            {
-                IsValid = !errors.Any(),
-                Errors = errors,
-                Message = errors.Any() ? "Input validation failed" : "Input validation passed"
-            };
-        }
 
         private async Task<TopUpResponseDto> CreateResponseFromExistingTransaction(Transaction transaction, string correlationId)
         {
