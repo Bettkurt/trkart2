@@ -137,7 +137,7 @@ namespace TRKart.API.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request = null)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             // Try to get refresh token from request body first, then from cookie
             string? refreshToken = request?.RefreshToken;
@@ -273,12 +273,12 @@ namespace TRKart.API.Controllers
                     });
                 }
 
-               /* return Ok(new { 
+                return Ok(new { 
                     hasValidSession = isValid, 
                     email, 
                     customerID, 
                     fullName 
-                }); */
+                });
             }
              catch (Exception ex)
             {

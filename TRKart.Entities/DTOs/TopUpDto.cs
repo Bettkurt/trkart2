@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using TRKart.Entities.Models;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Entities.DTOs
 {
@@ -62,7 +66,7 @@ namespace TRKart.Entities.DTOs
         public bool IsValid { get; set; }
         public string Message { get; set; } = string.Empty;
         public string? CardNumber { get; set; }
-        public string? CardStatus { get; set; }
+        public CardStatus? CardStatus { get; set; }
         public decimal? CurrentBalance { get; set; }
         public decimal? ProjectedBalance { get; set; }
         public bool DuplicateExternalRef { get; set; }

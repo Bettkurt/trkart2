@@ -23,8 +23,7 @@ namespace TRKart.Business.Services
 
         public UserCardService(ApplicationDbContext context, 
                              IUniqueNumberChecker uniqueNumberChecker,
-                             ILogger<UserCardService> logger,
-                             IUniqueNumberChecker uniqueNumberChecker)
+                             ILogger<UserCardService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _uniqueNumberChecker = uniqueNumberChecker ?? throw new ArgumentNullException(nameof(uniqueNumberChecker));
@@ -219,7 +218,7 @@ namespace TRKart.Business.Services
             catch (Exception ex)
             {
                 // Log the error
-                _logger.LogError(ex, "Error updating card status for card ID: {CardId}", updateDto?.CardId);
+                _logger.LogError(ex, "Error updating card status for card ID: {CardId}", updateDto?.CardID);
                 await transaction.RollbackAsync();
                 Console.WriteLine($"[UpdateCardStatusAsync] Error updating card status: {ex.Message}");
                 return false;

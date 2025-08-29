@@ -10,6 +10,7 @@ using TRKart.Entities.DTOs;
 using TRKart.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 
+
 namespace TRKart.Business.Services
 {
     public class AuthService : IAuthService
@@ -62,13 +63,17 @@ namespace TRKart.Business.Services
         {
             _logger.LogInformation("Login attempt for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
 
-            if (customer == null)
-                return null;
-
             bool isValid = await VerifyPasswordAsync(dto.Email, dto.Password);
             if (!isValid)
+            {
                 return null;
+            }
 
+            var customer = await _context.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync( x => x.Email == dto.Email);
+
+            // No null customer check is needed. VerifyPasswordAsync already checks if the customer exists.
 
             // No valid existing session found OR existing session had blacklisted token, create new tokens
             string accessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);

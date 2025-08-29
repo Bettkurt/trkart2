@@ -3,6 +3,7 @@ using System.Globalization;
 using TRKart.Business.Interfaces;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Business.Services
 {
@@ -349,13 +350,13 @@ namespace TRKart.Business.Services
             }
 
             // Validate recipient card status is Active
-            if (recipientCard != null && recipientCard.CardStatus != "Active")
+            if (recipientCard != null && recipientCard.CardStatus != CardStatus.Active)
             {
                 errors.Add(new ValidationError
                 {
                     Field = "RecipientCardStatus",
                     Error = "Transfer cannot be completed. Card not found.",
-                    Value = recipientCard.CardStatus
+                    Value = recipientCard.CardStatus.ToString()
                 });
             }
 
@@ -705,4 +706,4 @@ namespace TRKart.Business.Services
             return response;
         }
     }
-} 
+}

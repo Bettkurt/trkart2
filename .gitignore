@@ -38,17 +38,12 @@ Migrations/
 .env
 .env.*
 
-# SonarQube
-.sonarqube/
-
 # node_modules
 node_modules/
 
-# Sonarqube
-.sonarqube/
-
 # Sensitive Information
 TRKart.API/appsettings.json
+TRKart.API/logs/
 
 # SonarQube
 .sonarqube/

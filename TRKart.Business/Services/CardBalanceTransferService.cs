@@ -115,7 +115,7 @@ namespace TRKart.Business.Services
                             _logger.LogInformation("Transferred {Amount} from blacklisted card {SourceCardId} to card {TargetCardId}", 
                                 blacklistedCard.LeftOverBalance, blacklistedCard.OriginalCardID, activeCard.CardID);
                         } else {
-                            _logger.LogInformation("Transfer from blacklisted card {SourceCardId} to card {TargetCardId} failed", 
+                            _logger.LogInformation("Transfer of {Amount} TRY from blacklisted card {SourceCardId} to card {TargetCardId} failed", 
                                 blacklistedCard.LeftOverBalance, blacklistedCard.OriginalCardID, activeCard.CardID);
                         }
                     }

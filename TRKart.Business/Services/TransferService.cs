@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using TRKart.Business.Interfaces;
+using TRKart.Business.Services;
 using TRKart.DataAccess;
 using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
@@ -15,11 +16,15 @@ namespace TRKart.Business.Services
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly ApplicationDbContext _context;
+        private readonly IInputValidationService _inputValidationService;
 
-        public TransferService(ITransactionRepository transactionRepository, ApplicationDbContext context)
+        public TransferService(ITransactionRepository transactionRepository, 
+                               ApplicationDbContext context,
+                               IInputValidationService inputValidationService)
         {
             _transactionRepository = transactionRepository;
             _context = context;
+            _inputValidationService = inputValidationService;
         }
 
         public async Task<TransferResponse> CreateTransferAsync(TransferCreateDto dto)
@@ -122,7 +127,7 @@ namespace TRKart.Business.Services
                     return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
                 }
                 
-                if (currentRecipientCard.CardStatus != "Active")
+                if (currentRecipientCard.CardStatus != CardStatus.Active)
                 {
                     var failureReason = $"Recipient card status changed to {currentRecipientCard.CardStatus} during transfer. Only active cards can receive transfers.";
                     return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);

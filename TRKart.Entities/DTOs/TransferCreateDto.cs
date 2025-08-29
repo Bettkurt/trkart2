@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using TRKart.Entities.Models;
 
@@ -34,6 +36,7 @@ namespace TRKart.Entities.DTOs
         public bool Success { get; set; }
         public bool IsValid { get; set; }
         public string Message { get; set; } = string.Empty;
+        public string? Error { get; set; } = string.Empty;
         public UserCardDto? RecipientCard { get; set; }
     }
 } 

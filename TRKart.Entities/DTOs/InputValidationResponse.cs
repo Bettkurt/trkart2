@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using TRKart.Entities.Models;
+
 namespace TRKart.Entities.DTOs
 {
     public class InputValidationResponse
@@ -11,6 +16,6 @@ namespace TRKart.Entities.DTOs
     {
         public string Field { get; set; } = string.Empty;
         public string Error { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
+        public string Value { get; set; }
     }
 } 

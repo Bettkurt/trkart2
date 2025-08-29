@@ -8,6 +8,7 @@ using TRKart.Business.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Business.Services
 {
@@ -104,7 +105,7 @@ namespace TRKart.Business.Services
                         }
 
                         // Verify card is active
-                        if (targetCard.CardStatus != "Active")
+                        if (targetCard.CardStatus != CardStatus.Active)
                         {
                             _logger.LogWarning("[{CorrelationId}] Card {CardNumber} is not active, status: {Status}", 
                                 correlationId, request.TargetCardNumber, targetCard.CardStatus);
@@ -217,7 +218,7 @@ namespace TRKart.Business.Services
                 result.CurrentBalance = card.Balance;
 
                 // 2. Check card status
-                if (card.CardStatus != "Active")
+                if (card.CardStatus != CardStatus.Active)
                 {
                     result.IsValid = false;
                     result.Message = $"Card is not active. Current status: {card.CardStatus}";
