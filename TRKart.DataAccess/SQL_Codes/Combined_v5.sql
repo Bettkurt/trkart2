@@ -1,3 +1,4 @@
+-- This is the SQL code for the TRKart database.
 
 -------------------------------------------------------------------------------------------
 -------------------------------------Customers---------------------------------------------
@@ -17,6 +18,72 @@ CREATE TABLE "Customers" (
     "PasswordHash" VARCHAR(200) NOT NULL,
     "PasswordChangedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-------------------------------------------------------------------------------------------
+-------------------------------------PasswordHistory---------------------------------------
+-------------------------------------------------------------------------------------------
+
+CREATE TABLE "PasswordHistory" (
+    "PasswordHistoryID" SERIAL PRIMARY KEY,
+    "CustomerID" INTEGER NOT NULL,
+    "PasswordHash" VARCHAR(200) NOT NULL,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "FK_PasswordHistory_Customers_CustomerID" 
+        FOREIGN KEY ("CustomerID") 
+        REFERENCES "Customers"("CustomerID")
+        ON DELETE CASCADE
+);
+
+-------------------------------------------------------------------------------------------
+
+-- Function to manage password history
+CREATE OR REPLACE FUNCTION manage_password_history()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Delete oldest password history if customer has 3 or more entries
+    DELETE FROM "PasswordHistory"
+    WHERE "PasswordHistoryID" IN (
+        SELECT "PasswordHistoryID"
+        FROM "PasswordHistory"
+        WHERE "CustomerID" = NEW."CustomerID"
+        ORDER BY "CreatedAt" ASC
+        LIMIT 1
+    )
+    AND (
+        SELECT COUNT(*)
+        FROM "PasswordHistory"
+        WHERE "CustomerID" = NEW."CustomerID"
+    ) >= 3;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER trg_manage_password_history
+BEFORE INSERT ON "PasswordHistory"
+FOR EACH ROW
+EXECUTE FUNCTION manage_password_history();
+
+-------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION update_customer_password_changed_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE "Customers"
+    SET "PasswordChangedAt" = NEW."CreatedAt"
+    WHERE "CustomerID" = NEW."CustomerID";
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE OR REPLACE TRIGGER trg_update_customer_password_changed_at
+AFTER INSERT ON "PasswordHistory"
+FOR EACH ROW
+EXECUTE FUNCTION update_customer_password_changed_at();
 
 -------------------------------------------------------------------------------------------
 -------------------------------------SessionToken------------------------------------------
@@ -98,12 +165,11 @@ CREATE TABLE "UserCard" (
     "CardName" VARCHAR(20),
     -- Default is calculated by DB. 5 years from current date, and end of the current month
     "CardExpirationDate" DATE NOT NULL DEFAULT 
-        (DATE_TRUNC('MONTH', CURRENT_DATE) + 
-        INTERVAL '5 years' + 
-        INTERVAL '1 month' - 
-        INTERVAL '1 day')::DATE,
+        (DATE_TRUNC('MONTH', CURRENT_DATE) 
+        + INTERVAL '5 years' 
+        + INTERVAL '1 month' 
+        - INTERVAL '1 day')::DATE,
     "IsBlacklisted" BOOLEAN NOT NULL DEFAULT FALSE,
-    "BlacklistedAt" TIMESTAMP,
     "CreatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "LastUpdate" TIMESTAMP,
     "UpdateReason" VARCHAR(100),
@@ -321,10 +387,10 @@ EXECUTE FUNCTION create_card_limits_trigger_fn();
 CREATE OR REPLACE FUNCTION handle_card_type_change_for_limits()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_old_max_pay DECIMAL(10,2);
-    v_old_max_transfer DECIMAL(10,2);
-    v_new_max_pay DECIMAL(10,2);
-    v_new_max_transfer DECIMAL(10,2);
+    v_old_max_pay DECIMAL(18, 2);
+    v_old_max_transfer DECIMAL(18, 2);
+    v_new_max_pay DECIMAL(18, 2);
+    v_new_max_transfer DECIMAL(18, 2);
 BEGIN
     -- Only proceed if CardType actually changed
     IF NEW."CardType" = OLD."CardType" THEN
@@ -442,11 +508,8 @@ CREATE OR REPLACE FUNCTION update_user_card_blacklist_status()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Update the UserCard table to mark the card as blacklisted
-    -- and set the BlacklistedAt to the current timestamp
     UPDATE "UserCard"
-    SET 
-        "IsBlacklisted" = TRUE,
-        "BlacklistedAt" = NEW."BlacklistedAt"
+    SET "IsBlacklisted" = TRUE
     WHERE "CardID" = NEW."OriginalCardID";
     
     RETURN NEW;
@@ -468,7 +531,7 @@ CREATE TABLE "Transaction" (
     "CardID" INT NOT NULL,
     "TransferTransactionID" INT,
     "Amount" DECIMAL(18, 2) NOT NULL,
-    "FeeAmount" DECIMAL(10,2),
+    "FeeAmount" DECIMAL(18,2) NULL DEFAULT 0.00,
     "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" 
         IN ('Pay', 'Load', 'Refund',
             'TransferOut', 'TransferIn', 'TopUp',
@@ -503,24 +566,38 @@ DECLARE
     v_net_amount DECIMAL(18, 2);
 BEGIN
 
-    -- If the amount given is negative, something is wrong. Directly reject
-    IF NEW."Amount" <= 0 THEN
-        RAISE EXCEPTION 'Amount must be greater than 0';
+    -- Check for unknown transaction statuses. 
+    -- Since the trigger calls this function before inserting, and the trigger checks for TransactionStatus = 'Pending', 
+    --  this should never happen. Safety check, just in case 
+    IF NEW."TransactionStatus" <> 'Pending' THEN
+        RAISE EXCEPTION 'Transaction is not pending. It is %', NEW."TransactionStatus";
     END IF;
 
-IF NEW."TransactionStatus" = 'Pending' THEN
+    -- If the amount given is negative, something is wrong. Save it as denied for audit purposes
+    IF NEW."Amount" <= 0 THEN
+        NEW."TransactionStatus" := 'Denied';
+        RETURN NEW;
+    END IF;
+
     -- Get the current balance and card status with row-level locking
     SELECT "Balance", "CardStatus" 
     INTO v_current_balance, v_current_card_status
     FROM "UserCard"
     WHERE "CardID" = NEW."CardID"
     FOR UPDATE;  -- Lock the row to prevent race conditions
+
+    -- If the card can't be found, DB won't save the entry because CardID is a FK, therefore it is required
+    -- Check anyway if the card actually exists, and throw an error. Do NOT save the entry.
+    IF v_current_balance IS NULL OR v_current_card_status IS NULL THEN
+        RAISE EXCEPTION 'Card not found';
+    END IF;
     
     -- Background services send/create transfers from blacklisted cards 
-    --  to an active card of the user (if it exists) 
+    --  to an active card of the same user (if it exists) 
     --  in order to transfer leftover balance
-    -- We just approve them since all the check are done by back-end
+    -- We just approve them since all the checks are done by the back-end
     -- Back-end sends one after the other. So, it does not get mixed up
+    -- First SystemTransferOut, then SystemTransferIn
     IF NEW."TransactionType" = 'SystemTransferOut' THEN 
         NEW."TransactionStatus" := 'Approved';
         -- Update blacklisted card balance
@@ -540,8 +617,9 @@ IF NEW."TransactionStatus" = 'Pending' THEN
         RETURN NEW;
     END IF;
 
-    -- From this point forward, we won't do any transaction for blacklisted cards
+    -- From this point forward, we won't do any transactions for blacklisted cards
     --  They are cards with statuses 0: Deactivated, 1: Expired, 2: Lost
+    -- Save it as 'Denied' for audit purposes
     IF v_current_card_status < 3 THEN
         NEW."TransactionStatus" := 'Denied';
         RETURN NEW;
@@ -569,6 +647,7 @@ IF NEW."TransactionStatus" = 'Pending' THEN
         
     -- From this point forward, we won't do any transaction non-active cards
     --  They are cards with statuses 0: Deactivated, 1: Expired, 2: Lost, 3: Inactive
+    -- Save it as 'Denied' for audit purposes
     IF v_current_card_status < 4 THEN
         NEW."TransactionStatus" := 'Denied';
         RETURN NEW;
@@ -576,10 +655,16 @@ IF NEW."TransactionStatus" = 'Pending' THEN
 
     -- TopUp transactions (external payment with fees)
     IF NEW."TransactionType" = 'TopUp' THEN
+        -- Check for invalid fee amount values. Save it as 'Denied' for audit purposes
+        IF NEW."FeeAmount" < 0 OR NEW."Amount" < NEW."FeeAmount" THEN
+            NEW."TransactionStatus" := 'Denied';
+            RETURN NEW;
+        END IF;
+
         -- Calculate net amount (gross amount minus fee)
         v_net_amount := NEW."Amount" - COALESCE(NEW."FeeAmount", 0);
             
-        -- Net amount must be positive
+        -- Net amount must be positive. This is a redundant check, but just in case it is for safety
         IF v_net_amount < 0 THEN
             NEW."TransactionStatus" := 'Denied';
             RETURN NEW;
@@ -592,21 +677,25 @@ IF NEW."TransactionStatus" = 'Pending' THEN
 
         NEW."TransactionStatus" := 'Approved';
 
+        RETURN NEW;
+
     -- Process based on transaction type
     -- Pay & TransferOut transactions
     ELSIF NEW."TransactionType" = 'Pay' OR NEW."TransactionType" = 'TransferOut' THEN
         -- Check if balance is sufficient
-        IF v_current_balance >= NEW."Amount" THEN
-            -- Update card balance
-            UPDATE "UserCard"
-            SET "Balance" = "Balance" - NEW."Amount"
-            WHERE "CardID" = NEW."CardID";
-                
-            -- Update transaction status
-            NEW."TransactionStatus" := 'Approved';
-        ELSE
+        IF v_current_balance < NEW."Amount" THEN
             NEW."TransactionStatus" := 'Denied';
+            RETURN NEW;
         END IF;
+
+        -- Update card balance
+        UPDATE "UserCard"
+        SET "Balance" = v_current_balance - NEW."Amount"
+        WHERE "CardID" = NEW."CardID";
+                
+        NEW."TransactionStatus" := 'Approved';
+        
+        RETURN NEW;
 
     -- Refund & TransferIn transaction
     ELSIF NEW."TransactionType" = 'Refund' OR NEW."TransactionType" = 'TransferIn' THEN
@@ -616,12 +705,16 @@ IF NEW."TransactionStatus" = 'Pending' THEN
         WHERE "CardID" = NEW."CardID";
 
         NEW."TransactionStatus" := 'Approved';
-    END IF;
-ELSE
-    NEW."TransactionStatus" := 'Denied';
-END IF;
 
-    RETURN NEW;
+        RETURN NEW;
+    END IF;
+
+    -- If the transaction is not approved or denied, something is wrong
+    -- This is a redundant check, but just in case it is for safety
+    IF NEW."TransactionStatus" != 'Approved' AND NEW."TransactionStatus" != 'Denied' THEN
+        RAISE EXCEPTION 'Transaction is not approved or denied. It is %', NEW."TransactionStatus";
+    END IF;
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -642,25 +735,38 @@ EXECUTE FUNCTION process_transaction_trigger();
 -- Indexes for faster queries
 CREATE INDEX IDX_Customer_CustomerNumber ON "Customers"("CustomerNumber");
 CREATE INDEX IDX_Customer_Email ON "Customers"("Email");
+CREATE INDEX IDX_Customer_FullName ON "Customers"("FullName");
+CREATE INDEX IDX_Customer_UpdatedAt ON "Customers"("EmailLastUpdatedAt", "PasswordChangedAt");
+
+CREATE INDEX IDX_PasswordHistory_CustomerID ON "PasswordHistory"("CustomerID");
+CREATE INDEX IDX_PasswordHistory_CreatedAt ON "PasswordHistory"("CreatedAt");
 
 CREATE INDEX IDX_SessionToken_CustomerID ON "SessionToken" ("CustomerID");
 CREATE INDEX IDX_SessionToken_RefreshToken ON "SessionToken" ("RefreshToken");
 CREATE INDEX IDX_SessionToken_AccessToken ON "SessionToken" ("AccessToken");
 CREATE INDEX IDX_SessionToken_Expirations ON "SessionToken" ("AccessTokenExpiration", "RefreshTokenExpiration");
+CREATE INDEX IDX_SessionToken_IPAddress ON "SessionToken" ("IPAddress");
 
 CREATE INDEX IDX_TokenBlacklist_SessionID ON "TokenBlacklist" ("SessionID");
 CREATE INDEX IDX_TokenBlacklist_RefreshToken ON "TokenBlacklist"("RefreshToken");
 CREATE INDEX IDX_TokenBlacklist_BlacklistedAt ON "TokenBlacklist"("BlacklistedAt");
+CREATE INDEX IDX_TokenBlacklist_IPAddress ON "TokenBlacklist"("IPAddress");
 
 CREATE INDEX IDX_UserCard_CustomerID ON "UserCard"("CustomerID");
 CREATE INDEX IDX_UserCard_CardNumber ON "UserCard"("CardNumber");
+CREATE INDEX IDX_UserCard_Balance ON "UserCard"("Balance");
+CREATE INDEX IDX_UserCard_CreatedAt ON "UserCard"("CreatedAt");
+CREATE INDEX IDX_UserCard_ExpirationDate ON "UserCard"("CardExpirationDate");
+CREATE INDEX IDX_UserCard_LastUpdate ON "UserCard"("LastUpdate");
 
 CREATE INDEX IDX_CardUpdates_CardID ON "CardUpdates"("CardID");
 CREATE INDEX IDX_CardUpdates_UpdatedAt ON "CardUpdates"("StatusUpdatedAt", "TypeUpdatedAt");
 
-CREATE INDEX IDX_CardBlacklist_CardNumber ON "CardBlacklist" ("CardNumber");
 CREATE INDEX IDX_CardBlacklist_CustomerID ON "CardBlacklist" ("CustomerID");
 CREATE INDEX IDX_CardBlacklist_OriginalCardID ON "CardBlacklist" ("OriginalCardID");
+CREATE INDEX IDX_CardBlacklist_CardNumber ON "CardBlacklist" ("CardNumber");
+CREATE INDEX IDX_CardBlacklist_LeftOverBalance ON "CardBlacklist" ("LeftOverBalance");
+CREATE INDEX IDX_CardBlacklist_BlacklistedAt ON "CardBlacklist" ("BlacklistedAt");
 
 CREATE INDEX IDX_CardLimits_CardID ON "CardLimits" ("CardID");
 CREATE INDEX IDX_CardLimits_Limit ON "CardLimits" ("PayLimit", "TransferLimit");
@@ -668,3 +774,5 @@ CREATE INDEX IDX_CardLimits_LimitUpdateddAt ON "CardLimits" ("PayLimitUpdatedAt"
 
 CREATE INDEX IDX_Transaction_CardID ON "Transaction"("CardID");
 CREATE INDEX IDX_Transaction_TransferTransactionID ON "Transaction"("TransferTransactionID");
+CREATE INDEX IDX_Transaction_Amount ON "Transaction"("Amount");
+CREATE INDEX IDX_Transaction_TransactionDate ON "Transaction"("TransactionDate");

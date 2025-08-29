@@ -68,10 +68,6 @@ namespace TRKart.Entities.Models
         [Column("IsBlacklisted", TypeName = "BOOLEAN")]
         public bool IsBlacklisted { get; set; } = false;
 
-        // Maps to BlacklistedAt TIMESTAMP
-        [Column("BlacklistedAt")]
-        public DateTime? BlacklistedAt { get; set; }
-
         // Maps to CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         [Column("CreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]

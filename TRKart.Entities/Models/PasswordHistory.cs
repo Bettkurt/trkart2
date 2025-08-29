@@ -8,12 +8,12 @@ namespace TRKart.Entities.Models
     public class PasswordHistory
     {
         [Key]
-        [Column("ID")]
+        [Column("PasswordHistoryID")]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ID { get; set; }
+        public int PasswordHistoryID { get; set; }
 
         [Column("CustomerID")]
-        [Required]
+        [ForeignKey("Customer")]
         public int CustomerID { get; set; }
 
         [Column("PasswordHash")]

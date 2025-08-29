@@ -27,7 +27,12 @@ const TopUpForm: React.FC<TopUpFormProps> = ({ onSubmit, onCancel }) => {
 
   // Real-time validation handlers
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+    // Remove spaces and other whitespace, then filter non-alphanumeric (no length limit yet)
+    const value = e.target.value
+      .replace(/\s/g, '') // Remove spaces first (like TransferForm)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '') // Remove other non-alphanumeric characters
+      .slice(0, 16); // Limit to 16 characters
     setFormData(prev => ({ ...prev, targetCardNumber: value }));
     
     // Clear previous validation
@@ -244,8 +249,8 @@ const TopUpForm: React.FC<TopUpFormProps> = ({ onSubmit, onCancel }) => {
               cardValidation?.isValid ? 'border-green-500 focus:ring-green-500' :
               'border-gray-300 focus:ring-blue-500'
             }`}
-            placeholder="Enter 16-character card number"
-            maxLength={16}
+            placeholder="Enter card number (TRK90 XXXX XXXX XXX)"
+            required
           />
           {errors.targetCardNumber && (
             <p className="text-red-500 text-sm mt-1">{errors.targetCardNumber}</p>
