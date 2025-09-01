@@ -1,6 +1,7 @@
 // Import enums
 import { CardType } from './cardTypes';
 import { CardStatus } from './cardStatus';
+import { TransactionType } from './TransactionType';
 
 // Auth types
 export interface LoginRequest {
@@ -79,7 +80,7 @@ export interface Transaction {
   cardID: number;
   cardNumber?: string;
   amount: number;
-  transactionType: string;
+  transactionType: TransactionType;
   description?: string;
   transactionDate: string;
   transactionStatus?: string;
@@ -89,7 +90,7 @@ export interface Transaction {
 export interface CreateTransactionRequest {
   cardID: number;
   amount: number;
-  transactionType: string;
+  transactionType: TransactionType;
   description?: string;
 }
 
@@ -165,7 +166,7 @@ export interface TopUpTransaction {
   cardID: number;
   cardNumber: string;
   amount: number;
-  transactionType: string;
+  transactionType: TransactionType;
   paymentMethod: string;
   feeAmount?: number;
   netAmount: number;

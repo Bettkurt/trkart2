@@ -184,7 +184,7 @@ namespace TRKart.Business.Services
                     
                     if (!isAlreadyBlacklisted)
                     {
-                        var blacklistReason = updateDto.Status; // 0: Deactivated, 1: Expired, 2: Lost
+                        var blacklistReason = updateDto.Status; // 0: Deactivated, 1: Expired, 2: ReportedLost
                         
                         Console.WriteLine($"[UpdateCardStatusAsync] Creating blacklist entry with reason: {blacklistReason}");
                         

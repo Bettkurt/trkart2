@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Entities.DTOs
 {
@@ -15,8 +16,8 @@ namespace TRKart.Entities.DTOs
         public decimal Amount { get; set; }
 
         [Required(ErrorMessage = "TransactionType is required")]
-        [RegularExpression(@"^(Pay|Load|Refund|TransferIn|TransferOut)$", ErrorMessage = "TransactionType must be one of: Pay, Load, Refund, TransferIn, TransferOut")]
-        public string TransactionType { get; set; } = null!;
+        [EnumDataType(typeof(TransactionType), ErrorMessage = "Invalid transaction type")]
+        public TransactionType TransactionType { get; set; }
 
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Description can only contain letters and numbers. No special characters allowed.")]

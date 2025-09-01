@@ -128,7 +128,7 @@ try
         builder.Configuration.GetSection("TokenCleanup"));
 
     // 8. Register Background Services
-    builder.Services.AddHostedService<TokenCleanupService>();
+    builder.Services.AddHostedService<TokenCleanupBackgroundService>();
 
     // 9. DI Services
     builder.Services.AddScoped<IAuthService, AuthService>();

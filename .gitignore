@@ -4,6 +4,10 @@ obj/
 out/
 build/
 
+# Frontend build outputs
+TRKartFrontend/dist/
+node_modules/
+
 # User-specific files
 *.user
 *.suo
@@ -37,9 +41,6 @@ Migrations/
 # Environment files
 .env
 .env.*
-
-# node_modules
-node_modules/
 
 # Sensitive Information
 TRKart.API/appsettings.json

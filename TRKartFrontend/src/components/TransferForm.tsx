@@ -90,7 +90,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
 
   const handleRecipientCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-      .replace(/\s/g, '') // Remove spaces first (like TransferForm)
+      .replace(/\s/g, '') // Remove spaces first
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '') // Remove other non-alphanumeric characters
       .slice(0, 16); // Limit to 16 characters

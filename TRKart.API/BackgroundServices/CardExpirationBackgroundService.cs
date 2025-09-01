@@ -12,7 +12,8 @@ namespace TRKart.API.BackgroundServices
         private readonly ILogger<CardExpirationBackgroundService> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly TimeSpan _checkInterval = TimeSpan.FromDays(30); // Run once a month day // FromDays(30)
-        private readonly TimeSpan _startupDelay = TimeSpan.FromMinutes(1); // Delay before first run on startup
+        // Delay before first run on startup. It runs second among the background services. After token cleanup.
+        private readonly TimeSpan _startupDelay = TimeSpan.FromMinutes(2); 
 
         public CardExpirationBackgroundService(
             ILogger<CardExpirationBackgroundService> logger,

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { validationUtils } from '@/utils/validationUtils';
 import transactionService from '@/services/transactionService';
+import { TransactionType, getTransactionTypeName, getUserCreatableTransactionTypes } from '@/types/TransactionType';
 
 interface TransactionFormProps {
   onSubmit?: (transaction: any) => void;
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    cardID: string;
+    amount: string;
+    transactionType: TransactionType | '';
+    description: string;
+  }>({
     cardID: '',
     amount: '',
     transactionType: '',
@@ -31,10 +37,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit }) => {
   };
 
   const handleTransactionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = validationUtils.sanitizeTransactionType(e.target.value);
+    const value = e.target.value === '' ? '' : Number(e.target.value) as TransactionType;
     setFormData(prev => ({ ...prev, transactionType: value }));
     
-    const validation = validationUtils.validateTransactionType(value);
+    const validation = value === '' ? { isValid: false, error: 'Transaction type is required' } : validationUtils.validateTransactionType(value);
     setErrors(prev => ({
       ...prev,
       transactionType: validation.isValid ? '' : validation.error || ''
@@ -88,6 +94,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit }) => {
     setValidationMessage('');
 
     try {
+      // Check if all required fields are filled
+      if (formData.transactionType === '') {
+        setValidationMessage('❌ Please select a transaction type');
+        setIsSubmitting(false);
+        return;
+      }
+
       // First validate with backend (amount only)
       const backendValid = await validateWithBackend();
       
@@ -188,11 +201,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit }) => {
             }`}
           >
             <option value="">Select transaction type</option>
-            <option value="Pay">Pay</option>
-            <option value="Load">Load</option>
-            <option value="Refund">Refund</option>
-            <option value="TransferIn">TransferIn</option>
-            <option value="TransferOut">TransferOut</option>
+            {getUserCreatableTransactionTypes().map(type => (
+              <option key={type} value={type}>
+                {getTransactionTypeName(type)}
+              </option>
+            ))}
           </select>
           {errors.transactionType && (
             <p className="text-red-500 text-sm mt-1">{errors.transactionType}</p>

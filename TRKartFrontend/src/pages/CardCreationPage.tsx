@@ -33,7 +33,7 @@ const CardCreationPage: React.FC = () => {
 
       try {
         logger.debug('CardCreationPage', 'checkCardCount', 'Fetching user cards', { customerId: user.customerID });
-        const cards = await userCardService.getCardsByCustomerId(user.customerID);
+        const cards = await userCardService.getUserCards();
         logger.info('CardCreationPage', 'checkCardCount', `Found ${cards.length} cards for user`, { 
           customerId: user.customerID, 
           cardCount: cards.length 

@@ -7,6 +7,7 @@ using TRKart.Repository.Interfaces;
 using TRKart.Repository.Repositories;
 using TRKart.DataAccess;
 using Microsoft.EntityFrameworkCore;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Business.Services
 {
@@ -32,6 +33,13 @@ namespace TRKart.Business.Services
                 throw new InvalidOperationException($"Input validation failed: {string.Join("; ", inputValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}");
             }
 
+            // Validate that the transaction type is allowed for user-initiated transactions
+            var userTransactionValidation = _inputValidationService.ValidateUserTransactionType(dto.TransactionType);
+            if (!userTransactionValidation.IsValid)
+            {
+                throw new InvalidOperationException($"Transaction type validation failed: {string.Join("; ", userTransactionValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}");
+            }
+
             // Pre-check transaction feasibility before attempting database operation
             var feasibilityCheck = await CheckTransactionFeasibilityAsync(dto);
             if (!feasibilityCheck.IsFeasible)
@@ -43,7 +51,7 @@ namespace TRKart.Business.Services
 			{
 				CardID = dto.CardID,
 				Amount = dto.Amount, // Always positive amount - direction determined by transaction type
-				TransactionType = dto.TransactionType,
+				TransactionType = (int)dto.TransactionType,
 				Description = dto.Description
 			};
             return await _transactionRepository.AddTransactionAsync(transaction);
@@ -74,22 +82,19 @@ namespace TRKart.Business.Services
             // Calculate projected balance based on transaction type
             decimal projectedBalance = card.Balance;
             
-            switch (dto.TransactionType.ToLower())
+            if (dto.TransactionType.IsDebitTransaction())
             {
-               
-                case "transferout":
-                case "pay":
-                    projectedBalance -= dto.Amount;
-                    break;
-                case "load":
-                case "transferin":
-                case "refund":
-                    projectedBalance += dto.Amount;
-                    break;
-                default:
-                    response.IsFeasible = false;
-                    response.Message = $"Invalid transaction type: {dto.TransactionType}";
-                    return response;
+                projectedBalance -= dto.Amount;
+            }
+            else if (dto.TransactionType.IsCreditTransaction())
+            {
+                projectedBalance += dto.Amount;
+            }
+            else
+            {
+                response.IsFeasible = false;
+                response.Message = $"Invalid transaction type: {dto.TransactionType.GetDisplayName()}";
+                return response;
             }
 
             response.ProjectedBalance = projectedBalance;

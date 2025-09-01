@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { topUpService } from '@/services/topUpService';
 import { TopUpRequest, TopUpResponse, TopUpValidation } from '@/types';
 
@@ -29,7 +29,7 @@ const TopUpForm: React.FC<TopUpFormProps> = ({ onSubmit, onCancel }) => {
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove spaces and other whitespace, then filter non-alphanumeric (no length limit yet)
     const value = e.target.value
-      .replace(/\s/g, '') // Remove spaces first (like TransferForm)
+      .replace(/\s/g, '') // Remove spaces first
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '') // Remove other non-alphanumeric characters
       .slice(0, 16); // Limit to 16 characters

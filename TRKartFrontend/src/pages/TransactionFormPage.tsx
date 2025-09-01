@@ -5,6 +5,8 @@ import transactionService from '@/services/transactionService';
 import userCardService from '@/services/userCardService';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard, CreateTransactionRequest } from '@/types';
+import { CardStatus } from '@/types/cardStatus';
+import { TransactionType, getTransactionTypeName, getUserCreatableTransactionTypes } from '@/types/TransactionType';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 
@@ -12,11 +14,11 @@ const TransactionFormPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [formData, setFormData] = useState<{
     cardID: string;
     amount: string;
-    transactionType: string;
+    transactionType: TransactionType | '';
     description: string;
   }>({
     cardID: '',
@@ -43,23 +45,23 @@ const TransactionFormPage: React.FC = () => {
     // Get cardId from URL if present and valid
     let cardIdFromUrl: string | null = null;
     let cardIdNum: number | null = null;
-    
+
     const searchParams = new URLSearchParams(location.search);
     const cardIdParam = searchParams.get('cardId');
-    
+
     if (cardIdParam) {
       const parsedId = parseInt(cardIdParam, 10);
       if (!isNaN(parsedId)) {
         cardIdFromUrl = cardIdParam; // Keep original string for form state
         cardIdNum = parsedId; // Number for comparison with card IDs
-        
-        logger.debug('TransactionForm', 'mount', 'Found valid cardId in URL', { 
+
+        logger.debug('TransactionForm', 'mount', 'Found valid cardId in URL', {
           cardId: cardIdFromUrl,
           cardIdNum
         });
       } else {
-        logger.warn('TransactionForm', 'mount', 'Invalid cardId in URL', { 
-          cardId: cardIdParam 
+        logger.warn('TransactionForm', 'mount', 'Invalid cardId in URL', {
+          cardId: cardIdParam
         });
       }
     }
@@ -74,19 +76,19 @@ const TransactionFormPage: React.FC = () => {
       try {
         setLoadingCards(true);
         logger.debug('TransactionForm', 'loadCards', 'Loading user cards');
-        
+
         const cards = await userCardService.getUserCards();
-        
+
         // Filter out deactivated cards - only show Active, Inactive, and Lost cards
-        const activeCards = cards.filter(card => 
-          card.cardStatus !== 'Deactivated' && card.cardStatus !== 'Expired'
+        const activeCards = cards.filter(card =>
+          card.cardStatus !== CardStatus.Deactivated && card.cardStatus !== CardStatus.Expired
         );
-        
+
         // Log which cards are being filtered out
-        const deactivatedCards = cards.filter(card => 
-          card.cardStatus === 'Deactivated' || card.cardStatus === 'Expired'
+        const deactivatedCards = cards.filter(card =>
+          card.cardStatus === CardStatus.Deactivated || card.cardStatus === CardStatus.Expired
         );
-        
+
         if (deactivatedCards.length > 0) {
           logger.info('TransactionForm', 'loadCards', 'Filtered out deactivated cards', {
             deactivatedCards: deactivatedCards.map(card => ({
@@ -96,32 +98,32 @@ const TransactionFormPage: React.FC = () => {
             }))
           });
         }
-        
+
         logger.info('TransactionForm', 'loadCards', 'Successfully loaded user cards', {
           totalCardCount: cards.length,
           activeCardCount: activeCards.length,
           deactivatedCardCount: deactivatedCards.length
         });
-        
+
         setUserCards(cards);
-        
+
         // If we have a valid cardId in the URL and it exists in the user's cards, select it
         if (cardIdNum !== null && cardIdFromUrl !== null) {
           const cardExists = cards.some(card => card.cardID === cardIdNum);
           if (cardExists) {
-            logger.debug('TransactionForm', 'loadCards', 'Auto-selecting card from URL', { 
+            logger.debug('TransactionForm', 'loadCards', 'Auto-selecting card from URL', {
               cardId: cardIdNum,
               cardIdStr: cardIdFromUrl
             });
             setFormData(prev => ({
               ...prev,
-              cardID: cardIdFromUrl // This is guaranteed to be a string here
+              cardID: cardIdFromUrl! // This is guaranteed to be a string here (we checked it's not null above)
             }));
           } else {
-            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in user cards', { 
+            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in user cards', {
               cardId: cardIdNum,
               cardIdStr: cardIdFromUrl,
-              availableCardIds: cards.map(c => c.cardID) 
+              availableCardIds: cards.map(c => c.cardID)
             });
           }
         }
@@ -145,17 +147,17 @@ const TransactionFormPage: React.FC = () => {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = validationUtils.sanitizeAmount(e.target.value);
     setFormData(prev => ({ ...prev, amount: value }));
-    
+
     const validation = validationUtils.validateAmount(value);
     const error = validation.isValid ? '' : validation.error || '';
-    
+
     if (error) {
       logger.debug('TransactionForm', 'validation', 'Amount validation failed', {
         value,
         error
       });
     }
-    
+
     setErrors(prev => ({
       ...prev,
       amount: error
@@ -163,18 +165,19 @@ const TransactionFormPage: React.FC = () => {
   };
 
   const handleTransactionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = validationUtils.sanitizeTransactionType(e.target.value);
+    const value = e.target.value === '' ? '' : Number(e.target.value) as TransactionType;
     setFormData(prev => ({ ...prev, transactionType: value }));
-    
-    const validation = validationUtils.validateTransactionType(value);
+
+    const validation = value === '' ? { isValid: false, error: 'Transaction type is required' } : validationUtils.validateTransactionType(value);
     const error = validation.isValid ? '' : validation.error || '';
-    
+
     logger.debug('TransactionForm', 'transactionTypeChange', 'Transaction type changed', {
       transactionType: value,
+      transactionTypeName: value !== '' ? getTransactionTypeName(value) : '',
       isValid: validation.isValid,
       error
     });
-    
+
     setErrors(prev => ({
       ...prev,
       transactionType: error
@@ -184,17 +187,17 @@ const TransactionFormPage: React.FC = () => {
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = validationUtils.sanitizeDescription(e.target.value);
     setFormData(prev => ({ ...prev, description: value }));
-    
+
     const validation = validationUtils.validateDescription(value);
     const error = validation.isValid ? '' : validation.error || '';
-    
+
     if (error) {
       logger.debug('TransactionForm', 'validation', 'Description validation failed', {
         description: value,
         error
       });
     }
-    
+
     setErrors(prev => ({
       ...prev,
       description: error
@@ -204,13 +207,13 @@ const TransactionFormPage: React.FC = () => {
   const handleCardIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({ ...prev, cardID: value }));
-    
+
     // Log card selection
     logger.debug('TransactionForm', 'cardSelection', 'Card selected', {
       cardId: value,
       hasCards: userCards.length > 0
     });
-    
+
     // Clear card ID error when a card is selected
     if (value) {
       setErrors(prev => ({
@@ -225,34 +228,34 @@ const TransactionFormPage: React.FC = () => {
     logger.debug('TransactionForm', 'validation', 'Validating amount with backend', {
       amount: formData.amount
     });
-    
+
     try {
       const amountValidation = await transactionService.validateAmount(formData.amount);
-      
+
       if (!amountValidation.isValid) {
         logger.warn('TransactionForm', 'validation', 'Backend validation failed', {
           amount: formData.amount,
           error: amountValidation.message
         });
-        
+
         setErrors(prev => ({
           ...prev,
           amount: amountValidation.message
         }));
         return false;
       }
-      
+
       logger.debug('TransactionForm', 'validation', 'Backend validation passed');
       return true;
     } catch (error: any) {
       const err = error instanceof Error ? error : new Error(String(error));
       const errorMessage = `Backend validation error: ${error.response?.data?.message || error.message}`;
-      
+
       logger.error('TransactionForm', 'validation', 'Error during backend validation', err, {
         amount: formData.amount,
         status: error.response?.status
       });
-      
+
       setValidationMessage(errorMessage);
       return false;
     }
@@ -262,7 +265,7 @@ const TransactionFormPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setValidationMessage('');
-    
+
     logger.info('TransactionForm', 'submit', 'Form submission started', {
       hasCardSelected: !!formData.cardID,
       amount: formData.amount,
@@ -290,7 +293,7 @@ const TransactionFormPage: React.FC = () => {
       const transactionData: CreateTransactionRequest = {
         cardID: parseInt(formData.cardID, 10),
         amount: parseFloat(formData.amount),
-        transactionType: formData.transactionType,
+        transactionType: formData.transactionType as TransactionType,
         description: formData.description || 'No description provided'
       };
 
@@ -301,7 +304,7 @@ const TransactionFormPage: React.FC = () => {
 
       // Submit transaction
       const result = await transactionService.createTransaction(transactionData);
-      
+
       if (result.success) {
         logger.info('TransactionForm', 'submit', 'Transaction created successfully', {
           transactionId: result.transaction?.transactionID, // Using transactionID instead of id
@@ -309,9 +312,9 @@ const TransactionFormPage: React.FC = () => {
           amount: formData.amount,
           transactionType: formData.transactionType
         });
-        
+
         setValidationMessage('✅ Transaction created successfully!');
-        
+
         // Reset form
         setFormData({
           cardID: '',
@@ -319,7 +322,7 @@ const TransactionFormPage: React.FC = () => {
           transactionType: '',
           description: ''
         });
-        
+
         // Redirect to transactions page after a short delay
         setTimeout(() => {
           logger.debug('TransactionForm', 'navigation', 'Redirecting to transactions page');
@@ -339,11 +342,11 @@ const TransactionFormPage: React.FC = () => {
     } catch (error: any) {
       const err = error instanceof Error ? error : new Error(String(error));
       let errorMsg = `❌ Error: ${error.response?.data?.message || error.message || 'Unknown error occurred'}`;
-      
+
       if (error.response?.status === 401) {
         errorMsg = '❌ Session expired. Please log in again.';
         logger.warn('TransactionForm', 'auth', 'Session expired during transaction submission', err);
-        
+
         // Redirect to login after a delay
         setTimeout(() => {
           logger.info('TransactionForm', 'auth', 'Redirecting to login page');
@@ -357,7 +360,7 @@ const TransactionFormPage: React.FC = () => {
           }
         });
       }
-      
+
       setValidationMessage(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -371,23 +374,23 @@ const TransactionFormPage: React.FC = () => {
 
   const testAuth = async () => {
     logger.debug('TransactionForm', 'auth', 'Testing authentication status');
-    
+
     try {
       logger.debug('TransactionForm', 'auth', 'Current authentication cookies', {
         cookies: document.cookie.split('; ').filter(c => c.startsWith('trkart_'))
       });
-      
+
       const response = await fetch('http://localhost:7037/api/SecureTransaction/test-auth', {
         credentials: 'include' // Include cookies
       });
-      
+
       const data = await response.json();
       logger.info('TransactionForm', 'auth', 'Authentication test successful', {
         customerId: data.customerId,
         accessTokenPresent: data.accessTokenPresent,
         refreshTokenPresent: data.refreshTokenPresent
       });
-      
+
       alert(`Auth test: ${data.message} (CustomerID: ${data.customerId}, AccessToken: ${data.accessTokenPresent}, RefreshToken: ${data.refreshTokenPresent})`);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -398,7 +401,7 @@ const TransactionFormPage: React.FC = () => {
 
   // Track form errors
   const hasFormErrors = Object.values(errors).some(error => error !== '');
-  
+
   // Log form state changes
   useEffect(() => {
     logger.debug('TransactionForm', 'render', 'Form state updated', {
@@ -463,17 +466,16 @@ const TransactionFormPage: React.FC = () => {
                     id="cardID"
                     value={formData.cardID}
                     onChange={handleCardIdChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                     required
                   >
                     <option value="">Select a card</option>
-                                         {userCards.map(card => (
-                       <option key={card.cardID} value={card.cardID}>
-                         {card.cardNumber} - ₺{card.balance.toFixed(2)}
-                       </option>
-                     ))}
+                    {userCards.map(card => (
+                      <option key={card.cardID} value={card.cardID}>
+                        {card.cardNumber} - ₺{card.balance.toFixed(2)}
+                      </option>
+                    ))}
                   </select>
                 )}
                 {errors.cardID && (
@@ -491,9 +493,8 @@ const TransactionFormPage: React.FC = () => {
                   id="amount"
                   value={formData.amount}
                   onChange={handleAmountChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                   placeholder="Enter amount"
                   required
                 />
@@ -511,17 +512,16 @@ const TransactionFormPage: React.FC = () => {
                   id="transactionType"
                   value={formData.transactionType}
                   onChange={handleTransactionTypeChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                   required
                 >
                   <option value="">Select transaction type</option>
-                  <option value="Pay">Pay</option>
-                  <option value="Load">Load</option>
-                  <option value="Refund">Refund</option>
-                  <option value="TransferIn">Transfer In</option>
-                  <option value="TransferOut">Transfer Out</option>
+                  {getUserCreatableTransactionTypes().map(type => (
+                    <option key={type} value={type}>
+                      {getTransactionTypeName(type)}
+                    </option>
+                  ))}
                 </select>
                 {errors.transactionType && (
                   <p className="text-red-500 text-sm mt-1">{errors.transactionType}</p>
@@ -538,9 +538,8 @@ const TransactionFormPage: React.FC = () => {
                   id="description"
                   value={formData.description}
                   onChange={handleDescriptionChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                   placeholder="Enter description (letters and numbers only)"
                 />
                 {errors.description && (
@@ -550,9 +549,8 @@ const TransactionFormPage: React.FC = () => {
 
               {/* Validation Message */}
               {validationMessage && (
-                <div className={`p-3 rounded-md ${
-                  validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <div className={`p-3 rounded-md ${validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
                   {validationMessage}
                 </div>
               )}
@@ -569,11 +567,10 @@ const TransactionFormPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || hasFormErrors}
-                  className={`flex-1 py-2 px-4 rounded-md font-medium ${
-                    isSubmitting || hasFormErrors
+                  className={`flex-1 py-2 px-4 rounded-md font-medium ${isSubmitting || hasFormErrors
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white transition-colors`}
+                    } text-white transition-colors`}
                 >
                   {isSubmitting ? 'Processing...' : 'Create Transaction'}
                 </button>

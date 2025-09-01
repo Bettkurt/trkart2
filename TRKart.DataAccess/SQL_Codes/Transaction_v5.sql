@@ -8,14 +8,13 @@ CREATE TABLE "Transaction" (
     "TransferTransactionID" INT,
     "Amount" DECIMAL(18, 2) NOT NULL,
     "FeeAmount" DECIMAL(18,2) NULL DEFAULT 0.00,
-    "TransactionType" VARCHAR(20) NOT NULL CHECK ("TransactionType" 
-        IN ('Pay', 'Load', 'Refund',
-            'TransferOut', 'TransferIn', 'TopUp',
-            'SystemTransferOut', 'SystemTransferIn')),
+    -- 0: Load, 1: TopUp, 2: Refund, 3: TransferIn, 4: TransferOut, 5: Pay, 6: SystemTransferIn, 7: SystemTransferOut
+    "TransactionType" INT NOT NULL CHECK ("TransactionType" 
+        BETWEEN 0 AND 7),
     "PaymentMethod" VARCHAR(50),
-    "ExternalRef" VARCHAR(100),
+    "ExternalRef" VARCHAR(100), -- For TopUp type transactions
     "Description" TEXT,
-    "Note" TEXT,
+    "Note" TEXT, -- For TopUp type transactions
     "TransactionDate" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "TransactionStatus" VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK ("TransactionStatus" IN ('Pending', 'Approved', 'Denied')),
     
@@ -73,8 +72,9 @@ BEGIN
     --  in order to transfer leftover balance
     -- We just approve them since all the checks are done by the back-end
     -- Back-end sends one after the other. So, it does not get mixed up
-    -- First SystemTransferOut, then SystemTransferIn
-    IF NEW."TransactionType" = 'SystemTransferOut' THEN 
+
+    -- First SystemTransferOut
+    IF NEW."TransactionType" = 7 THEN 
         NEW."TransactionStatus" := 'Approved';
         -- Update blacklisted card balance
         UPDATE "UserCard"
@@ -83,7 +83,8 @@ BEGIN
 
         RETURN NEW;
 
-    ELSIF NEW."TransactionType" = 'SystemTransferIn' THEN
+    -- Then, SystemTransferIn
+    ELSIF NEW."TransactionType" = 6 THEN
         NEW."TransactionStatus" := 'Approved';
         -- Update active card balance
         UPDATE "UserCard"
@@ -101,7 +102,8 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    IF NEW."TransactionType" = 'Load' THEN
+    -- Load transactions
+    IF NEW."TransactionType" = 0 THEN
         -- For load transactions, just need positive amount 
         -- Update card balance
         UPDATE "UserCard"
@@ -121,7 +123,7 @@ BEGIN
         RETURN NEW;
     END IF;
         
-    -- From this point forward, we won't do any transaction non-active cards
+    -- From this point forward, we won't do any transactions with cards that are not active
     --  They are cards with statuses 0: Deactivated, 1: Expired, 2: Lost, 3: Inactive
     -- Save it as 'Denied' for audit purposes
     IF v_current_card_status < 4 THEN
@@ -130,7 +132,7 @@ BEGIN
     END IF;
 
     -- TopUp transactions (external payment with fees)
-    IF NEW."TransactionType" = 'TopUp' THEN
+    IF NEW."TransactionType" = 1 THEN
         -- Check for invalid fee amount values. Save it as 'Denied' for audit purposes
         IF NEW."FeeAmount" < 0 OR NEW."Amount" < NEW."FeeAmount" THEN
             NEW."TransactionStatus" := 'Denied';
@@ -140,7 +142,8 @@ BEGIN
         -- Calculate net amount (gross amount minus fee)
         v_net_amount := NEW."Amount" - COALESCE(NEW."FeeAmount", 0);
             
-        -- Net amount must be positive. This is a redundant check, but just in case it is for safety
+        -- Net amount must be positive. 
+        -- This is a redundant check, but just in case
         IF v_net_amount < 0 THEN
             NEW."TransactionStatus" := 'Denied';
             RETURN NEW;
@@ -155,10 +158,10 @@ BEGIN
 
         RETURN NEW;
 
-    -- Process based on transaction type
     -- Pay & TransferOut transactions
-    ELSIF NEW."TransactionType" = 'Pay' OR NEW."TransactionType" = 'TransferOut' THEN
-        -- Check if balance is sufficient
+    ELSIF NEW."TransactionType" = 5 OR NEW."TransactionType" = 4 THEN
+        -- Check if balance is sufficient. If not, save it as 'Denied' for audit purposes
+        -- These should not reach DB but just in case
         IF v_current_balance < NEW."Amount" THEN
             NEW."TransactionStatus" := 'Denied';
             RETURN NEW;
@@ -174,7 +177,7 @@ BEGIN
         RETURN NEW;
 
     -- Refund & TransferIn transaction
-    ELSIF NEW."TransactionType" = 'Refund' OR NEW."TransactionType" = 'TransferIn' THEN
+    ELSIF NEW."TransactionType" = 2 OR NEW."TransactionType" = 3 THEN
         -- Update card balance
         UPDATE "UserCard"
         SET "Balance" = "Balance" + NEW."Amount"
@@ -186,7 +189,7 @@ BEGIN
     END IF;
 
     -- If the transaction is not approved or denied, something is wrong
-    -- This is a redundant check, but just in case it is for safety
+    -- This should never happen. Safety check, just in case
     IF NEW."TransactionStatus" != 'Approved' AND NEW."TransactionStatus" != 'Denied' THEN
         RAISE EXCEPTION 'Transaction is not approved or denied. It is %', NEW."TransactionStatus";
     END IF;
