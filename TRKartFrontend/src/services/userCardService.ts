@@ -98,7 +98,7 @@ class UserCardService {
     
     // Get status name safely from CardStatus enum
     const statusName = Object.entries(CardStatus).find(
-      ([key, value]) => value === updateData.status
+      ([_, value]) => value === updateData.status
     )?.[0] || 'Unknown';
     
     // Log the status update for debugging

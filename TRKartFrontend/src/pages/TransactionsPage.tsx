@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 import { Transaction } from '@/types';
+import { TransactionType, getTransactionTypeName, getUserViewableTransactionTypes } from '@/types/TransactionType';
 
 interface TransactionWithStatus extends Transaction {
   transactionStatus?: string;
@@ -23,7 +24,7 @@ const TransactionsPage: React.FC = () => {
   const [selectedCardNumber, setSelectedCardNumber] = useState<string>('');
   const [selectedCardID, setSelectedCardID] = useState<number | null>(null);
   const [availableCardNumbers, setAvailableCardNumbers] = useState<string[]>([]);
-  const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('');
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<TransactionType | ''>('');
   const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
   // Log component mount/unmount
@@ -140,13 +141,14 @@ const TransactionsPage: React.FC = () => {
       }
 
       // Apply transaction type filter
-      if (transactionTypeFilter) {
+      if (transactionTypeFilter !== '') {
         const beforeCount = filtered.length;
         filtered = filtered.filter(tx => 
-          tx.transactionType?.toLowerCase() === transactionTypeFilter.toLowerCase()
+          tx.transactionType === transactionTypeFilter
         );
         logger.debug('TransactionsPage', 'filter', 'Applied transaction type filter', {
           filter: transactionTypeFilter,
+          filterName: getTransactionTypeName(transactionTypeFilter),
           beforeCount,
           afterCount: filtered.length,
           filteredOut: beforeCount - filtered.length
@@ -289,11 +291,11 @@ const TransactionsPage: React.FC = () => {
     }
   };
 
-  const formatAmount = (amount: number, transactionType?: string) => {
-    const isNegative = ['Pay', 'TransferOut'].includes(transactionType || '');
-    const isTopUp = transactionType === 'TopUp';
+  const formatAmount = (amount: number, transactionType?: TransactionType) => {
+    const isNegative = [TransactionType.Pay, TransactionType.TransferOut].includes(transactionType || TransactionType.Load);
+    const isTopUp = transactionType === TransactionType.TopUp;
     const sign = isNegative ? '-' : '+';
-    const color = isNegative ? 'text-red-600' : isTopUp ? 'text-green-700' : 'text-green-600';
+    const color = isNegative ? 'text-red-600' : 'text-green-600';
     const icon = isTopUp ? '💳 ' : '';
     return <span className={color}>{icon}{sign}₺{Math.abs(amount).toFixed(2)}</span>;
   };
@@ -430,13 +432,18 @@ const TransactionsPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Transaction Type
                 </label>
-                <input
-                  type="text"
+                <select
                   value={transactionTypeFilter}
-                  onChange={(e) => setTransactionTypeFilter(e.target.value)}
-                  placeholder="Filter by type..."
+                  onChange={(e) => setTransactionTypeFilter(e.target.value === '' ? '' : Number(e.target.value) as TransactionType)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  <option value="">All Types</option>
+                  {getUserViewableTransactionTypes().map(type => (
+                    <option key={type} value={type}>
+                      {getTransactionTypeName(type)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Date Range Filter */}
@@ -547,15 +554,15 @@ const TransactionsPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            transaction.transactionType === 'TopUp' 
+                            transaction.transactionType === TransactionType.TopUp 
                               ? 'bg-green-100 text-green-800' 
-                              : transaction.transactionType === 'Pay' 
+                              : transaction.transactionType === TransactionType.Pay 
                                 ? 'bg-red-100 text-red-800'
-                                : transaction.transactionType === 'Load' 
+                                : transaction.transactionType === TransactionType.Load 
                                   ? 'bg-blue-100 text-blue-800'
                                   : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {transaction.transactionType === 'TopUp' ? '💳 Top-Up' : transaction.transactionType}
+                            {transaction.transactionType === TransactionType.TopUp ? '💳 Top-Up' : getTransactionTypeName(transaction.transactionType)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

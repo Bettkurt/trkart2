@@ -1,5 +1,8 @@
-using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
 using TRKart.Business.Interfaces;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
@@ -375,28 +378,26 @@ namespace TRKart.Business.Services
             // Calculate projected balance based on transaction type
             decimal projectedBalance = currentBalance;
             
-            switch (dto.TransactionType.ToLower())
+            if (dto.TransactionType.IsDebitTransaction())
             {
-                case "transferout":
-                case "pay":
-                    projectedBalance -= dto.Amount;
-                    break;
-                case "load":
-                case "transferin":
-                case "refund":
-                    projectedBalance += dto.Amount;
-                    break;
-                default:
-                    errors.Add(new ValidationError
-                    {
-                        Field = "TransactionType",
-                        Error = $"Invalid transaction type: {dto.TransactionType}",
-                        Value = dto.TransactionType
-                    });
-                    response.Errors = errors;
-                    response.IsValid = false;
-                    response.Message = "Transaction feasibility validation failed";
-                    return response;
+                projectedBalance -= dto.Amount;
+            }
+            else if (dto.TransactionType.IsCreditTransaction())
+            {
+                projectedBalance += dto.Amount;
+            }
+            else
+            {
+                errors.Add(new ValidationError
+                {
+                    Field = "TransactionType",
+                    Error = $"Invalid transaction type: {dto.TransactionType.GetDisplayName()}",
+                    Value = dto.TransactionType.ToString()
+                });
+                response.Errors = errors;
+                response.IsValid = false;
+                response.Message = "Transaction feasibility validation failed";
+                return response;
             }
 
             // Check if transaction would result in negative balance
@@ -548,47 +549,20 @@ namespace TRKart.Business.Services
             return response;
         }
 
-        public InputValidationResponse ValidateTransactionType(string transactionType)
+        // Validate the transaction type is valid
+        public InputValidationResponse ValidateTransactionType(TransactionType transactionType)
         {
             var response = new InputValidationResponse();
             var errors = new List<ValidationError>();
 
-            // Check for null or empty
-            if (string.IsNullOrWhiteSpace(transactionType))
+            // Check if the enum value is valid (defined)
+            if (!Enum.IsDefined(typeof(TransactionType), transactionType))
             {
                 errors.Add(new ValidationError
                 {
                     Field = "TransactionType",
-                    Error = "TransactionType cannot be empty",
-                    Value = transactionType ?? "null"
-                });
-                response.Errors = errors;
-                response.IsValid = false;
-                response.Message = "TransactionType validation failed";
-                return response;
-            }
-
-            // Check for invalid characters (only letters allowed)
-            if (!Regex.IsMatch(transactionType, @"^[a-zA-Z]+$"))
-            {
-                var invalidChars = Regex.Replace(transactionType, @"[a-zA-Z]", "");
-                errors.Add(new ValidationError
-                {
-                    Field = "TransactionType",
-                    Error = $"TransactionType contains invalid characters: {string.Join(", ", invalidChars.Distinct())}",
-                    Value = transactionType
-                });
-            }
-
-            // Check for valid transaction types
-            var validTypes = new[] { "Pay", "Load", "Transfer", "Refund" };
-            if (!validTypes.Contains(transactionType, StringComparer.OrdinalIgnoreCase))
-            {
-                errors.Add(new ValidationError
-                {
-                    Field = "TransactionType",
-                    Error = $"TransactionType must be one of: {string.Join(", ", validTypes)}",
-                    Value = transactionType
+                    Error = $"Invalid transaction type: {transactionType}",
+                    Value = transactionType.ToString()
                 });
             }
 
@@ -599,6 +573,42 @@ namespace TRKart.Business.Services
             return response;
         }
 
+        // Validate if the transaction type is user-visible
+        public InputValidationResponse ValidateUserTransactionType(TransactionType transactionType)
+        {
+            var response = new InputValidationResponse();
+            var errors = new List<ValidationError>();
+
+            // First check if the enum value is valid
+            if (!Enum.IsDefined(typeof(TransactionType), transactionType))
+            {
+                errors.Add(new ValidationError
+                {
+                    Field = "TransactionType",
+                    Error = $"Invalid transaction type: {transactionType}",
+                    Value = transactionType.ToString()
+                });
+            }
+            else if (!transactionType.IsUserCreatable())
+            {
+                // Check if the transaction type can be created by users
+                var allowedTypes = string.Join(", ", TransactionTypeExtensions.GetUserCreatableTransactionTypes().Select(t => t.GetDisplayName()));
+                errors.Add(new ValidationError
+                {
+                    Field = "TransactionType",
+                    Error = $"Transaction type '{transactionType.GetDisplayName()}' is not allowed for user transactions. Allowed types: {allowedTypes}",
+                    Value = transactionType.ToString()
+                });
+            }
+
+            response.Errors = errors;
+            response.IsValid = errors.Count == 0;
+            response.Message = response.IsValid ? "User transaction type validation passed" : "User transaction type validation failed";
+
+            return response;
+        }
+
+        // Validate the description is valid (Regex checks for letters, numbers, spaces, and basic punctuation)
         public InputValidationResponse ValidateDescription(string description)
         {
             var response = new InputValidationResponse();
@@ -643,6 +653,7 @@ namespace TRKart.Business.Services
             return response;
         }
 
+        // Validate the card ID is valid (only numbers allowed)
         public InputValidationResponse ValidateCardId(string cardIdString)
         {
             var response = new InputValidationResponse();

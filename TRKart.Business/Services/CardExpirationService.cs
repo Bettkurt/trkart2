@@ -135,7 +135,7 @@ namespace TRKart.Business.Services
                 CardExpirationDate = DateTime.SpecifyKind(card.CardExpirationDate.Date, DateTimeKind.Utc),
                 OriginalCreatedAt = DateTime.SpecifyKind(card.CreatedAt, DateTimeKind.Utc),
                 Reason = (CardBlacklistReason)status,
-                // BlacklistedAt = DateTime.UtcNow,
+                // BlacklistedAt = DateTime.UtcNow, // Set by DB
                 Notes = $"Automatically blacklisted: {reason}"
             };
             

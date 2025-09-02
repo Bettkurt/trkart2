@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using TRKart.Business.Services;
 using TRKart.Entities.DTOs;
+using TRKart.Entities.Enums;
 using Xunit;
 
 namespace TRKart.UnitTests.BusinessTests
@@ -45,8 +46,8 @@ namespace TRKart.UnitTests.BusinessTests
 			var service = CreateService();
 
 			Assert.False(service.ValidateAmount("10.2.3").IsValid); // multiple decimals
-			Assert.False(service.ValidateAmount("--10").IsValid); // multiple minus
-			Assert.False(service.ValidateAmount("10-").IsValid); // minus not at start
+			Assert.False(service.ValidateAmount("--10").IsValid);   // multiple minus
+			Assert.False(service.ValidateAmount("10-").IsValid);    // minus not at start
 			Assert.False(service.ValidateAmount("10.123").IsValid); // > 2 decimal places
 		}
 
@@ -72,53 +73,66 @@ namespace TRKart.UnitTests.BusinessTests
 			Assert.Empty(result.Errors);
 		}
 
-		[Fact]
-		public void ValidateTransactionType_ReturnsInvalid_WhenNullOrEmpty()
-		{
-			var service = CreateService();
-			var nullResult = service.ValidateTransactionType(null!);
-			var emptyResult = service.ValidateTransactionType("");
-
-			Assert.False(nullResult.IsValid);
-			Assert.Contains(nullResult.Errors, e => e.Field == "TransactionType" && e.Error.Contains("cannot be empty"));
-
-			Assert.False(emptyResult.IsValid);
-			Assert.Contains(emptyResult.Errors, e => e.Field == "TransactionType" && e.Error.Contains("cannot be empty"));
-		}
-
-		[Fact]
-		public void ValidateTransactionType_ReturnsInvalid_WhenContainsInvalidCharacters()
-		{
-			var service = CreateService();
-			var result = service.ValidateTransactionType("Pay!");
-			Assert.False(result.IsValid);
-			Assert.Contains(result.Errors, e => e.Field == "TransactionType" && e.Error.Contains("invalid characters"));
-		}
-
 		[Theory]
-		[InlineData("TransferIn")]
-		[InlineData("TransferOut")]
-		[InlineData("Deposit")]
-		public void ValidateTransactionType_ReturnsInvalid_WhenNotInAllowedList(string input)
+		[InlineData(TransactionType.Load)]
+		[InlineData(TransactionType.TopUp)]
+		[InlineData(TransactionType.Refund)]
+		[InlineData(TransactionType.TransferIn)]
+		[InlineData(TransactionType.TransferOut)]
+		[InlineData(TransactionType.Pay)]
+		[InlineData(TransactionType.SystemTransferIn)]
+		[InlineData(TransactionType.SystemTransferOut)]
+		public void ValidateTransactionType_ReturnsValid_ForAllValidEnumValues(TransactionType transactionType)
 		{
 			var service = CreateService();
-			var result = service.ValidateTransactionType(input);
-			Assert.False(result.IsValid);
-			Assert.Contains(result.Errors, e => e.Field == "TransactionType" && e.Error.Contains("must be one of"));
-		}
-
-		[Theory]
-		[InlineData("Pay")]
-		[InlineData("Load")]
-		[InlineData("Transfer")]
-		[InlineData("Refund")]
-		[InlineData("pay")] // case-insensitive
-		public void ValidateTransactionType_ReturnsValid_ForAllowedValues(string input)
-		{
-			var service = CreateService();
-			var result = service.ValidateTransactionType(input);
+			var result = service.ValidateTransactionType(transactionType);
 			Assert.True(result.IsValid);
 			Assert.Empty(result.Errors);
+		}
+
+		[Fact]
+		public void ValidateTransactionType_ReturnsInvalid_ForInvalidEnumValue()
+		{
+			var service = CreateService();
+			// Test with an invalid enum value (outside defined range)
+			var result = service.ValidateTransactionType((TransactionType)999);
+			Assert.False(result.IsValid);
+			Assert.Contains(result.Errors, e => e.Field == "TransactionType" && e.Error.Contains("Invalid transaction type"));
+		}
+
+		[Theory]
+		[InlineData(TransactionType.Load)]
+		[InlineData(TransactionType.TopUp)]
+		[InlineData(TransactionType.TransferOut)]
+		[InlineData(TransactionType.Pay)]
+		public void ValidateUserTransactionType_ReturnsValid_ForUserCreatableTypes(TransactionType transactionType)
+		{
+			var service = CreateService();
+			var result = service.ValidateUserTransactionType(transactionType);
+			Assert.True(result.IsValid);
+			Assert.Empty(result.Errors);
+		}
+
+		[Theory]
+		[InlineData(TransactionType.Refund)]
+		[InlineData(TransactionType.TransferIn)]
+		[InlineData(TransactionType.SystemTransferIn)]
+		[InlineData(TransactionType.SystemTransferOut)]
+		public void ValidateUserTransactionType_ReturnsInvalid_ForSystemOnlyTypes(TransactionType transactionType)
+		{
+			var service = CreateService();
+			var result = service.ValidateUserTransactionType(transactionType);
+			Assert.False(result.IsValid);
+			Assert.Contains(result.Errors, e => e.Field == "TransactionType" && e.Error.Contains("not allowed for user transactions"));
+		}
+
+		[Fact]
+		public void ValidateUserTransactionType_ReturnsInvalid_ForInvalidEnumValue()
+		{
+			var service = CreateService();
+			var result = service.ValidateUserTransactionType((TransactionType)999);
+			Assert.False(result.IsValid);
+			Assert.Contains(result.Errors, e => e.Field == "TransactionType" && e.Error.Contains("Invalid transaction type"));
 		}
 
 		[Fact]
@@ -184,7 +198,7 @@ namespace TRKart.UnitTests.BusinessTests
 			{
 				CardID = 123,
 				Amount = 10.50m,
-				TransactionType = "Pay",
+				TransactionType = TransactionType.Pay,
 				Description = "Coffee 2x"
 			};
 
@@ -194,10 +208,10 @@ namespace TRKart.UnitTests.BusinessTests
 
 			var dtoInvalid = new TransactionCreateDto
 			{
-				CardID = 0, // invalid
-				Amount = -5, // invalid
-				TransactionType = "TransferIn", // not in allowed list
-				Description = new string('x', 501) // invalid
+				CardID = 0,  // Invalid
+				Amount = -5, // Invalid
+				TransactionType = TransactionType.TransferIn, // Not in allowed transaction types
+				Description = new string('x', 501) // Invalid
 			};
 
 			var invalid = service.ValidateTransactionInput(dtoInvalid);

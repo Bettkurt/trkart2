@@ -1,3 +1,5 @@
+import { TransactionType, getTransactionTypeName, getUserCreatableTransactionTypes } from '../types/TransactionType';
+
 // Frontend validation utilities for real-time input validation
 export const validationUtils = {
   // Amount validation - simplified to just check if it's a positive number
@@ -18,17 +20,15 @@ export const validationUtils = {
     return { isValid: true };
   },
 
-  // Transaction type validation - updated with new allowed values
-  validateTransactionType: (transactionType: string): { isValid: boolean; error?: string } => {
-    if (!transactionType || transactionType.trim() === '') {
-      return { isValid: false, error: 'Transaction type is required' };
-    }
-
-    const allowedTypes = ['Pay', 'Load', 'Refund', 'TransferIn', 'TransferOut'];
+  // Transaction type validation - only accepts TransactionType enum
+  validateTransactionType: (transactionType: TransactionType): { isValid: boolean; error?: string } => {
+    // Only allow transaction types that users can create
+    const allowedTypes = getUserCreatableTransactionTypes();
     if (!allowedTypes.includes(transactionType)) {
+      const allowedNames = allowedTypes.map(type => getTransactionTypeName(type));
       return { 
         isValid: false, 
-        error: `Transaction type must be one of: ${allowedTypes.join(', ')}` 
+        error: `Transaction type must be one of: ${allowedNames.join(', ')}` 
       };
     }
 

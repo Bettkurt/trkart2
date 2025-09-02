@@ -4,6 +4,10 @@ obj/
 out/
 build/
 
+# Frontend build outputs
+TRKartFrontend/dist/
+node_modules/
+
 # User-specific files
 *.user
 *.suo
@@ -38,12 +42,10 @@ Migrations/
 .env
 .env.*
 
-# node_modules
-node_modules/
-
 # Sensitive Information
 TRKart.API/appsettings.json
 TRKart.API/logs/
+TRKart.DataAccess/Quick_Register_Login/
 
 # SonarQube
 .sonarqube/

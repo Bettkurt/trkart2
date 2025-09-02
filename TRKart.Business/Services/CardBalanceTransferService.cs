@@ -38,7 +38,7 @@ namespace TRKart.Business.Services
 
                 if (!blacklistedCards.Any())
                 {
-                    _logger.LogInformation("No blacklisted cards with positive balance found");
+                    _logger.LogInformation("No blacklisted cards with positive balance found that meet the 5-day criteria");
                     return 0;
                 }
 
@@ -73,7 +73,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = blacklistedCard.OriginalCardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = "SystemTransferOut",
+                            TransactionType = (int)TransactionType.SystemTransferOut,
                             Description = $"System transfer to card {activeCard.CardNumber}",
                             // TransactionStatus = "Pending"
                         };
@@ -83,7 +83,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = activeCard.CardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = "SystemTransferIn",
+                            TransactionType = (int)TransactionType.SystemTransferIn,
                             Description = $"System transfer from blacklisted card {blacklistedCard.CardNumber}",
                             // TransactionStatus = "Pending"
                         };

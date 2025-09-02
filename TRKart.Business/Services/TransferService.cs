@@ -71,7 +71,7 @@ namespace TRKart.Business.Services
                 {
                     CardID = senderCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = "transferout",
+                    TransactionType = TransactionType.TransferOut,
                     Description = $"Transfer to card {recipientCard.CardNumber}"
                 };
 
@@ -79,7 +79,7 @@ namespace TRKart.Business.Services
                 {
                     CardID = recipientCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = "transferin",
+                    TransactionType = TransactionType.TransferIn,
                     Description = $"Transfer from card {senderCard.CardNumber}"
                 };
 
@@ -107,7 +107,7 @@ namespace TRKart.Business.Services
                 {
                     CardID = senderCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = "TransferOut",
+                    TransactionType = (int)TransactionType.TransferOut,
                     Description = $"Transfer to card {recipientCard.CardNumber}"
                 };
 
@@ -137,7 +137,7 @@ namespace TRKart.Business.Services
                 {
                     CardID = recipientCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = "TransferIn",
+                    TransactionType = (int)TransactionType.TransferIn,
                     Description = $"Transfer from card {senderCard.CardNumber}",
                     TransferTransactionID = transferOutResult.TransactionID // Link to TransferOut
                 };
@@ -247,12 +247,12 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                if (transaction.TransactionType == "TransferOut")
+                if (transaction.TransactionType == (int)TransactionType.TransferOut)
                 {
                     response.TransferOutTransaction = transaction;
                     response.TransferInTransaction = transaction.TransferTransaction;
                 }
-                else if (transaction.TransactionType == "TransferIn")
+                else if (transaction.TransactionType == (int)TransactionType.TransferIn)
                 {
                     response.TransferInTransaction = transaction;
                     response.TransferOutTransaction = transaction.TransferTransaction;
@@ -283,7 +283,7 @@ namespace TRKart.Business.Services
             {
                 CardID = cardId,
                 Amount = amount, // Positive amount for refund
-                TransactionType = "Refund",
+                TransactionType = (int)TransactionType.Refund,
                 Description = description
             };
 

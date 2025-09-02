@@ -123,7 +123,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = targetCard.CardID,
                             Amount = request.Amount,
-                            TransactionType = "TopUp",
+                            TransactionType = (int)TransactionType.TopUp,
                             Description = $"Top-up via {request.PaymentMethod}",
                             ExternalRef = string.IsNullOrEmpty(request.ExternalRef) ? null : request.ExternalRef,
                             PaymentMethod = request.PaymentMethod,
@@ -169,7 +169,7 @@ namespace TRKart.Business.Services
                         CardID = topUpTransaction.CardID,
                         CardNumber = targetCard.CardNumber,
                         Amount = topUpTransaction.Amount,
-                        TransactionType = topUpTransaction.TransactionType,
+                        TransactionType = (TransactionType)topUpTransaction.TransactionType,
                         PaymentMethod = topUpTransaction.PaymentMethod ?? "",
                         FeeAmount = topUpTransaction.FeeAmount,
                         NetAmount = topUpTransaction.Amount - (topUpTransaction.FeeAmount ?? 0m),
@@ -299,7 +299,7 @@ namespace TRKart.Business.Services
                 {
                     var transaction = await _context.Transaction
                         .Include(t => t.UserCard)
-                        .Where(t => t.TransactionID == statusUpdate.TransactionId && t.TransactionType == "TopUp")
+                        .Where(t => t.TransactionID == statusUpdate.TransactionId && t.TransactionType == (int)TransactionType.TopUp)
                         .FirstOrDefaultAsync();
 
                     if (transaction == null)
@@ -404,7 +404,7 @@ namespace TRKart.Business.Services
                 return null;
 
             return await _context.Transaction
-                .Where(t => t.ExternalRef == externalRef && t.TransactionType == "TopUp")
+                .Where(t => t.ExternalRef == externalRef && t.TransactionType == (int)TransactionType.TopUp)
                 .FirstOrDefaultAsync();
         }
 
@@ -432,7 +432,7 @@ namespace TRKart.Business.Services
             try
             {
                 var pendingTransactions = await _context.Transaction
-                    .Where(t => t.TransactionType == "TopUp" 
+                    .Where(t => t.TransactionType == (int)TransactionType.TopUp 
                                && t.TransactionStatus == "Pending" 
                                && t.TransactionDate < cutoffTime)
                     .ToListAsync();
@@ -464,7 +464,7 @@ namespace TRKart.Business.Services
 
             var topUps = await _context.Transaction
                 .Include(t => t.UserCard)
-                .Where(t => t.TransactionType == "TopUp" && t.UserCard.CustomerID == customerId)
+                .Where(t => t.TransactionType == (int)TransactionType.TopUp && t.UserCard.CustomerID == customerId)
                 .OrderByDescending(t => t.TransactionDate)
                 .Skip(skip)
                 .Take(pageSize)
@@ -474,7 +474,7 @@ namespace TRKart.Business.Services
                     CardID = t.CardID,
                     CardNumber = t.UserCard.CardNumber,
                     Amount = t.Amount,
-                    TransactionType = t.TransactionType,
+                    TransactionType = (TransactionType)t.TransactionType,
                     PaymentMethod = t.PaymentMethod ?? "",
                     FeeAmount = t.FeeAmount,
                     NetAmount = t.Amount - (t.FeeAmount ?? 0m),
@@ -522,7 +522,7 @@ namespace TRKart.Business.Services
                     CardID = transaction.CardID,
                     CardNumber = card?.CardNumber ?? "",
                     Amount = transaction.Amount,
-                    TransactionType = transaction.TransactionType,
+                    TransactionType = (TransactionType)transaction.TransactionType,
                     PaymentMethod = transaction.PaymentMethod ?? "",
                     FeeAmount = transaction.FeeAmount,
                     NetAmount = transaction.Amount - (transaction.FeeAmount ?? 0m),
