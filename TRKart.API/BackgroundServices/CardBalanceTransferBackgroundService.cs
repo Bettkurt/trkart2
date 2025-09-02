@@ -12,7 +12,7 @@ namespace TRKart.API.BackgroundServices
         private readonly ILogger<CardBalanceTransferBackgroundService> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly TimeSpan _checkInterval = TimeSpan.FromDays(1); // Run once a day
--porcelain        // Delay before first run on startup. It runs third among the background services. 
+        // Delay before first run on startup. It runs third among the background services. 
         // After token cleanup and card expiration/blacklisting.
         private readonly TimeSpan _startupDelay = TimeSpan.FromMinutes(3); 
 
