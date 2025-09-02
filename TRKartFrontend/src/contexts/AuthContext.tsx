@@ -65,23 +65,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         console.log('[Auth] No valid session or email found, checking for refresh token???');
         // If no valid session but we have a refresh token, try to refresh
-        console.log('[Auth] GİRDİ A');
+      
         const refreshToken = document.cookie.split('; ').find(row => row.startsWith('refreshToken='))?.split('=')[1];
-        console.log('BURAYA GİRDİ B',refreshToken);
+       
         if (refreshToken) {
           console.log('[Auth] Found refresh token, attempting to refresh...');
           try {
-            console.log('BURAYA GİRDİ 0');
+          
            const test = await tokenService.refreshToken();
             // If refresh was successful, check session again
-            console.log('BURAYA GİRDİ 1',test);
+        
             const sessionData1 = await authService.checkSession();
-            console.log('BURAYA GİRDİ 2',sessionData1);
+           
             setHasValidSession(sessionData1.hasValidSession);
-            console.log('BURAYA GİRDİ 3',sessionData1.hasValidSession);
-            console.log('BURAYA GİRDİ 4',sessionData1.email);
-            console.log('BURAYA GİRDİ 5',sessionData1.customerID);
-            console.log('BURAYA GİRDİ 6',sessionData1.fullName);
+          
           
             if (sessionData1.hasValidSession && sessionData1.email) {
               // Create a user object from the session data
@@ -90,9 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 email: sessionData1.email,
                 fullName: sessionData1.fullName || '',
               };
-              console.log('BURAYA GİRDİ 7',userData.customerID);
-              console.log('BURAYA GİRDİ 8',userData.email);
-              console.log('BURAYA GİRDİ 9',userData.fullName);  
+              
 
               console.log('[Auth] Setting user data:', userData);
               setUser(userData);

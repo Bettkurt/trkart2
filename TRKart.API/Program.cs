@@ -14,15 +14,35 @@ using Serilog;
 using Serilog.Events;
 using TRKart.API.Services;
 using TRKart.API.BackgroundServices;
+using Hangfire;
+using TRKart.API.BackgroundServices.Hangfire;
+using TRKart.API;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog from configuration
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
+    .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
     .CreateLogger();
 
 try
+{
+    // Make the main method async
+    await RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}
+
+async Task RunAsync()
 {
     Log.Information("Starting TRKart API...");
 
@@ -64,13 +84,13 @@ try
     // 4. Register application services
     builder.Services.AddScoped<TRKart.Core.Interfaces.IUniqueNumberChecker, TRKart.DataAccess.Services.UniqueNumberChecker>();
 
-    // 4.1. Register card expiration services
+    // 4.1. Register card expiration services (temporarily disabled)
     builder.Services.AddScoped<ICardExpirationService, CardExpirationService>();
-    builder.Services.AddHostedService<CardExpirationBackgroundService>();
+    // builder.Services.AddHostedService<CardExpirationBackgroundService>();
 
-    // 4.2. Register card balance transfer services
+    // 4.2. Register card balance transfer services (temporarily disabled)
     builder.Services.AddScoped<ICardBalanceTransferService, CardBalanceTransferService>();
-    builder.Services.AddHostedService<CardBalanceTransferBackgroundService>();
+    // builder.Services.AddHostedService<CardBalanceTransferBackgroundService>();
 
     // 5. Swagger + JWT support
     builder.Services.AddEndpointsApiExplorer();
@@ -127,8 +147,8 @@ try
     builder.Services.Configure<TokenCleanupSettings>(
         builder.Configuration.GetSection("TokenCleanup"));
 
-    // 8. Register Background Services
-    builder.Services.AddHostedService<TokenCleanupService>();
+    // 8. Register Background Services (temporarily disabled)
+    // builder.Services.AddHostedService<TokenCleanupService>();
 
     // 9. DI Services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -139,39 +159,66 @@ try
     builder.Services.AddScoped<ITopUpService, TopUpService>();
     builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
     builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
+    
+    // 10. Add Hangfire services
+    /*  builder.Services.AddHangfireServices(builder.Configuration);
+   builder.Services.AddHangfireServer();*/
+   builder.Services.AddHangfire(cfg =>
+    cfg.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("HangfireConnection"))
+    );
+
+    builder.Services.AddHangfireServer();
+
+
+
 
     var app = builder.Build();
 
+    // Ensure database is created and migrations are applied
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await db.Database.MigrateAsync();
+    }
+    
+    // Configure Hangfire dashboard and jobs
+    //app.UseHangfireDashboardWithAuth(builder.Configuration);
+    app.UseHangfireDashboard();
+    app.UseHangfireDashboard("/hangfire"); 
+    
+    // Initialize Hangfire background processing
+    GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3 });
+    
+    // Use CORS before authentication
+    app.UseCors("AllowedOrigins");
+    
     // Use custom JWT middleware before authorization
     app.UseJwtMiddleware();
+    
+    // Add authentication and authorization middleware
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     // 8. Swagger only active on development environment
     if (app.Environment.IsDevelopment())
     {
+        app.UseDeveloperExceptionPage(); 
         app.UseSwagger();
         app.UseSwaggerUI();
     }
 
     // 9. Middleware order - CORS before authentication
     // app.UseHttpsRedirection(); // Disabled for HTTP development
-    app.UseCors("AllowedOrigins");
-    app.UseAuthenticationMiddleware(); // Custom authentication middleware
-    app.UseAuthentication();
-    app.UseAuthorization();
+    // Note: CORS, Authentication, and Authorization are already configured above
 
     app.MapControllers();
     // app.MapGet("/", () => "API çalışıyor!").AllowAnonymous();
     // Use the bottom one to directly connect to swagger interface
     app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).AllowAnonymous();
 
-    // Force HTTP for development
-    app.Run("http://localhost:7037");
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "Application terminated unexpectedly");
-}
-finally
-{
-    Log.CloseAndFlush();
+    // Listen on all interfaces for development
+    var url = "http://localhost:7037";
+    Console.WriteLine($"Starting server on {url}");
+   await app.RunAsync(url);
+   
 }
