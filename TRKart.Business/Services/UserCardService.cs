@@ -276,6 +276,41 @@ namespace TRKart.Business.Services
                 .ToListAsync();
         }
 
+        public async Task<bool> UpdateCardNameAsync(UpdateCardNameDto updateDto)
+        {
+            if (updateDto == null)
+                throw new ArgumentNullException(nameof(updateDto));
+
+            _logger.LogInformation("Starting to update card name for CardID: {CardID}", updateDto.CardID);
+
+            try
+            {
+                // Find the card
+                var card = await _context.UserCard
+                    .FirstOrDefaultAsync(c => c.CardID == updateDto.CardID);
+
+                if (card == null)
+                {
+                    _logger.LogWarning("Card with ID {CardID} not found", updateDto.CardID);
+                    return false;
+                }
+
+                // Update the card name
+                card.CardName = updateDto.CardName;
+                
+                // Save changes
+                var recordsAffected = await _context.SaveChangesAsync();
+                _logger.LogInformation("Card name updated successfully. Records affected: {RecordsAffected}", recordsAffected);
+                
+                return recordsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating card name for CardID: {CardID}", updateDto.CardID);
+                throw;
+            }
+        }
+
         private async Task CreateCardBlacklistAsync(UserCard card, int status)
         {
             // Check if card is already blacklisted

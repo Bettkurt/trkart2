@@ -123,7 +123,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = targetCard.CardID,
                             Amount = request.Amount,
-                            TransactionType = (int)TransactionType.TopUp,
+                            TransactionType = TransactionType.TopUp,
                             Description = $"Top-up via {request.PaymentMethod}",
                             ExternalRef = string.IsNullOrEmpty(request.ExternalRef) ? null : request.ExternalRef,
                             PaymentMethod = request.PaymentMethod,
@@ -299,7 +299,7 @@ namespace TRKart.Business.Services
                 {
                     var transaction = await _context.Transaction
                         .Include(t => t.UserCard)
-                        .Where(t => t.TransactionID == statusUpdate.TransactionId && t.TransactionType == (int)TransactionType.TopUp)
+                        .Where(t => t.TransactionID == statusUpdate.TransactionId && t.TransactionType == TransactionType.TopUp)
                         .FirstOrDefaultAsync();
 
                     if (transaction == null)
@@ -404,7 +404,7 @@ namespace TRKart.Business.Services
                 return null;
 
             return await _context.Transaction
-                .Where(t => t.ExternalRef == externalRef && t.TransactionType == (int)TransactionType.TopUp)
+                .Where(t => t.ExternalRef == externalRef && t.TransactionType == TransactionType.TopUp)
                 .FirstOrDefaultAsync();
         }
 
@@ -432,7 +432,7 @@ namespace TRKart.Business.Services
             try
             {
                 var pendingTransactions = await _context.Transaction
-                    .Where(t => t.TransactionType == (int)TransactionType.TopUp 
+                    .Where(t => t.TransactionType == TransactionType.TopUp 
                                && t.TransactionStatus == "Pending" 
                                && t.TransactionDate < cutoffTime)
                     .ToListAsync();
@@ -464,7 +464,7 @@ namespace TRKart.Business.Services
 
             var topUps = await _context.Transaction
                 .Include(t => t.UserCard)
-                .Where(t => t.TransactionType == (int)TransactionType.TopUp && t.UserCard.CustomerID == customerId)
+                .Where(t => t.TransactionType == TransactionType.TopUp && t.UserCard.CustomerID == customerId)
                 .OrderByDescending(t => t.TransactionDate)
                 .Skip(skip)
                 .Take(pageSize)

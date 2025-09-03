@@ -37,8 +37,8 @@ namespace TRKart.Entities.Models
         public decimal Amount { get; set; } 
 
         [Required]
-        [Column("TransactionType", TypeName = "INT")]
-        public int TransactionType { get; set; }
+        [Column("TransactionType")]
+        public TransactionType TransactionType { get; set; }
 
         [Column("Description", TypeName = "TEXT")]
         public string? Description { get; set; }

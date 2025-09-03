@@ -514,7 +514,7 @@ namespace TRKart.API.Controllers
                 var transaction = await _context.Transaction
                     .Include(t => t.UserCard)
                     .FirstOrDefaultAsync(t => t.TransactionID == transactionId 
-                                            && t.TransactionType == (int)TransactionType.TopUp 
+                                            && t.TransactionType == TransactionType.TopUp 
                                             && t.UserCard.CustomerID == customerId.Value);
 
                 if (transaction == null)

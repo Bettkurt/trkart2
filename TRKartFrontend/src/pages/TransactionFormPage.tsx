@@ -466,7 +466,8 @@ const TransactionFormPage: React.FC = () => {
                     id="cardID"
                     value={formData.cardID}
                     onChange={handleCardIdChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                      ${errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                       }`}
                     required
                   >
@@ -493,7 +494,8 @@ const TransactionFormPage: React.FC = () => {
                   id="amount"
                   value={formData.amount}
                   onChange={handleAmountChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   placeholder="Enter amount"
                   required
@@ -512,7 +514,8 @@ const TransactionFormPage: React.FC = () => {
                   id="transactionType"
                   value={formData.transactionType}
                   onChange={handleTransactionTypeChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   required
                 >
@@ -538,7 +541,8 @@ const TransactionFormPage: React.FC = () => {
                   id="description"
                   value={formData.description}
                   onChange={handleDescriptionChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   placeholder="Enter description (letters and numbers only)"
                 />
@@ -549,7 +553,8 @@ const TransactionFormPage: React.FC = () => {
 
               {/* Validation Message */}
               {validationMessage && (
-                <div className={`p-3 rounded-md ${validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                <div className={`p-3 rounded-md 
+                  ${validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                   {validationMessage}
                 </div>

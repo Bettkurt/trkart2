@@ -73,7 +73,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = blacklistedCard.OriginalCardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = (int)TransactionType.SystemTransferOut,
+                            TransactionType = TransactionType.SystemTransferOut,
                             Description = $"System transfer to card {activeCard.CardNumber}",
                             // TransactionStatus = "Pending"
                         };
@@ -83,7 +83,7 @@ namespace TRKart.Business.Services
                         {
                             CardID = activeCard.CardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = (int)TransactionType.SystemTransferIn,
+                            TransactionType = TransactionType.SystemTransferIn,
                             Description = $"System transfer from blacklisted card {blacklistedCard.CardNumber}",
                             // TransactionStatus = "Pending"
                         };

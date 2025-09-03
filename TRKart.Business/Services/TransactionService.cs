@@ -51,7 +51,7 @@ namespace TRKart.Business.Services
 			{
 				CardID = dto.CardID,
 				Amount = dto.Amount, // Always positive amount - direction determined by transaction type
-				TransactionType = (int)dto.TransactionType,
+				TransactionType = dto.TransactionType,
 				Description = dto.Description
 			};
             return await _transactionRepository.AddTransactionAsync(transaction);
