@@ -6,17 +6,19 @@ using TRKart.Entities.Models;
 
 namespace TRKart.API.Services
 {
-    public class TokenCleanupService : BackgroundService
+    public class TokenCleanupBackgroundService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<TokenCleanupService> _logger;
+        private readonly ILogger<TokenCleanupBackgroundService> _logger;
         private const int BatchSize = 1000;
         private readonly int _deleteOlderThanDays;
         private readonly int _cleanupIntervalDays;
+        // Delay before first run on startup. It runs first among the background services.
+        private readonly TimeSpan _startupDelay = TimeSpan.FromMinutes(1); 
 
-        public TokenCleanupService(
+        public TokenCleanupBackgroundService(
             IServiceProvider serviceProvider, 
-            ILogger<TokenCleanupService> logger,
+            ILogger<TokenCleanupBackgroundService> logger,
             IOptions<TokenCleanupSettings> settings)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
@@ -32,7 +34,7 @@ namespace TRKart.API.Services
             _logger.LogInformation("Token Cleanup Service is starting with interval: {Interval} days", _cleanupIntervalDays);
 
             // Initial delay to prevent blocking application startup
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(_startupDelay, stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {

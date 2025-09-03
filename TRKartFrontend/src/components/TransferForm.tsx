@@ -89,7 +89,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
   };
 
   const handleRecipientCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\s/g, ''); // Remove spaces
+    const value = e.target.value
+      .replace(/\s/g, '') // Remove spaces first
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '') // Remove other non-alphanumeric characters
+      .slice(0, 16); // Limit to 16 characters
     setFormData(prev => ({ ...prev, recipientCardNumber: value }));
     
     if (value) {
@@ -227,7 +231,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
               errors.recipientCardNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
             }`}
-            placeholder="Enter recipient card number"
+            placeholder="Enter recipient card number (TRK90 XXXX XXXX XXX)"
             required
           />
           {errors.recipientCardNumber && (

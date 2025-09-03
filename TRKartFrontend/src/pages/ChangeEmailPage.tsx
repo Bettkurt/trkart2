@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const ChangeEmailPage: React.FC = () => {
   const { changeEmail } = useAuth();
@@ -80,16 +81,7 @@ const ChangeEmailPage: React.FC = () => {
               autoComplete="current-password"
             />
             <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-11 text-gray-500 focus:outline-none">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                {showPassword ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm6 0c0 3.866-3.582 7-8 7s-8-3.134-8-7 3.582-7 8-7 8 3.134 8 7z" />
-                ) : (
-                  <>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.418 0-8-3.134-8-7 0-1.657.672-3.156 1.825-4.325m3.153-2.348A9.956 9.956 0 0112 5c4.418 0 8 3.134 8 7 0 1.657-.672 3.156-1.825 4.325M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
-                  </>
-                )}
-              </svg>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
           <div className="mb-6">

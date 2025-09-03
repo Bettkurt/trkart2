@@ -147,8 +147,8 @@ async Task RunAsync()
     builder.Services.Configure<TokenCleanupSettings>(
         builder.Configuration.GetSection("TokenCleanup"));
 
-    // 8. Register Background Services (temporarily disabled)
-    // builder.Services.AddHostedService<TokenCleanupService>();
+    // 8. Register Background Services
+    builder.Services.AddHostedService<TokenCleanupBackgroundService>();
 
     // 9. DI Services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -178,7 +178,7 @@ async Task RunAsync()
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await db.Database.MigrateAsync();
+       // await db.Database.MigrateAsync();
     }
     
     // Configure Hangfire dashboard and jobs
@@ -193,7 +193,7 @@ async Task RunAsync()
     app.UseCors("AllowedOrigins");
     
     // Use custom JWT middleware before authorization
-    app.UseJwtMiddleware();
+    app.UseAuthenticationMiddleware();
     
     // Add authentication and authorization middleware
     app.UseAuthentication();

@@ -137,6 +137,82 @@ namespace TRKart.API.Controllers
         }
 
         /// <summary>
+        /// Get transaction types that users can create (for form dropdowns)
+        /// </summary>
+        [HttpGet("user/creatable-transaction-types")]
+        public IActionResult GetUserCreatableTransactionTypes()
+        {
+            try
+            {
+                var creatableTypes = TransactionTypeExtensions.GetUserCreatableTransactionTypes()
+                    .Select(type => new
+                    {
+                        Value = (int)type,
+                        Name = type.ToString(),
+                        DisplayName = type.GetDisplayName(),
+                        IsDebit = type.IsDebitTransaction(),
+                        IsCredit = type.IsCreditTransaction()
+                    })
+                    .ToList();
+
+                return Ok(new
+                {
+                    success = true,
+                    transactionTypes = creatableTypes,
+                    count = creatableTypes.Count
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Failed to fetch creatable transaction types",
+                    error = "INTERNAL_ERROR"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get all transaction types that users can see in their transaction history
+        /// </summary>
+        [HttpGet("user/viewable-transaction-types")]
+        public IActionResult GetUserViewableTransactionTypes()
+        {
+            try
+            {
+                var viewableTypes = TransactionTypeExtensions.GetUserViewableTransactionTypes()
+                    .Select(type => new
+                    {
+                        Value = (int)type,
+                        Name = type.ToString(),
+                        DisplayName = type.GetDisplayName(),
+                        IsDebit = type.IsDebitTransaction(),
+                        IsCredit = type.IsCreditTransaction(),
+                        IsUserCreatable = type.IsUserCreatable(),
+                        IsSystemOnly = type.IsSystemOnly()
+                    })
+                    .ToList();
+
+                return Ok(new
+                {
+                    success = true,
+                    transactionTypes = viewableTypes,
+                    count = viewableTypes.Count
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Failed to fetch viewable transaction types",
+                    error = "INTERNAL_ERROR"
+                });
+            }
+        }
+
+        /// <summary>
         /// Create a new transaction for the authenticated user
         /// </summary>
         [HttpPost("user/transaction")]
@@ -438,7 +514,7 @@ namespace TRKart.API.Controllers
                 var transaction = await _context.Transaction
                     .Include(t => t.UserCard)
                     .FirstOrDefaultAsync(t => t.TransactionID == transactionId 
-                                            && t.TransactionType == "TopUp" 
+                                            && t.TransactionType == TransactionType.TopUp 
                                             && t.UserCard.CustomerID == customerId.Value);
 
                 if (transaction == null)

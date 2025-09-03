@@ -50,7 +50,7 @@ namespace TRKart.Entities.DTOs
         public int CardID { get; set; }
         public string CardNumber { get; set; } = string.Empty;
         public decimal Amount { get; set; }
-        public string TransactionType { get; set; } = "TopUp";
+        public TransactionType TransactionType { get; set; } = TransactionType.TopUp;
         public string PaymentMethod { get; set; } = string.Empty;
         public decimal? FeeAmount { get; set; }
         public decimal NetAmount { get; set; }

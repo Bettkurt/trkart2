@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Entities.Models
 {
@@ -36,8 +37,8 @@ namespace TRKart.Entities.Models
         public decimal Amount { get; set; } 
 
         [Required]
-        [Column("TransactionType", TypeName = "VARCHAR(20)")]
-        public string TransactionType { get; set; }
+        [Column("TransactionType")]
+        public TransactionType TransactionType { get; set; }
 
         [Column("Description", TypeName = "TEXT")]
         public string? Description { get; set; }

@@ -16,6 +16,7 @@ import CardCreationPage from '@/pages/CardCreationPage';
 import CardDeletionPage from '@/pages/CardDeletionPage';
 import LostCardPage from '@/pages/LostCardPage';
 import NewTransferPage from '@/pages/NewTransferPage';
+import TransfersPage from '@/pages/TransfersPage';
 import AboutPage from '@/pages/AboutPage';
 import ChangePasswordPage from '@/pages/ChangePasswordPage';
 import ChangeEmailPage from '@/pages/ChangeEmailPage';
@@ -83,6 +84,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/new-transfer" element={
         <ProtectedRoute>
           <NewTransferPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/transfers" element={
+        <ProtectedRoute>
+          <TransfersPage />
         </ProtectedRoute>
       } />
       <Route path="/cards" element={

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import TransferForm from '@/components/TransferForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
+import transferService from '@/services/transferService';
 
 const NewTransferPage: React.FC = () => {
   const { user } = useAuth();
@@ -23,10 +24,35 @@ const NewTransferPage: React.FC = () => {
     }
   }, [location.search]);
 
-  const handleTransferSubmit = (transfer: any) => {
-    logger.info('NewTransferPage', 'handleTransferSubmit', 'Transfer created', { transfer });
-    // Optionally navigate to transfer history or dashboard
-    // navigate('/transfers');
+  const handleTransferSubmit = async (transfer: any) => {
+    try {
+      logger.info('NewTransferPage', 'handleTransferSubmit', 'Submitting transfer', { transfer });
+      
+      // Convert amount to number and card ID to number
+      const transferData = {
+        ...transfer,
+        amount: parseFloat(transfer.amount),
+        senderCardID: parseInt(transfer.senderCardID, 10)
+      };
+
+      // Call the transfer service
+      const result = await transferService.createTransfer(transferData);
+      
+      if (result.success) {
+        logger.info('NewTransferPage', 'handleTransferSubmit', 'Transfer successful', { result });
+        // Show success message and redirect to transfers page
+        alert('Transfer completed successfully!');
+        navigate('/transfers');
+      } else {
+        const error = new Error(result.message);
+        logger.error('NewTransferPage', 'handleTransferSubmit', 'Transfer failed', error);
+        alert(`Transfer failed: ${result.message}`);
+      }
+    } catch (error: any) {
+      const err = new Error(error.message);
+      logger.error('NewTransferPage', 'handleTransferSubmit', 'Error during transfer', err);
+      alert(`An error occurred: ${error.message || 'Please try again later.'}`);
+    }
   };
 
   // Redirect if not authenticated
