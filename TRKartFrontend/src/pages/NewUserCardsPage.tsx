@@ -214,13 +214,14 @@ const NewUserCardsPage: React.FC = () => {
               <Link to="/create-card" className="btn-primary mt-4 inline-block">Add Your First Card</Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-wrap gap-x-24 gap-y-32 p-8 max-w-7xl mx-auto">
               {cards.map((card) => (
-                <CardItem 
-                  key={card.cardID} 
-                  card={card} 
-                  onNameEdit={handleNameEdit} 
-                />
+                <div key={card.cardID} className="w-80">
+                  <CardItem 
+                    card={card} 
+                    onNameEdit={handleNameEdit} 
+                  />
+                </div>
               ))}
             </div>
           )}
