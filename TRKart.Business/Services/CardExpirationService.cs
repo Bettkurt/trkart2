@@ -31,7 +31,7 @@ namespace TRKart.Business.Services
                 _logger.LogInformation("Starting expired cards check at {UtcNow}", DateTime.UtcNow);
 
                 // Get current date
-                var currentDate = DateTime.UtcNow.Date;
+                var currentDate = DateTimeOffset.UtcNow.Date;
                 
                 var expiredCards = await _context.UserCard
                     .Where(c => c.CardExpirationDate < currentDate && 
@@ -123,7 +123,7 @@ namespace TRKart.Business.Services
                 _ => "Unknown reason"
             };
             
-            // Create blacklist entry with UTC time for PostgreSQL compatibility
+            // Create blacklist entry with UTC timestamps
             var blacklist = new CardBlacklist
             {
                 CustomerID = card.CustomerID,
@@ -131,9 +131,8 @@ namespace TRKart.Business.Services
                 CardNumber = card.CardNumber,
                 CardType = card.CardType,
                 LeftOverBalance = card.Balance,
-                // Use UTC time for PostgreSQL timestamp with time zone
-                CardExpirationDate = DateTime.SpecifyKind(card.CardExpirationDate.Date, DateTimeKind.Utc),
-                OriginalCreatedAt = DateTime.SpecifyKind(card.CreatedAt, DateTimeKind.Utc),
+                CardExpirationDate = DateTime.SpecifyKind(card.CardExpirationDate, DateTimeKind.Utc),
+                OriginalCreatedAt = card.CreatedAt.ToUniversalTime(),
                 Reason = (CardBlacklistReason)status,
                 // BlacklistedAt = DateTime.UtcNow, // Set by DB
                 Notes = $"Automatically blacklisted: {reason}"

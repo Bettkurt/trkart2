@@ -2,10 +2,10 @@ CREATE TABLE "Log" (
     "LogID" SERIAL PRIMARY KEY,
     -- Name of the table the changes took place
     "LogTable" VARCHAR(50) NOT NULL,
-    -- 0: Create, 1: Update, 2: Delete, 3: Error
+    -- 0: INSERT, 1: UPDATE, 2: DELETE, 3: ERROR
     "LogType" INT NOT NULL,
     "LogMessage" TEXT NOT NULL,
-    "LogTimestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "LogTimestamp" TIMESTAMPTZ DEFAULT NOW(),
     "LogDetails" TEXT
 );
 
@@ -39,6 +39,6 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER LogTrigger
 AFTER INSERT OR UPDATE OR DELETE ON "Customers", "SessionToken", 
-    "TokenBlacklist", "UserCard", "CardBlacklist", "CardUpdates",
-    "CardLimits", "Transaction"
+    "TokenBlacklist", "UserCard", "CardBlacklist",
+     "CardLimits", "Transaction"
 FOR EACH ROW EXECUTE FUNCTION LogTriggerFunction();

@@ -52,6 +52,15 @@ export const getUserCreatableTransactionTypes = (): TransactionType[] => {
   ];
 };
 
+// Get transaction types available in the new transaction form page (restricted set)
+export const getTransactionFormPageTypes = (): TransactionType[] => {
+  return [
+    TransactionType.Load,
+    TransactionType.Refund,      // !!!Only for testing!!!
+    TransactionType.Pay          // !!!Only for testing!!!
+  ];
+};
+
 // Get all transaction types that users can see in transaction history
 export const getUserViewableTransactionTypes = (): TransactionType[] => {
   return Object.values(TransactionType).filter(value => typeof value === 'number') as TransactionType[];

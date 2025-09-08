@@ -9,19 +9,22 @@ const CARD_TYPE_MAP = {
     name: 'Standard', 
     className: 'bg-gray-100 text-gray-900',
     buttonBg: 'bg-gray-400 hover:bg-gray-500',
-    stripeColor: 'bg-gray-400'
+    stripeColor: 'bg-gray-400',
+    hoverBg: 'hover:bg-gray-400'
   },
   1: { 
     name: 'Gold', 
     className: 'bg-yellow-100 text-yellow-900',
     buttonBg: 'bg-yellow-400 hover:bg-yellow-500',
-    stripeColor: 'bg-yellow-400'
+    stripeColor: 'bg-yellow-400',
+    hoverBg: 'hover:bg-yellow-400'
   },
   2: { 
     name: 'Platinum', 
     className: 'bg-cyan-100 text-cyan-900',
     buttonBg: 'bg-cyan-400 hover:bg-cyan-500',
-    stripeColor: 'bg-cyan-400'
+    stripeColor: 'bg-cyan-400',
+    hoverBg: 'hover:bg-cyan-400'
   }
 } as const;
 
@@ -256,7 +259,8 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
         {/* Diagonal stripe reflecting card type - Layer 1 */}
         <div 
           className={`absolute top-0 -right-4 w-10 h-full 
-            ${CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.stripeColor || 'bg-gray-400'} ${getCardOpacity(card.cardStatus)}`}
+            ${CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.stripeColor || 'bg-gray-400'} 
+              ${getCardOpacity(card.cardStatus)}`}
           style={{
             transform: 'skewX(-35deg)',
             transformOrigin: 'top right',
@@ -296,7 +300,8 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                   />
                   <button 
                     onClick={handleSaveClick}
-                    className="text-white hover:text-white transition-colors p-1.5 rounded hover:bg-gray-700 flex-shrink-0"
+                    className={`text-white hover:text-black transition-colors p-1.5 rounded 
+                      ${CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.hoverBg || 'hover:bg-gray-700'}`}
                     aria-label="Save card name"
                   >
                     <Save size={16} />
@@ -310,10 +315,11 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                 <div className="relative group/pen">
                   <button 
                     onClick={handleEditClick}
-                    className="text-gray-300 hover:text-white transition-colors p-1.5 rounded hover:bg-gray-700"
+                    className={`text-white hover:text-black transition-colors p-1.5 rounded 
+                      ${CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.hoverBg || 'hover:bg-gray-700'}`}
                     aria-label="Edit card name"
                   >
-                    <PenLine size={16} className="text-white" />
+                    <PenLine size={16} />
                   </button>
                   
                 </div>
@@ -324,7 +330,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
           </div>
         </div>
 
-        {/* Status Message - Inside card's overflow-hidden */}
+        {/* Status Message for Card Name Edit - Inside card's overflow-hidden */}
           {saveStatus && (
             <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 text-xs px-2 py-1 rounded shadow-lg z-50 animate-fade-in whitespace-nowrap 
               ${getStatusMessageStyle(saveStatus.type)}`}
@@ -349,12 +355,14 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
             <div className="relative">
               <button
                 onClick={handleCopyCardNumber}
-                className="text-gray-300 hover:text-white transition-colors p-1.5 rounded hover:bg-gray-700"
+                className={`text-white hover:text-black transition-colors p-1.5 rounded 
+                  ${CARD_TYPE_MAP[card.cardType as keyof typeof CARD_TYPE_MAP]?.hoverBg || 'hover:bg-gray-700'}`}
                 aria-label="Copy card number"
                 title="Copy card number"
               >
                 <Copy size={16} />
               </button>
+
               {/* Floating "Copied!" notification */}
               {showCopied && (
                 <div className="absolute -bottom-7 -left-10 transform -translate-x-1/2 bg-green-500 text-black text-xs px-2 py-1.5 rounded shadow-lg z-20 animate-fade-in">

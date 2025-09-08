@@ -66,7 +66,7 @@ namespace TRKart.Entities.DTOs
         public int CardID { get; set; }
         public CardStatus? PreviousStatus { get; set; }
         public CardStatus? NewStatus { get; set; }
-        public DateTime? StatusUpdatedAt { get; set; }
+        public DateTimeOffset? StatusUpdatedAt { get; set; }
     }
 
     // DTO for updating card name

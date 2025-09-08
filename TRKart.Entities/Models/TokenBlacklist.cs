@@ -25,12 +25,12 @@ namespace TRKart.Entities.Models
         [Required]
         [Column("BlacklistedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime BlacklistedAt { get; set; }
+        public DateTimeOffset BlacklistedAt { get; set; }
 
         [Column("Reason", TypeName = "TEXT")]
-        public string? Reason { get; set; }
+        public string? Reason { get; set; } = null!;
 
         [Column("IPAddress", TypeName = "TEXT")]
-        public string? IPAddress { get; set; }
+        public string? IPAddress { get; set; } = null!;
     }
 }

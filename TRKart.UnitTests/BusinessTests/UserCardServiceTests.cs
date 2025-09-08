@@ -6,6 +6,7 @@ using TRKart.Core.Interfaces;
 using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
+using TRKart.Entities.Enums;
 using Xunit;
 
 namespace TRKart.UnitTests.BusinessTests
@@ -46,7 +47,7 @@ namespace TRKart.UnitTests.BusinessTests
 			Assert.NotNull(result);
 			Assert.True(result.CardID > 0);
 			Assert.False(string.IsNullOrWhiteSpace(result.CardNumber));
-			Assert.Equal("Inactive", result.CardStatus);
+			Assert.Equal(CardStatus.Inactive, result.CardStatus);
 			Assert.Equal(0, result.Balance);
 		}
 
@@ -56,13 +57,13 @@ namespace TRKart.UnitTests.BusinessTests
 			using var context = CreateInMemoryContext(nameof(UpdateCardStatusAsync_UpdatesStatus));
 			context.Customers.Add(new Customers { CustomerNumber = "CUST-002", Email = "u@test.com", FullName = "U", PasswordHash = "x" });
 			await context.SaveChangesAsync();
-			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "TRK-X", Balance = 0, CardStatus = "Inactive" });
+			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "TRK-X", Balance = 0, CardStatus = CardStatus.Inactive });
 			await context.SaveChangesAsync();
 
 			var service = CreateService(context);
-			var ok = await service.UpdateCardStatusAsync(new CardStatusUpdateDto { CardId = 1, Status = "Active" });
+			var ok = await service.UpdateCardStatusAsync(new CardStatusUpdateDto { CardId = 1, Status = CardStatus.Active });
 			Assert.True(ok);
-			Assert.Equal("Active", (await context.UserCard.FirstAsync()).CardStatus);
+			Assert.Equal(CardStatus.Active, (await context.UserCard.FirstAsync()).CardStatus);
 		}
 
 		[Fact]
@@ -71,8 +72,8 @@ namespace TRKart.UnitTests.BusinessTests
 			using var context = CreateInMemoryContext(nameof(GetUserCardsByCustomerIdAsync_ExcludesDeactivated));
 			context.Customers.Add(new Customers { CustomerNumber = "CUST-003", Email = "u@test.com", FullName = "U", PasswordHash = "x" });
 			await context.SaveChangesAsync();
-			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "A", Balance = 0, CardStatus = "Active" });
-			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "B", Balance = 0, CardStatus = "Deactivated" });
+			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "A", Balance = 0, CardStatus = CardStatus.Active });
+			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "B", Balance = 0, CardStatus = CardStatus.Deactivated });
 			await context.SaveChangesAsync();
 
 			var service = CreateService(context);
@@ -86,7 +87,7 @@ namespace TRKart.UnitTests.BusinessTests
 			using var context = CreateInMemoryContext(nameof(GetUserCardByNumberAsync_ReturnsNull_WhenDeactivated));
 			context.Customers.Add(new Customers { CustomerNumber = "CUST-004", Email = "u@test.com", FullName = "U", PasswordHash = "x" });
 			await context.SaveChangesAsync();
-			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "Z", Balance = 0, CardStatus = "Deactivated" });
+			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "Z", Balance = 0, CardStatus = CardStatus.Deactivated });
 			await context.SaveChangesAsync();
 
 			var service = CreateService(context);
@@ -100,9 +101,9 @@ namespace TRKart.UnitTests.BusinessTests
 			using var context = CreateInMemoryContext(nameof(GetCardStatusHistoryAsync_ReturnsHistory));
 			context.Customers.Add(new Customers { CustomerNumber = "CUST-005", Email = "u@test.com", FullName = "U", PasswordHash = "x" });
 			await context.SaveChangesAsync();
-			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "H", Balance = 0, CardStatus = "Active", CardID = 5 });
+			context.UserCard.Add(new UserCard { CustomerID = 1, CardNumber = "H", Balance = 0, CardStatus = CardStatus.Active, CardID = 5 });
 			await context.SaveChangesAsync();
-			context.CardUpdates.Add(new CardUpdates { CardID = 5, NewStatus = "Active", PreviousStatus = "Inactive", UpdatedAt = DateTime.UtcNow });
+			context.CardUpdates.Add(new CardUpdates { CardID = 5, NewStatus = CardStatus.Active, PreviousStatus = CardStatus.Inactive, UpdatedAt = DateTimeOffset.UtcNow });
 			await context.SaveChangesAsync();
 
 			var service = CreateService(context);

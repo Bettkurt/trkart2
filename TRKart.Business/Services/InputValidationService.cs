@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TRKart.Business.Interfaces;
+using TRKart.DataAccess;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
 using TRKart.Entities.Enums;
@@ -234,13 +237,13 @@ namespace TRKart.Business.Services
                 });
             }
 
-            // Validate CardName (optional, max 20 characters)
-            if (!string.IsNullOrEmpty(dto.CardName) && dto.CardName.Length > 20)
+            // Validate CardName (optional, max 16 characters)
+            if (!string.IsNullOrEmpty(dto.CardName) && dto.CardName.Length > 16)
             {
                 errors.Add(new ValidationError
                 {
                     Field = "CardName",
-                    Error = "Card name cannot exceed 20 characters",
+                    Error = "Card name cannot exceed 16 characters",
                     Value = dto.CardName
                 });
             }
@@ -284,18 +287,18 @@ namespace TRKart.Business.Services
                 return response;
             }
 
-            // Check length (based on TransferCreateDto validation - between 8 and 50 characters)
-            if (cardNumber.Length < 8 || cardNumber.Length > 50)
+            // Check CardNumber length 
+            if (cardNumber.Length != 16)
             {
                 errors.Add(new ValidationError
                 {
                     Field = "CardNumber",
-                    Error = "Card number must be between 8 and 50 characters",
+                    Error = "Card number must be exactly 16 characters",
                     Value = cardNumber
                 });
             }
 
-            // Check for invalid characters (only letters and numbers allowed based on TransferCreateDto)
+            // Check for invalid characters (only letters and numbers)
             if (!Regex.IsMatch(cardNumber, @"^[a-zA-Z0-9]+$"))
             {
                 var invalidChars = Regex.Replace(cardNumber, @"[a-zA-Z0-9]", "");
@@ -360,6 +363,17 @@ namespace TRKart.Business.Services
                     Field = "RecipientCardStatus",
                     Error = "Transfer cannot be completed. Card not found.",
                     Value = recipientCard.CardStatus.ToString()
+                });
+            }
+
+            // Validate that sender and recipient are not the same card (prevent self-transfer)
+            if (senderCard != null && recipientCard != null && senderCard.CardID == recipientCard.CardID)
+            {
+                errors.Add(new ValidationError
+                {
+                    Field = "RecipientCard",
+                    Error = "Cannot transfer to the same card. Please select a different recipient card.",
+                    Value = dto.RecipientCardNumber
                 });
             }
 

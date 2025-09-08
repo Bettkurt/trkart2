@@ -47,8 +47,6 @@ namespace TRKart.Business.Services
 
             // Generate card number with TRK prefix and proper validation
             var cardNumber = await CardNumberHelper.GenerateCardNumberAsync(_uniqueNumberChecker);
-            // Set by DB
-            //a var expirationDate = DateTime.UtcNow.AddYears(5).AddMonths(1).AddDays(-1);
             
             var newCard = new UserCard
             {
@@ -141,28 +139,9 @@ namespace TRKart.Business.Services
                     Console.WriteLine($"[UpdateCardStatusAsync] Status is already {updateDto.Status}, no update needed");
                     return true;
                 }
-
-                // Save the old status for logging and blacklist check
-                //a var oldStatus = card.CardStatus;
                 
                 // Update the card status first
-                card.CardStatus = updateDto.Status;
-                
-                // Create status update record with explicit UTC timestamps
-                //a var utcNow = DateTime.UtcNow;
-
-                // DB handles CardUpdates entry creations
-                /* var statusUpdate = new CardUpdates
-                {
-                    CardID = card.CardID,
-                    PreviousStatus = oldStatus,
-                    NewStatus = updateDto.Status,
-                    StatusUpdatedAt = utcNow,
-                    //a PreviousType = card.CardType,
-                    //a NewType = card.CardType,
-                    //a TypeUpdatedAt = utcNow,
-                };
-                _context.CardUpdates.Add(statusUpdate); */
+                card.CardStatus = updateDto.Status;           
                 
                 // Check if we need to blacklist the card
                 // Expired (1) card blacklistings are handled by background services
@@ -271,7 +250,7 @@ namespace TRKart.Business.Services
                     CardID = cu.CardID,
                     PreviousStatus = (CardStatus)cu.PreviousStatus,
                     NewStatus = (CardStatus)cu.NewStatus,
-                    StatusUpdatedAt = cu.StatusUpdatedAt ?? DateTime.UtcNow
+                    StatusUpdatedAt = cu.StatusUpdatedAt ?? DateTimeOffset.UtcNow
                 })
                 .ToListAsync();
         }
@@ -332,16 +311,7 @@ namespace TRKart.Business.Services
                 _ => "Unknown reason"
             };
             
-            // Ensure all DateTime values are properly specified as UTC
-            //a var utcNow = DateTime.UtcNow;
-            var cardExpirationDate = card.CardExpirationDate.Kind == DateTimeKind.Unspecified 
-                ? DateTime.SpecifyKind(card.CardExpirationDate, DateTimeKind.Utc)
-                : card.CardExpirationDate.ToUniversalTime();
-                
-            var originalCreatedAt = card.CreatedAt.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(card.CreatedAt, DateTimeKind.Utc)
-                : card.CreatedAt.ToUniversalTime();
-
+            // Create blacklist entry - database handles UTC timestamps automatically
             var blacklist = new CardBlacklist
             {
                 CustomerID = card.CustomerID,
@@ -349,8 +319,8 @@ namespace TRKart.Business.Services
                 CardNumber = card.CardNumber,
                 CardType = card.CardType,
                 LeftOverBalance = card.Balance,
-                CardExpirationDate = cardExpirationDate,
-                OriginalCreatedAt = originalCreatedAt,
+                CardExpirationDate = DateTime.SpecifyKind(card.CardExpirationDate, DateTimeKind.Utc),
+                OriginalCreatedAt = card.CreatedAt.ToUniversalTime(),
                 Reason = (CardBlacklistReason)status,
                 Notes = $"Automatically blacklisted: {reason}"
             };

@@ -258,6 +258,7 @@ namespace TRKart.API.Controllers
                         Response.Cookies.Append("AccessToken", tokenResponse.AccessToken, new CookieOptions
                         {
                             HttpOnly = true,
+                            Expires = tokenResponse.AccessTokenExpiration,
                             Secure = true,
                             SameSite = SameSiteMode.Strict,
                             Path = "/"
@@ -333,7 +334,7 @@ namespace TRKart.API.Controllers
                     if (session != null)
                     {
                         // Set access token expiration to now in the database
-                        session.AccessTokenExpiration = DateTime.UtcNow;
+                        session.AccessTokenExpiration = DateTimeOffset.UtcNow;
                         await _context.SaveChangesAsync();
                         _logger.LogDebug("Session expired in database for token: {TokenPrefix}...", accessToken.Substring(0, Math.Min(10, accessToken.Length)));
                     }

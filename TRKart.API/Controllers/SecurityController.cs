@@ -67,7 +67,7 @@ namespace TRKart.API.Controllers
 
             // Get all active sessions for this user
             var sessions = await _context.SessionToken
-                .Where(s => s.CustomerID == customerId.Value && !s.IsRevoked && s.RefreshTokenExpiration > DateTime.UtcNow)
+                .Where(s => s.CustomerID == customerId.Value && !s.IsRevoked && s.RefreshTokenExpiration > DateTimeOffset.UtcNow)
                 .Select(s => new {
                     s.SessionID,
                     s.RefreshTokenCreatedAt,

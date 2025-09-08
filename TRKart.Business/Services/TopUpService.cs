@@ -426,7 +426,7 @@ namespace TRKart.Business.Services
             _logger.LogInformation("[{CorrelationId}] Expiring TopUp transactions older than {TimeoutMinutes} minutes", 
                 correlationId, timeoutMinutes);
 
-            var cutoffTime = DateTime.UtcNow.AddMinutes(-timeoutMinutes);
+            var cutoffTime = DateTimeOffset.UtcNow.AddMinutes(-timeoutMinutes);
             var expiredCount = 0;
 
             try

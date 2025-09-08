@@ -1,4 +1,6 @@
 import { TransactionType, getTransactionTypeName, getUserCreatableTransactionTypes } from '../types/TransactionType';
+import { UserCard } from '../types';
+import { CardStatus } from '../types/cardStatus';
 
 // Frontend validation utilities for real-time input validation
 export const validationUtils = {
@@ -93,5 +95,56 @@ export const validationUtils = {
   sanitizeCardId: (input: string): string => {
     // Only allow numbers
     return input.replace(/[^0-9]/g, '');
+  },
+
+  // Transfer validation - check if sender and recipient are the same card
+  validateTransferSelfTransfer: (senderCardID: string, recipientCardNumber: string, userCards: UserCard[]): { isValid: boolean; error?: string } => {
+    if (!senderCardID || !recipientCardNumber) {
+      return { isValid: true }; // No validation needed if data is missing
+    }
+
+    const selectedSenderCard = userCards.find(card => card.cardID.toString() === senderCardID);
+    if (selectedSenderCard && selectedSenderCard.cardNumber === recipientCardNumber) {
+      return {
+        isValid: false,
+        error: 'Cannot transfer to the same card. Please select a different recipient card.'
+      };
+    }
+
+    return { isValid: true };
+  },
+
+  // Card status validation - check if card is active
+  validateCardStatus: (card: UserCard | null, operation: 'transfer' | 'topup' = 'transfer'): { isValid: boolean; error?: string } => {
+    if (!card) {
+      return {
+        isValid: false,
+        error: 'Card not found'
+      };
+    }
+
+    if (card.cardStatus !== CardStatus.Active) {
+      const statusName = Object.keys(CardStatus).find(key => CardStatus[key as keyof typeof CardStatus] === card.cardStatus) || 'Unknown';
+      return {
+        isValid: false,
+        error: `Cannot ${operation} to this card. Card status is ${statusName}. Only active cards are allowed.`
+      };
+    }
+
+    return { isValid: true };
+  },
+
+  // Combined transfer validation - self-transfer and card status
+  validateTransferRecipient: (senderCardID: string, recipientCardNumber: string, userCards: UserCard[]): { isValid: boolean; error?: string } => {
+    // First check for self-transfer
+    const selfTransferValidation = validationUtils.validateTransferSelfTransfer(senderCardID, recipientCardNumber, userCards);
+    if (!selfTransferValidation.isValid) {
+      return selfTransferValidation;
+    }
+
+    // For recipient validation, we only check if it's not the same as sender
+    // The actual recipient card validation (existence, status, etc.) will be done by the backend
+    //  since the frontend doesn't have access to all cards in the system
+    return { isValid: true };
   }
 }; 

@@ -21,23 +21,23 @@ namespace TRKart.Entities.Models
         public Customers Customer { get; set; }
 
         [Column("AccessToken", TypeName = "VARCHAR(500)")]
-        public string? AccessToken { get; set; }
+        public string? AccessToken { get; set; } = null!;
 
         [Required]
         [Column("RefreshToken", TypeName = "VARCHAR(500)")]
         public string RefreshToken { get; set; }
 
         [Column("AccessTokenExpiration")]
-        public DateTime? AccessTokenExpiration { get; set; }
+        public DateTimeOffset? AccessTokenExpiration { get; set; } = null!;
 
         [Required]
         [Column("RefreshTokenExpiration")]
-        public DateTime RefreshTokenExpiration { get; set; }
+        public DateTimeOffset RefreshTokenExpiration { get; set; }
 
         [Required]
         [Column("RefreshTokenCreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime RefreshTokenCreatedAt { get; set; }
+        public DateTimeOffset RefreshTokenCreatedAt { get; set; }
 
         [Required]
         [Column("IsRevoked", TypeName = "BOOLEAN")]

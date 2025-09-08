@@ -80,8 +80,8 @@ namespace TRKart.Business.Services
             string refreshToken = _jwtHelper.GenerateRefreshToken();
 
             // Get token expiration times
-            DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
-            DateTime refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
+            DateTimeOffset accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
+            DateTimeOffset refreshTokenExpiration = _jwtHelper.GetRefreshTokenExpiration();
 
             // Create and save new session
             var session = new SessionToken
@@ -124,7 +124,7 @@ namespace TRKart.Business.Services
             var session = await _context.SessionToken
                 .Include(s => s.Customer)
                 .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken && 
-                                       s.RefreshTokenExpiration > DateTime.UtcNow && 
+                                       s.RefreshTokenExpiration > DateTimeOffset.UtcNow && 
                                        !s.IsRevoked);
 
             if (session == null)
@@ -165,16 +165,16 @@ namespace TRKart.Business.Services
 
             // Generate a new access token
             string newAccessToken = _jwtHelper.GenerateAccessToken(customer.Email, customer.CustomerID);
-            DateTime accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
+            DateTimeOffset accessTokenExpiration = _jwtHelper.GetAccessTokenExpiration();
             
             // Only rotate refresh token if it's close to expiration (e.g., within 1 day)
-            bool shouldRotateRefreshToken = session.RefreshTokenExpiration < DateTime.UtcNow.AddDays(1);
+            bool shouldRotateRefreshToken = session.RefreshTokenExpiration < DateTimeOffset.UtcNow.AddDays(1);
             
             string newRefreshToken = shouldRotateRefreshToken 
                 ? _jwtHelper.GenerateRefreshToken()
                 : refreshToken;
                 
-            DateTime refreshTokenExpiration = shouldRotateRefreshToken 
+            DateTimeOffset refreshTokenExpiration = shouldRotateRefreshToken 
                 ? _jwtHelper.GetRefreshTokenExpiration()
                 : session.RefreshTokenExpiration;
 
@@ -234,7 +234,7 @@ namespace TRKart.Business.Services
                 var session = await _context.SessionToken
                     .Include(s => s.Customer)
                     .FirstOrDefaultAsync(s => s.AccessToken == accessToken &&
-                                              s.AccessTokenExpiration > DateTime.UtcNow &&
+                                              s.AccessTokenExpiration > DateTimeOffset.UtcNow &&
                                               !s.IsRevoked);
 
                 if (session == null)
@@ -339,7 +339,7 @@ namespace TRKart.Business.Services
                 SessionID = session.SessionID,
                 RefreshToken = refreshToken,
                 IPAddress = session.IPAddress,
-                BlacklistedAt = DateTime.UtcNow,
+                BlacklistedAt = DateTimeOffset.UtcNow,
                 Reason = reason
             };
 
@@ -474,7 +474,7 @@ namespace TRKart.Business.Services
             var token = await _context.SessionToken
                 .Include(rt => rt.Customer)
                 .FirstOrDefaultAsync(rt => rt.RefreshToken == refreshToken && 
-                                       rt.RefreshTokenExpiration > DateTime.UtcNow && 
+                                       rt.RefreshTokenExpiration > DateTimeOffset.UtcNow && 
                                        !rt.IsRevoked);
 
             if (token == null || token.Customer == null)
@@ -521,10 +521,11 @@ namespace TRKart.Business.Services
                 {
                     CustomerID = customer.CustomerID,
                     PasswordHash = customer.PasswordHash,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTimeOffset.UtcNow
                 });
 
                 customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+                customer.PasswordChangedAt = DateTimeOffset.UtcNow;
         
                 await _context.SaveChangesAsync();
                 if (transaction != null)
@@ -581,6 +582,7 @@ namespace TRKart.Business.Services
                     return false;
 
                 customer.Email = dto.NewEmail;
+                customer.EmailLastUpdatedAt = DateTimeOffset.UtcNow;
                 await _context.SaveChangesAsync();
                 if (transaction != null)
                 {

@@ -20,25 +20,30 @@ namespace TRKart.Entities.Models
         public UserCard Card { get; set; }
 
         [Required]
-        [Column("PayLimit", TypeName = "DECIMAL(10, 2)")]
+        [Column("PayLimit", TypeName = "DECIMAL(18, 2)")]
         public decimal PayLimit { get; set; }
 
         [Required]
-        [Column("PayMaxLimit", TypeName = "DECIMAL(10, 2)")]
+        [Column("PayMaxLimit", TypeName = "DECIMAL(18, 2)")]
         public decimal PayMaxLimit { get; set; }
 
         [Column("PayLimitUpdatedAt")]
-        public DateTime PayLimitUpdatedAt { get; set; }
+        public DateTimeOffset PayLimitUpdatedAt { get; set; }
 
         [Required]
-        [Column("TransferLimit", TypeName = "DECIMAL(10, 2)")]
+        [Column("TransferLimit", TypeName = "DECIMAL(18, 2)")]
         public decimal TransferLimit { get; set; }
 
         [Required]
-        [Column("TransferMaxLimit", TypeName = "DECIMAL(10, 2)")]
+        [Column("TransferMaxLimit", TypeName = "DECIMAL(18, 2)")]
         public decimal TransferMaxLimit { get; set; }
 
         [Column("TransferLimitUpdatedAt")]
-        public DateTime TransferLimitUpdatedAt { get; set; }
+        public DateTimeOffset TransferLimitUpdatedAt { get; set; }
+
+        [Required]
+        [Column("CreatedAt")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTimeOffset CreatedAt { get; set; }
     }
 }

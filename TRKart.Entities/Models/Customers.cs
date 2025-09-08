@@ -30,16 +30,19 @@ namespace TRKart.Entities.Models
         public bool VerifiedUser { get; set; } = true;
 
         [Column("EmailLastUpdatedAt")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime? EmailLastUpdatedAt { get; set; }
+        public DateTimeOffset? EmailLastUpdatedAt { get; set; } = null!;
 
         [Required]
         [Column("PasswordHash", TypeName = "VARCHAR(200)")]
         public string PasswordHash { get; set; }
 
         [Column("PasswordChangedAt")]
+        public DateTimeOffset? PasswordChangedAt { get; set; } = null!;
+
+        [Required]
+        [Column("CreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime? PasswordChangedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
         // Related SessionTokens (mandatory one-to-mandatory many)
         public virtual ICollection<SessionToken>? SessionTokens { get; set; } = new List<SessionToken>();
