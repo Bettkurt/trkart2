@@ -40,6 +40,9 @@ try
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
+    // 2.1. Add memory cache for rate limiting
+    builder.Services.AddMemoryCache();
+
     // 3. CORS configuration for local development
     var allowedOrigins = new[] 
     {
@@ -129,6 +132,7 @@ try
 
     // 8. Register Background Services
     builder.Services.AddHostedService<TokenCleanupBackgroundService>();
+    builder.Services.AddHostedService<RateLimitCleanupBackgroundService>();
 
     // 9. DI Services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -139,6 +143,7 @@ try
     builder.Services.AddScoped<ITopUpService, TopUpService>();
     builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
     builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
+    builder.Services.AddScoped<IAuditService, AuditService>();
 
     var app = builder.Build();
 
@@ -155,6 +160,8 @@ try
     // 9. Middleware order - CORS before authentication
     // app.UseHttpsRedirection(); // Disabled for HTTP development
     app.UseCors("AllowedOrigins");
+    app.UseSecurityHeaders(); // Security headers middleware
+    app.UseRateLimiting(); // Rate limiting middleware
     app.UseAuthenticationMiddleware(); // Custom authentication middleware
     app.UseAuthentication();
     app.UseAuthorization();

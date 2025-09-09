@@ -3,8 +3,7 @@
 -------------------------------------------------------------------------------------------
 
 -- Create the SessionToken table
-CREATE TABLE "SessionToken"
-(
+CREATE TABLE "SessionToken" (
     "SessionID" SERIAL PRIMARY KEY,
     "CustomerID" INTEGER NOT NULL,
     "AccessToken" VARCHAR(500) UNIQUE,
@@ -12,11 +11,20 @@ CREATE TABLE "SessionToken"
     "AccessTokenExpiration" TIMESTAMPTZ,
     "RefreshTokenExpiration" TIMESTAMPTZ NOT NULL,
     "RefreshTokenCreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "LastUsedAt" TIMESTAMPTZ,
+    "UsageCount" INTEGER DEFAULT 0,
     "IsRevoked" BOOLEAN NOT NULL DEFAULT FALSE,
+    "RevokedAt" TIMESTAMPTZ,
+    "RevokeReason" VARCHAR(200),
     "DeviceInfo" TEXT,
+    "DeviceFingerprint" VARCHAR(255),
     "IPAddress" TEXT,
-    
-    -- Foreign key constraint
+    "UserAgent" TEXT,
+    "IsSuspicious" BOOLEAN DEFAULT FALSE,
+    "SuspiciousReason" VARCHAR(200),
+    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMPTZ DEFAULT NOW(),
+
     CONSTRAINT "FK_SessionToken_Customers_CustomerID" 
         FOREIGN KEY ("CustomerID") 
         REFERENCES "Customers"("CustomerID")

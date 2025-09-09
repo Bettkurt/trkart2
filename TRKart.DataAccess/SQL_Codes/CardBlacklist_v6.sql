@@ -17,12 +17,12 @@ CREATE TABLE "CardBlacklist" (
     "CardExpirationDate" DATE NOT NULL,  -- Original expiration date
     "OriginalCreatedAt" TIMESTAMPTZ NOT NULL,   -- When the card was originally created
     -- 0: Deactivated, 1: Expired, 2: Reported Lost for more than 7 days
-    -- TODO: Add a function/trigger to work 1 week after a card is added to this list with Reason 2
+    -- TODO: Add a function/trigger to work 1 week or 2 weeks after a card is added to this list with Reason 2
     -- and change it to Reason 0 and change CardStatus to 0 (Deactivated) in UserCard table.
     -- It will also update the CardUpdates table with the new status, automatically.
     "Reason" INT NOT NULL CHECK ("Reason" BETWEEN 0 AND 2),
     -- Who blacklisted the card. CustomerID or 0 for system
-    -- "BlacklistedBy" INTEGER,
+    -- "BlacklistedBy" VARCHAR(50) DEFAULT 'System',
     "BlacklistedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),  -- When the card was blacklisted
     "Notes" TEXT,                    -- Any additional notes
     
@@ -44,11 +44,8 @@ CREATE OR REPLACE FUNCTION update_user_card_blacklist_status()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Update the UserCard table to mark the card as blacklisted
-    -- and set the BlacklistedAt to the current timestamp
     UPDATE "UserCard"
-    SET 
-        "IsBlacklisted" = TRUE,
-        "BlacklistedAt" = NEW."BlacklistedAt"
+    SET "IsBlacklisted" = TRUE
     WHERE "CardID" = NEW."OriginalCardID";
     
     RETURN NEW;

@@ -14,6 +14,10 @@ CREATE TABLE "Customers" (
     "VerifiedUser" BOOLEAN NOT NULL DEFAULT TRUE,
     "EmailLastUpdatedAt" TIMESTAMPTZ,
     "PasswordHash" VARCHAR(200) NOT NULL,
-    "PasswordChangedAt" TIMESTAMPTZ DEFAULT NOW(),
-    "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
+    "PasswordChangedAt" TIMESTAMPTZ,
+    "LastLoginAt" TIMESTAMPTZ,
+    "FailedLoginAttempts" INTEGER DEFAULT 0,
+    "AccountLockedUntil" TIMESTAMPTZ,
+    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMPTZ
 );

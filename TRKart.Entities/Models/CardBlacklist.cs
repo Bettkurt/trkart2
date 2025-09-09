@@ -54,6 +54,9 @@ namespace TRKart.Entities.Models
         [EnumDataType(typeof(CardBlacklistReason), ErrorMessage = "Invalid blacklist reason")]
         public CardBlacklistReason Reason { get; set; }
 
+        // [Column("BlacklistedBy")]
+        // public string BlacklistedBy { get; set; } = "System";
+
         [Required]
         [Column("BlacklistedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]

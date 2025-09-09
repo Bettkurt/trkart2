@@ -7,6 +7,7 @@ CREATE TABLE "PasswordHistory" (
     "CustomerID" INTEGER NOT NULL,
     "PasswordHash" VARCHAR(200) NOT NULL,
     "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "CreatedBy" VARCHAR(50) DEFAULT 'System',
 
     CONSTRAINT "FK_PasswordHistory_Customers_CustomerID" 
         FOREIGN KEY ("CustomerID") 
@@ -44,22 +45,3 @@ CREATE TRIGGER trg_manage_password_history
 BEFORE INSERT ON "PasswordHistory"
 FOR EACH ROW
 EXECUTE FUNCTION manage_password_history();
-
--------------------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION update_customer_password_changed_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE "Customers"
-    SET "PasswordChangedAt" = NEW."CreatedAt"
-    WHERE "CustomerID" = NEW."CustomerID";
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the trigger
-CREATE OR REPLACE TRIGGER trg_update_customer_password_changed_at
-AFTER INSERT ON "PasswordHistory" -- After insert. So, we only update it for actual password changes
-FOR EACH ROW
-EXECUTE FUNCTION update_customer_password_changed_at();

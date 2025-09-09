@@ -61,7 +61,7 @@ namespace TRKart.Entities.Models
         //  + INTERVAL '5 years' 
         //  + INTERVAL '1 month - 1 day')::DATE
         [Column("CardExpirationDate", TypeName = "DATE")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        //a [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime CardExpirationDate { get; set; }
 
         // Soft delete fields

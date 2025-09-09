@@ -1,4 +1,4 @@
--- This is the SQL code for the TRKart database.
+-- This is the SQL code for the entire TRKart database.
 
 -------------------------------------------------------------------------------------------
 -------------------------------------Customers---------------------------------------------
@@ -16,8 +16,12 @@ CREATE TABLE "Customers" (
     "VerifiedUser" BOOLEAN NOT NULL DEFAULT TRUE,
     "EmailLastUpdatedAt" TIMESTAMPTZ,
     "PasswordHash" VARCHAR(200) NOT NULL,
-    "PasswordChangedAt" TIMESTAMPTZ DEFAULT NOW(),
-    "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
+    "PasswordChangedAt" TIMESTAMPTZ,
+    "LastLoginAt" TIMESTAMPTZ,
+    "FailedLoginAttempts" INTEGER DEFAULT 0,
+    "AccountLockedUntil" TIMESTAMPTZ,
+    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMPTZ
 );
 
 -------------------------------------------------------------------------------------------
@@ -29,6 +33,7 @@ CREATE TABLE "PasswordHistory" (
     "CustomerID" INTEGER NOT NULL,
     "PasswordHash" VARCHAR(200) NOT NULL,
     "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "CreatedBy" VARCHAR(50) DEFAULT 'System',
 
     CONSTRAINT "FK_PasswordHistory_Customers_CustomerID" 
         FOREIGN KEY ("CustomerID") 
@@ -72,8 +77,7 @@ EXECUTE FUNCTION manage_password_history();
 -------------------------------------------------------------------------------------------
 
 -- Create the SessionToken table
-CREATE TABLE "SessionToken"
-(
+CREATE TABLE "SessionToken" (
     "SessionID" SERIAL PRIMARY KEY,
     "CustomerID" INTEGER NOT NULL,
     "AccessToken" VARCHAR(500) UNIQUE,
@@ -81,11 +85,20 @@ CREATE TABLE "SessionToken"
     "AccessTokenExpiration" TIMESTAMPTZ,
     "RefreshTokenExpiration" TIMESTAMPTZ NOT NULL,
     "RefreshTokenCreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "LastUsedAt" TIMESTAMPTZ,
+    "UsageCount" INTEGER DEFAULT 0,
     "IsRevoked" BOOLEAN NOT NULL DEFAULT FALSE,
+    "RevokedAt" TIMESTAMPTZ,
+    "RevokeReason" VARCHAR(200),
     "DeviceInfo" TEXT,
+    "DeviceFingerprint" VARCHAR(255),
     "IPAddress" TEXT,
-    
-    -- Foreign key constraint
+    "UserAgent" TEXT,
+    "IsSuspicious" BOOLEAN DEFAULT FALSE,
+    "SuspiciousReason" VARCHAR(200),
+    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMPTZ DEFAULT NOW(),
+
     CONSTRAINT "FK_SessionToken_Customers_CustomerID" 
         FOREIGN KEY ("CustomerID") 
         REFERENCES "Customers"("CustomerID")
@@ -101,8 +114,12 @@ CREATE TABLE "TokenBlacklist" (
     "SessionID" INTEGER NOT NULL,
     "RefreshToken" VARCHAR(500) NOT NULL,
     "BlacklistedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "Reason" TEXT,
+    "BlacklistedBy" VARCHAR(50) DEFAULT 'System' CHECK ("BlacklistedBy" IN ('System', 'Customer', 'Admin')),
+    "Reason" VARCHAR(200) NOT NULL,
     "IPAddress" TEXT,
+    "UserAgent" TEXT,
+    "SuspiciousActivity" BOOLEAN DEFAULT FALSE,
+    "ComplianceRequired" BOOLEAN DEFAULT FALSE,
 
     CONSTRAINT "FK_TokenBlacklist_SessionToken_SessionID"
         FOREIGN KEY ("SessionID") 
@@ -110,25 +127,179 @@ CREATE TABLE "TokenBlacklist" (
         ON DELETE CASCADE
 );
 
----------------------Update IsRevoked in SessionToken When Blacklisted---------------------
+-------------------------------------------------------------------------------------------
+------------------------------------AuditEvents--------------------------------------------
+-------------------------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION update_sessiontoken_isrevoked()
+CREATE TABLE "AuditEvents" (
+    "AuditID" SERIAL PRIMARY KEY,
+    "CustomerID" INTEGER,
+    "EventType" VARCHAR(50) NOT NULL,
+    "EventSubType" VARCHAR(50),
+    "EventDetails" TEXT,
+    "IPAddress" TEXT,
+    "UserAgent" TEXT,
+    "SessionID" INTEGER,
+    "RiskLevel" VARCHAR(20) DEFAULT 'LOW',
+    "ComplianceRequired" BOOLEAN DEFAULT FALSE,
+    "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT "FK_AuditEvents_Customers_CustomerID"
+        FOREIGN KEY ("CustomerID") 
+        REFERENCES "Customers"("CustomerID")
+        ON DELETE CASCADE,
+    
+    CONSTRAINT "FK_AuditEvents_SessionToken_SessionID"
+        FOREIGN KEY ("SessionID") 
+        REFERENCES "SessionToken"("SessionID")
+        ON DELETE CASCADE
+);
+
+-------------------------------------------------------------------------------------------
+-----------------------------------SecurityEvents------------------------------------------
+-------------------------------------------------------------------------------------------
+
+CREATE TABLE "SecurityEvents" (
+    "SecurityEventID" SERIAL PRIMARY KEY,
+    "CustomerID" INTEGER,
+    "Email" VARCHAR(100),
+    "EventType" VARCHAR(50) NOT NULL,
+    "EventSeverity" VARCHAR(20) NOT NULL,
+    "EventDetails" TEXT,
+    "IPAddress" TEXT,
+    "UserAgent" TEXT,
+    "DeviceFingerprint" VARCHAR(255),
+    "GeographicLocation" VARCHAR(100),
+    "IsResolved" BOOLEAN DEFAULT FALSE,
+    "ResolvedAt" TIMESTAMPTZ,
+    "ResolvedBy" VARCHAR(50),
+    "ResolutionNotes" TEXT,
+    "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT "FK_SecurityEvents_Customers_CustomerID"
+        FOREIGN KEY ("CustomerID") 
+        REFERENCES "Customers"("CustomerID")
+        ON DELETE CASCADE
+);
+
+-------------------------------------------------------------------------------------------
+
+-- Function to update UpdatedAt timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Update the IsRevoked flag in the SessionToken table
-    UPDATE "SessionToken"
-    SET "IsRevoked" = TRUE
-    WHERE "SessionID" = NEW."SessionID";
-    
+    NEW."UpdatedAt" = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create the trigger
-CREATE OR REPLACE TRIGGER trg_update_sessiontoken_isrevoked
-AFTER INSERT ON "TokenBlacklist"
-FOR EACH ROW
-EXECUTE FUNCTION update_sessiontoken_isrevoked();
+-- Function to update LastUsedAt in SessionToken
+CREATE OR REPLACE FUNCTION update_session_last_used()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW."LastUsedAt" = NOW();
+    NEW."UsageCount" = COALESCE(NEW."UsageCount", 0) + 1;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-------------------------------------------------------------------------------------------
+
+-- Trigger for UpdatedAt columns
+CREATE TRIGGER "trg_update_customers_updated_at"
+    BEFORE UPDATE ON "Customers"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER "trg_update_sessiontoken_updated_at"
+    BEFORE UPDATE ON "SessionToken"
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for SessionToken usage tracking
+CREATE TRIGGER "trg_update_sessiontoken_usage"
+    BEFORE UPDATE ON "SessionToken"
+    FOR EACH ROW EXECUTE FUNCTION update_session_last_used();
+
+-------------------------------------------------------------------------------------------
+-------------------------------------RateLimiting------------------------------------------
+-------------------------------------------------------------------------------------------
+
+CREATE TABLE "RateLimiting" (
+    "RateLimitID" SERIAL PRIMARY KEY,
+    "Identifier" VARCHAR(255) NOT NULL,                    -- IP address, user ID, or other identifier
+    "IdentifierType" VARCHAR(20) NOT NULL,                 -- IP, USER_ID, DEVICE_ID, etc.
+    "Endpoint" VARCHAR(100) NOT NULL,                      -- API endpoint being rate limited
+    "CustomerID" INTEGER,                                  -- Customer ID (optional for IP-based rate limiting)
+    "RequestCount" INTEGER NOT NULL DEFAULT 1,             -- Current request count in this cycle
+    "FirstRequestAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),   -- When first request in this cycle was made
+    "LastRequestAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),    -- When last request in this cycle was made
+    "IsBlocked" BOOLEAN NOT NULL DEFAULT false,            -- Whether this identifier is currently blocked
+    "BlockedUntil" TIMESTAMPTZ,                            -- When the block expires
+    "BlockReason" VARCHAR(500),                            -- Reason for the block
+    "ViolationCount" INTEGER DEFAULT 0,                    -- Number of times rate limit was hit
+    "FirstViolationAt" TIMESTAMPTZ,                        -- When first violation occurred
+    "LastViolationAt" TIMESTAMPTZ,                         -- When last violation occurred
+    "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    CONSTRAINT "FK_RateLimiting_Customers" 
+    FOREIGN KEY ("CustomerID") REFERENCES "Customers"("CustomerID") 
+    ON DELETE CASCADE
+);
+
+-------------------------------------------------------------------------------------------
+
+-- Create trigger function for automatic UpdatedAt timestamp
+CREATE OR REPLACE FUNCTION update_rate_limiting_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW."UpdatedAt" = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger
+CREATE TRIGGER trg_rate_limiting_updated_at
+    BEFORE UPDATE ON "RateLimiting"
+    FOR EACH ROW
+    EXECUTE FUNCTION update_rate_limiting_updated_at();
+
+-------------------------------------------------------------------------------------------
+-------------------------------------Views-------------------------------------------------
+-------------------------------------------------------------------------------------------
+
+-- Active sessions view
+CREATE VIEW "ActiveSessions" AS
+SELECT 
+    s.*,
+    c."Email",
+    c."FullName"
+FROM "SessionToken" s
+JOIN "Customers" c ON s."CustomerID" = c."CustomerID"
+WHERE s."IsRevoked" = FALSE 
+  AND s."RefreshTokenExpiration" > NOW()
+  AND s."AccessTokenExpiration" > NOW();
+
+-- Suspicious sessions view
+CREATE VIEW "SuspiciousSessions" AS
+SELECT 
+    s.*,
+    c."Email",
+    c."FullName"
+FROM "SessionToken" s
+JOIN "Customers" c ON s."CustomerID" = c."CustomerID"
+WHERE s."IsSuspicious" = TRUE 
+  AND s."IsRevoked" = FALSE;
+
+-- Compliance audit view
+CREATE VIEW "ComplianceAudit" AS
+SELECT 
+    a.*,
+    c."Email",
+    c."FullName"
+FROM "AuditEvents" a
+LEFT JOIN "Customers" c ON a."CustomerID" = c."CustomerID"
+WHERE a."ComplianceRequired" = TRUE
+ORDER BY a."CreatedAt" DESC;
 
 -------------------------------------------------------------------------------------------
 -------------------------------------UserCard----------------------------------------------
@@ -288,7 +459,7 @@ EXECUTE FUNCTION update_usercard_lastupdate();
 CREATE TABLE "CardLimits" (
     "LimitID" SERIAL PRIMARY KEY,
     "CardID" INT NOT NULL,
-    -- Default 1. Lowest tier, standart card has 20k limit. 
+    -- Defaulted 1. Lowest tier, standart card has 20k limit. 
     -- So, if we see 1 as limit, we know something with CardType went wrong
     "PayLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "PayMaxLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
@@ -296,7 +467,7 @@ CREATE TABLE "CardLimits" (
     "TransferLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "TransferMaxLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "TransferLimitUpdatedAt" TIMESTAMPTZ DEFAULT NOW(),
-    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT "FK_CardLimits_UserCard_CardID"
         FOREIGN KEY ("CardID") 
@@ -464,12 +635,12 @@ CREATE TABLE "CardBlacklist" (
     "CardExpirationDate" DATE NOT NULL,  -- Original expiration date
     "OriginalCreatedAt" TIMESTAMPTZ NOT NULL,   -- When the card was originally created
     -- 0: Deactivated, 1: Expired, 2: Reported Lost for more than 7 days
-    -- TODO: Add a function/trigger to work 1 week after a card is added to this list with Reason 2
+    -- TODO: Add a function/trigger to work 1 week or 2 weeks after a card is added to this list with Reason 2
     -- and change it to Reason 0 and change CardStatus to 0 (Deactivated) in UserCard table.
     -- It will also update the CardUpdates table with the new status, automatically.
     "Reason" INT NOT NULL CHECK ("Reason" BETWEEN 0 AND 2),
     -- Who blacklisted the card. CustomerID or 0 for system
-    -- "BlacklistedBy" INTEGER,
+    -- "BlacklistedBy" VARCHAR(50) DEFAULT 'System',
     "BlacklistedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),  -- When the card was blacklisted
     "Notes" TEXT,                    -- Any additional notes
     
@@ -514,7 +685,7 @@ CREATE TABLE "Transaction" (
     "CardID" INT NOT NULL,
     "TransferTransactionID" INT,
     "Amount" DECIMAL(18, 2) NOT NULL,
-    "FeeAmount" DECIMAL(18, 2) NULL DEFAULT 0.00,
+    "FeeAmount" DECIMAL(18, 2) DEFAULT 0.00,
     -- 0: Load, 1: TopUp, 2: Refund, 3: TransferIn, 4: TransferOut, 5: Pay, 6: SystemTransferIn, 7: SystemTransferOut
     "TransactionType" INT NOT NULL CHECK ("TransactionType" 
         BETWEEN 0 AND 7),
@@ -711,54 +882,80 @@ BEFORE INSERT ON "Transaction"
 FOR EACH ROW
 -- New entries for Transaction table are always created with default status 'Pending'
 -- So, we make sure we are just processing brand-new transactions
-WHEN (NEW."TransactionStatus" = 'Pending')
+-- Since we check for TransactionStatus = 'Pending' in the trigger, we don't need to check it here
+-- This way, we can check for entries that are not created properly in the Transaction table
+-- WHEN (NEW."TransactionStatus" = 'Pending')
 EXECUTE FUNCTION process_transaction_trigger();
 
 -------------------------------------------------------------------------------------------
 ---------------------------------------Indexes---------------------------------------------
 -------------------------------------------------------------------------------------------
 
--- Indexes for faster queries
-CREATE INDEX IDX_Customer_CustomerNumber ON "Customers"("CustomerNumber");
-CREATE INDEX IDX_Customer_Email ON "Customers"("Email");
-CREATE INDEX IDX_Customer_FullName ON "Customers"("FullName");
-CREATE INDEX IDX_Customer_UpdatedAt ON "Customers"("EmailLastUpdatedAt", "PasswordChangedAt");
+-- Customers indexes
+CREATE INDEX  "IDX_Customer_CustomerNumber" ON "Customers"("CustomerNumber");
+CREATE INDEX  "IDX_Customer_Email" ON "Customers"("Email");
+CREATE INDEX  "IDX_Customer_FullName" ON "Customers"("FullName");
+CREATE INDEX  "IDX_Customer_UpdatedAt" ON "Customers"("EmailLastUpdatedAt", "PasswordChangedAt");
 
-CREATE INDEX IDX_PasswordHistory_CustomerID ON "PasswordHistory"("CustomerID");
-CREATE INDEX IDX_PasswordHistory_CreatedAt ON "PasswordHistory"("CreatedAt");
+-- PasswordHistory indexes
+CREATE INDEX  "IDX_PasswordHistory_CustomerID" ON "PasswordHistory"("CustomerID");
+CREATE INDEX  "IDX_PasswordHistory_CreatedAt" ON "PasswordHistory"("CreatedAt");
 
-CREATE INDEX IDX_SessionToken_CustomerID ON "SessionToken" ("CustomerID");
-CREATE INDEX IDX_SessionToken_RefreshToken ON "SessionToken" ("RefreshToken");
-CREATE INDEX IDX_SessionToken_AccessToken ON "SessionToken" ("AccessToken");
-CREATE INDEX IDX_SessionToken_Expirations ON "SessionToken" ("AccessTokenExpiration", "RefreshTokenExpiration");
-CREATE INDEX IDX_SessionToken_IPAddress ON "SessionToken" ("IPAddress");
+-- SessionToken indexes
+CREATE INDEX  "IDX_SessionToken_CustomerID" ON "SessionToken" ("CustomerID");
+CREATE INDEX  "IDX_SessionToken_RefreshToken" ON "SessionToken" ("RefreshToken");
+CREATE INDEX  "IDX_SessionToken_AccessToken" ON "SessionToken" ("AccessToken");
+CREATE INDEX  "IDX_SessionToken_Validation" ON "SessionToken" ("RefreshToken", "RefreshTokenExpiration", "IsRevoked");
+CREATE INDEX  "IDX_SessionToken_AccessValidation" ON "SessionToken" ("AccessToken", "AccessTokenExpiration", "IsRevoked");
+CREATE INDEX  "IDX_SessionToken_CustomerActive" ON "SessionToken" ("CustomerID", "IsRevoked", "RefreshTokenExpiration");
+CREATE INDEX  "IDX_SessionToken_LastUsed" ON "SessionToken" ("LastUsedAt");
+CREATE INDEX  "IDX_SessionToken_Suspicious" ON "SessionToken" ("IsSuspicious", "CreatedAt");
 
-CREATE INDEX IDX_TokenBlacklist_SessionID ON "TokenBlacklist" ("SessionID");
-CREATE INDEX IDX_TokenBlacklist_RefreshToken ON "TokenBlacklist"("RefreshToken");
-CREATE INDEX IDX_TokenBlacklist_BlacklistedAt ON "TokenBlacklist"("BlacklistedAt");
-CREATE INDEX IDX_TokenBlacklist_IPAddress ON "TokenBlacklist"("IPAddress");
+-- TokenBlacklist indexes
+CREATE INDEX  "IDX_TokenBlacklist_RefreshToken" ON "TokenBlacklist" ("RefreshToken");
+CREATE INDEX  "IDX_TokenBlacklist_SessionID" ON "TokenBlacklist" ("SessionID");
+CREATE INDEX  "IDX_TokenBlacklist_BlacklistedAt" ON "TokenBlacklist" ("BlacklistedAt");
+CREATE INDEX  "IDX_TokenBlacklist_Suspicious" ON "TokenBlacklist" ("SuspiciousActivity", "BlacklistedAt");
 
-CREATE INDEX IDX_UserCard_CustomerID ON "UserCard"("CustomerID");
-CREATE INDEX IDX_UserCard_CardNumber ON "UserCard"("CardNumber");
-CREATE INDEX IDX_UserCard_Balance ON "UserCard"("Balance");
-CREATE INDEX IDX_UserCard_CreatedAt ON "UserCard"("CreatedAt");
-CREATE INDEX IDX_UserCard_ExpirationDate ON "UserCard"("CardExpirationDate");
-CREATE INDEX IDX_UserCard_LastUpdate ON "UserCard"("LastUpdate");
+-- Audit and Security indexes
+CREATE INDEX  "IDX_AuditEvents_CustomerID" ON "AuditEvents" ("CustomerID", "CreatedAt");
+CREATE INDEX  "IDX_AuditEvents_EventType" ON "AuditEvents" ("EventType", "CreatedAt");
+CREATE INDEX  "IDX_AuditEvents_Compliance" ON "AuditEvents" ("ComplianceRequired", "CreatedAt");
 
-CREATE INDEX IDX_CardUpdates_CardID ON "CardUpdates"("CardID");
-CREATE INDEX IDX_CardUpdates_UpdatedAt ON "CardUpdates"("StatusUpdatedAt", "TypeUpdatedAt");
+CREATE INDEX  "IDX_SecurityEvents_CustomerID" ON "SecurityEvents" ("CustomerID", "CreatedAt");
+CREATE INDEX  "IDX_SecurityEvents_Severity" ON "SecurityEvents" ("EventSeverity", "CreatedAt");
+CREATE INDEX  "IDX_SecurityEvents_Unresolved" ON "SecurityEvents" ("IsResolved", "CreatedAt");
 
-CREATE INDEX IDX_CardBlacklist_CustomerID ON "CardBlacklist" ("CustomerID");
-CREATE INDEX IDX_CardBlacklist_OriginalCardID ON "CardBlacklist" ("OriginalCardID");
-CREATE INDEX IDX_CardBlacklist_CardNumber ON "CardBlacklist" ("CardNumber");
-CREATE INDEX IDX_CardBlacklist_LeftOverBalance ON "CardBlacklist" ("LeftOverBalance");
-CREATE INDEX IDX_CardBlacklist_BlacklistedAt ON "CardBlacklist" ("BlacklistedAt");
+-- Rate limiting indexes
+CREATE INDEX  "IDX_RateLimiting_Identifier" ON "RateLimiting" ("Identifier", "IdentifierType");
+CREATE INDEX  "IDX_RateLimiting_Blocked" ON "RateLimiting" ("IsBlocked", "BlockedUntil");
 
-CREATE INDEX IDX_CardLimits_CardID ON "CardLimits" ("CardID");
-CREATE INDEX IDX_CardLimits_Limit ON "CardLimits" ("PayLimit", "TransferLimit");
-CREATE INDEX IDX_CardLimits_LimitUpdateddAt ON "CardLimits" ("PayLimitUpdatedAt", "TransferLimitUpdatedAt");
+-- UserCard indexes
+CREATE INDEX  "IDX_UserCard_CustomerID" ON "UserCard"("CustomerID");
+CREATE INDEX  "IDX_UserCard_CardNumber" ON "UserCard"("CardNumber");
+CREATE INDEX  "IDX_UserCard_Balance" ON "UserCard"("Balance");
+CREATE INDEX  "IDX_UserCard_CreatedAt" ON "UserCard"("CreatedAt");
+CREATE INDEX  "IDX_UserCard_ExpirationDate" ON "UserCard"("CardExpirationDate");
+CREATE INDEX  "IDX_UserCard_LastUpdate" ON "UserCard"("LastUpdate");
 
-CREATE INDEX IDX_Transaction_CardID ON "Transaction"("CardID");
-CREATE INDEX IDX_Transaction_TransferTransactionID ON "Transaction"("TransferTransactionID");
-CREATE INDEX IDX_Transaction_Amount ON "Transaction"("Amount");
-CREATE INDEX IDX_Transaction_TransactionDate ON "Transaction"("TransactionDate");
+-- CardUpdates indexes
+CREATE INDEX  "IDX_CardUpdates_CardID" ON "CardUpdates"("CardID");
+CREATE INDEX  "IDX_CardUpdates_UpdatedAt" ON "CardUpdates"("StatusUpdatedAt", "TypeUpdatedAt");
+
+-- CardBlacklist indexes
+CREATE INDEX  "IDX_CardBlacklist_CustomerID" ON "CardBlacklist" ("CustomerID");
+CREATE INDEX  "IDX_CardBlacklist_OriginalCardID" ON "CardBlacklist" ("OriginalCardID");
+CREATE INDEX  "IDX_CardBlacklist_CardNumber" ON "CardBlacklist" ("CardNumber");
+CREATE INDEX  "IDX_CardBlacklist_LeftOverBalance" ON "CardBlacklist" ("LeftOverBalance");
+CREATE INDEX  "IDX_CardBlacklist_BlacklistedAt" ON "CardBlacklist" ("BlacklistedAt");
+
+-- CardLimits indexes
+CREATE INDEX  "IDX_CardLimits_CardID" ON "CardLimits" ("CardID");
+CREATE INDEX  "IDX_CardLimits_Limit" ON "CardLimits" ("PayLimit", "TransferLimit");
+CREATE INDEX  "IDX_CardLimits_LimitUpdateddAt" ON "CardLimits" ("PayLimitUpdatedAt", "TransferLimitUpdatedAt");
+
+-- Transaction indexes
+CREATE INDEX  "IDX_Transaction_CardID" ON "Transaction"("CardID");
+CREATE INDEX  "IDX_Transaction_TransferTransactionID" ON "Transaction"("TransferTransactionID");
+CREATE INDEX  "IDX_Transaction_Amount" ON "Transaction"("Amount");
+CREATE INDEX  "IDX_Transaction_TransactionDate" ON "Transaction"("TransactionDate");

@@ -7,7 +7,7 @@ CREATE TABLE "Transaction" (
     "CardID" INT NOT NULL,
     "TransferTransactionID" INT,
     "Amount" DECIMAL(18, 2) NOT NULL,
-    "FeeAmount" DECIMAL(18, 2) NULL DEFAULT 0.00,
+    "FeeAmount" DECIMAL(18, 2) DEFAULT 0.00,
     -- 0: Load, 1: TopUp, 2: Refund, 3: TransferIn, 4: TransferOut, 5: Pay, 6: SystemTransferIn, 7: SystemTransferOut
     "TransactionType" INT NOT NULL CHECK ("TransactionType" 
         BETWEEN 0 AND 7),
@@ -204,5 +204,7 @@ BEFORE INSERT ON "Transaction"
 FOR EACH ROW
 -- New entries for Transaction table are always created with default status 'Pending'
 -- So, we make sure we are just processing brand-new transactions
-WHEN (NEW."TransactionStatus" = 'Pending')
+-- Since we check for TransactionStatus = 'Pending' in the trigger, we don't need to check it here
+-- This way, we can check for entries that are not created properly in the Transaction table
+-- WHEN (NEW."TransactionStatus" = 'Pending')
 EXECUTE FUNCTION process_transaction_trigger();

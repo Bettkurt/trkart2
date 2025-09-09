@@ -94,7 +94,10 @@ namespace TRKart.Business.Services
                 // RefreshTokenCreatedAt = DateTime.UtcNow, // Set by DB
                 IsRevoked = false,
                 DeviceInfo = deviceInfo,
-                IPAddress = ipAddress
+                IPAddress = ipAddress,
+                // Since we auto-login right after registration, start with 1 for the first login
+                UsageCount = 1, 
+                LastUsedAt = DateTimeOffset.UtcNow
             };
 
             await _context.SessionToken.AddAsync(session);
@@ -201,6 +204,10 @@ namespace TRKart.Business.Services
             {
                 session.IPAddress = ipAddress;
             }
+
+            // Increment usage count and update last used time
+            session.UsageCount++;
+            session.LastUsedAt = DateTimeOffset.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -376,6 +383,7 @@ namespace TRKart.Business.Services
             await _context.Customers.AddAsync(newCustomer);
             await _context.SaveChangesAsync();
             _logger.LogInformation("User registered successfully with email: {Email}", dto.Email);
+
             return true;
         }
 

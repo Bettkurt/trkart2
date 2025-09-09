@@ -28,7 +28,7 @@ namespace TRKart.Entities.Models
         public decimal PayMaxLimit { get; set; }
 
         [Column("PayLimitUpdatedAt")]
-        public DateTimeOffset PayLimitUpdatedAt { get; set; }
+        public DateTimeOffset? PayLimitUpdatedAt { get; set; } = null!;
 
         [Required]
         [Column("TransferLimit", TypeName = "DECIMAL(18, 2)")]
@@ -39,7 +39,7 @@ namespace TRKart.Entities.Models
         public decimal TransferMaxLimit { get; set; }
 
         [Column("TransferLimitUpdatedAt")]
-        public DateTimeOffset TransferLimitUpdatedAt { get; set; }
+        public DateTimeOffset? TransferLimitUpdatedAt { get; set; } = null!;
 
         [Required]
         [Column("CreatedAt")]

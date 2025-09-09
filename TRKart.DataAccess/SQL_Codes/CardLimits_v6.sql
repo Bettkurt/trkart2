@@ -5,15 +5,15 @@
 CREATE TABLE "CardLimits" (
     "LimitID" SERIAL PRIMARY KEY,
     "CardID" INT NOT NULL,
-    -- Default 1. Lowest tier, standart card has 20k limit. 
-    -- So, if we see 10k limit, we know something with CardType went wrong
+    -- Defaulted 1. Lowest tier, standart card has 20k limit. 
+    -- So, if we see 1 as limit, we know something with CardType went wrong
     "PayLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "PayMaxLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "PayLimitUpdatedAt" TIMESTAMPTZ DEFAULT NOW(),
     "TransferLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "TransferMaxLimit" DECIMAL(18, 2) NOT NULL DEFAULT 1.00,
     "TransferLimitUpdatedAt" TIMESTAMPTZ DEFAULT NOW(),
-    "CreatedAt" TIMESTAMPTZ DEFAULT NOW(),
+    "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT "FK_CardLimits_UserCard_CardID"
         FOREIGN KEY ("CardID") 
@@ -36,8 +36,7 @@ BEGIN
         "PayLimitUpdatedAt",
         "TransferLimit",
         "TransferMaxLimit",
-        "TransferLimitUpdatedAt",
-        "CreatedAt"
+        "TransferLimitUpdatedAt"
     ) VALUES (
         NEW."CardID",
 

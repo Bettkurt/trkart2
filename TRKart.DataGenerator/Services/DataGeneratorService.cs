@@ -149,7 +149,7 @@ namespace TRKart.DataGenerator.Services
                     FullName = _faker.Name.FullName(),
                     Email = _faker.Internet.Email(),
                     VerifiedUser = _random.Next(100) < 95, // 95% verified
-                    EmailLastUpdatedAt = DateTime.UtcNow,
+                    EmailLastUpdatedAt = DateTimeOffset.UtcNow,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("1234")
                 };
                 customers.Add(customer);
@@ -175,17 +175,34 @@ namespace TRKart.DataGenerator.Services
         private async Task GenerateUserCardsAsync(bool updateStatuses = true)
         {
             Console.WriteLine("Generating user cards...");
-            var customers = await _context.Customers.ToListAsync();
+            // Only get customers that don't have any cards yet
+            var customersWithoutCards = await _context.Customers
+                .Where(c => !_context.UserCard.Any(uc => uc.CustomerID == c.CustomerID))
+                .ToListAsync();
+            
             var cards = new List<UserCard>();
             int totalCards = 0;
 
-            foreach (var customer in customers)
+            foreach (var customer in customersWithoutCards)
             {
                 int cardCount = _random.Next(1, _settings.CardsPerCustomer + 1);
 
                 for (int i = 0; i < cardCount; i++)
                 {
                     var cardNumber = await CardNumberHelper.GenerateCardNumberAsync(_uniqueNumberChecker);
+                    
+                    // Generate varied expiration dates: 20% expired, 80% normal
+                    DateTime expirationDate;
+                    var expirationType = _random.Next(100);
+                    if (expirationType < 20) // 20% expired cards
+                    {
+                        expirationDate = _faker.Date.Between(DateTime.UtcNow.AddYears(-2), DateTime.UtcNow.AddDays(-1));
+                    }
+                    else // 80% normal expiration (1-5 years)
+                    {
+                        expirationDate = _faker.Date.Between(DateTime.UtcNow.AddYears(1), DateTime.UtcNow.AddYears(5));
+                    }
+                    
                     var card = new UserCard
                     {
                         CustomerID = customer.CustomerID,
@@ -194,7 +211,7 @@ namespace TRKart.DataGenerator.Services
                         // All cards start as Inactive (3) - status updates will be handled separately
                         CardStatus = GetInitialCardStatus(updateStatuses, _random),
                         CardType = (CardType)_random.Next(3), // 0: Standard, 1: Gold, 2: Platinum
-                        CardExpirationDate = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(24), DateTimeKind.Utc),
+                        CardExpirationDate = expirationDate, // Set explicit expiration date
                     };
                     cards.Add(card);
                     totalCards++;
@@ -256,6 +273,9 @@ namespace TRKart.DataGenerator.Services
                 await _context.SaveChangesAsync();
                 _context.ChangeTracker.Clear();
             }
+            
+            // Generate some denied transactions for testing
+            await GenerateDeniedTransactionsAsync();
 
             // Now generate some random transactions and transfers
             totalTransactions = await GenerateRandomTransactionsAndTransfersAsync(totalTransactions);
@@ -321,9 +341,7 @@ namespace TRKart.DataGenerator.Services
                     CardID = card.CardID,
                     Amount = _random.Next(10, 1000),
                     TransactionType = transactionType,
-                    TransactionDate = DateTime.SpecifyKind(
-                        _faker.Date.Between(_settings.StartDate, _settings.EndDate),
-                        DateTimeKind.Utc),
+                    TransactionDate = new DateTimeOffset(_faker.Date.Between(_settings.StartDate.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
                     Description = $"{transactionType} transaction"
                 };
                 
@@ -361,9 +379,7 @@ namespace TRKart.DataGenerator.Services
                 Amount = amount,
                 TransactionType = TransactionType.Load,
                 Description = isInitialLoad ? "Initial card load" : "Card load",
-                TransactionDate = DateTime.SpecifyKind(
-                    _faker.Date.Between(_settings.StartDate, _settings.EndDate), 
-                    DateTimeKind.Utc)
+                TransactionDate = new DateTimeOffset(_faker.Date.Between(_settings.StartDate.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero)
             };
         }
         
@@ -404,9 +420,7 @@ namespace TRKart.DataGenerator.Services
                         CardID = sourceCard.CardID,
                         Amount = amount,
                         TransactionType = TransactionType.TransferOut,
-                        TransactionDate = DateTime.SpecifyKind(
-                            _faker.Date.Between(maxCreatedAt.DateTime, _settings.EndDate), 
-                            DateTimeKind.Utc),
+                        TransactionDate = new DateTimeOffset(_faker.Date.Between(maxCreatedAt.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
                         Description = $"Transfer to Card {targetCard.CardNumber}"
                     };
 
@@ -416,9 +430,7 @@ namespace TRKart.DataGenerator.Services
                         CardID = targetCard.CardID,
                         Amount = amount, // Positive amount
                         TransactionType = TransactionType.TransferIn,
-                        TransactionDate = DateTime.SpecifyKind(
-                            _faker.Date.Between(maxCreatedAt.DateTime, _settings.EndDate), 
-                            DateTimeKind.Utc),
+                        TransactionDate = new DateTimeOffset(_faker.Date.Between(maxCreatedAt.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
                         Description = $"Transfer from Card {sourceCard.CardNumber}"
                     };
 
@@ -454,7 +466,7 @@ namespace TRKart.DataGenerator.Services
             var customers = await _context.Customers.ToListAsync();
             var sessions = new List<SessionToken>();
             int totalSessions = 0;
-            var currentDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            var currentDate = DateTimeOffset.UtcNow;
 
             foreach (var customer in customers)
             {
@@ -462,15 +474,15 @@ namespace TRKart.DataGenerator.Services
                 
                 for (int i = 0; i < sessionCount; i++)
                 {
-                    var sessionDate = DateTime.SpecifyKind(_faker.Date.Between(currentDate.AddMonths(-4), currentDate), DateTimeKind.Utc);
-                    var expiryDate = DateTime.SpecifyKind(sessionDate.AddDays(7), DateTimeKind.Utc);
+                    var sessionDate = new DateTimeOffset(_faker.Date.Between(currentDate.AddMonths(-4).DateTime, currentDate.DateTime), TimeSpan.Zero);
+                    var expiryDate = sessionDate.AddDays(7);
                     var session = new SessionToken
                     {
                         CustomerID = customer.CustomerID,
                         AccessToken = Guid.NewGuid().ToString(),
                         RefreshToken = Guid.NewGuid().ToString(),
-                        AccessTokenExpiration = DateTime.SpecifyKind(expiryDate.AddDays(_random.Next(1, 8)), DateTimeKind.Utc),
-                        RefreshTokenExpiration = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc),
+                        AccessTokenExpiration = expiryDate.AddDays(_random.Next(1, 8)),
+                        RefreshTokenExpiration = expiryDate,
                        // IsRevoked = !isActive,
                        // DeviceInfo = _random.Next(100) < 80 ? _faker.System.Device() : null,
                         IPAddress = _random.Next(100) < 80 ? _faker.Internet.Ip() : null
@@ -496,6 +508,72 @@ namespace TRKart.DataGenerator.Services
 
             Console.WriteLine($"Generated {totalSessions} sessions");
         }
+        
+        private async Task GenerateDeniedTransactionsAsync()
+        {
+            Console.WriteLine("Generating denied transactions for testing...");
+            var cards = await _context.UserCard.ToListAsync();
+            var deniedTransactions = new List<Transaction>();
+            
+            // Generate 5-10 denied transactions
+            int deniedCount = _random.Next(5, 11);
+            
+            for (int i = 0; i < deniedCount; i++)
+            {
+                var card = cards[_random.Next(cards.Count)];
+                
+                // Create transactions that would be denied:
+                // 1. Transactions on expired cards
+                // 2. Transactions exceeding card balance
+                // 3. Transactions on inactive/blacklisted cards
+                
+                var transactionType = _random.Next(3);
+                Transaction deniedTransaction;
+                
+                if (transactionType == 0) // Expired card transaction
+                {
+                    deniedTransaction = new Transaction
+                    {
+                        CardID = card.CardID,
+                        Amount = _random.Next(10, 500),
+                        TransactionType = TransactionType.Pay,
+                        TransactionDate = new DateTimeOffset(_faker.Date.Between(_settings.StartDate.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
+                        Description = "Test transaction - expired card (should be denied by trigger)"
+                    };
+                }
+                else if (transactionType == 1) // Insufficient balance
+                {
+                    deniedTransaction = new Transaction
+                    {
+                        CardID = card.CardID,
+                        Amount = card.Balance + _random.Next(100, 1000), // Amount exceeds balance
+                        TransactionType = TransactionType.Pay,
+                        TransactionDate = new DateTimeOffset(_faker.Date.Between(_settings.StartDate.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
+                        Description = "Test transaction - insufficient balance (should be denied by trigger)"
+                    };
+                }
+                else // Inactive card
+                {
+                    deniedTransaction = new Transaction
+                    {
+                        CardID = card.CardID,
+                        Amount = _random.Next(10, 500),
+                        TransactionType = TransactionType.Pay,
+                        TransactionDate = new DateTimeOffset(_faker.Date.Between(_settings.StartDate.DateTime, _settings.EndDate.DateTime), TimeSpan.Zero),
+                        Description = "Test transaction - inactive card (should be denied by trigger)"
+                    };
+                }
+                
+                deniedTransactions.Add(deniedTransaction);
+            }
+            
+            if (deniedTransactions.Any())
+            {
+                await _context.Transaction.AddRangeAsync(deniedTransactions);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Generated {deniedTransactions.Count} denied transactions");
+            }
+        }
     }
 
     public class DataGenerationSettings
@@ -504,18 +582,18 @@ namespace TRKart.DataGenerator.Services
         public int CardsPerCustomer { get; set; } = 3;
         public int TransactionsPerCard { get; set; } = 10;
         public int MaxSessionsPerUser { get; set; } = 5;
-        private DateTime _startDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        public DateTime StartDate 
+        private DateTimeOffset _startDate = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        public DateTimeOffset StartDate 
         { 
             get => _startDate;
-            set => _startDate = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            set => _startDate = value;
         }
         
-        private DateTime _endDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-        public DateTime EndDate 
+        private DateTimeOffset _endDate = DateTimeOffset.UtcNow;
+        public DateTimeOffset EndDate 
         { 
             get => _endDate;
-            set => _endDate = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            set => _endDate = value;
         }
     }
 }

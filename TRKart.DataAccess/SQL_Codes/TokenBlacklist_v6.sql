@@ -7,31 +7,15 @@ CREATE TABLE "TokenBlacklist" (
     "SessionID" INTEGER NOT NULL,
     "RefreshToken" VARCHAR(500) NOT NULL,
     "BlacklistedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "Reason" TEXT,
+    "BlacklistedBy" VARCHAR(50) DEFAULT 'System' CHECK ("BlacklistedBy" IN ('System', 'Customer', 'Admin')),
+    "Reason" VARCHAR(200) NOT NULL,
     "IPAddress" TEXT,
+    "UserAgent" TEXT,
+    "SuspiciousActivity" BOOLEAN DEFAULT FALSE,
+    "ComplianceRequired" BOOLEAN DEFAULT FALSE,
 
     CONSTRAINT "FK_TokenBlacklist_SessionToken_SessionID"
         FOREIGN KEY ("SessionID") 
         REFERENCES "SessionToken"("SessionID") 
         ON DELETE CASCADE
 );
-
----------------------Update IsRevoked in SessionToken When Blacklisted---------------------
-
-CREATE OR REPLACE FUNCTION update_sessiontoken_isrevoked()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Update the IsRevoked flag in the SessionToken table
-    UPDATE "SessionToken"
-    SET "IsRevoked" = TRUE
-    WHERE "SessionID" = NEW."SessionID";
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the trigger
-CREATE OR REPLACE TRIGGER trg_update_sessiontoken_isrevoked
-AFTER INSERT ON "TokenBlacklist"
-FOR EACH ROW
-EXECUTE FUNCTION update_sessiontoken_isrevoked();

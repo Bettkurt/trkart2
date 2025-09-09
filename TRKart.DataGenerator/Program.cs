@@ -55,7 +55,7 @@ async Task RunAsync(IServiceProvider serviceProvider)
     Console.WriteLine($"- Cards per customer: {configuration.GetValue<int>("DataGeneration:CardsPerCustomer")}");
     Console.WriteLine($"- Transactions per card: {configuration.GetValue<int>("DataGeneration:TransactionsPerCard")}");
     Console.WriteLine($"- Max sessions per user: {configuration.GetValue<int>("DataGeneration:MaxSessionsPerUser")}");
-    Console.WriteLine($"- Date range: {configuration.GetValue<DateTime>("DataGeneration:StartDate"):yyyy-MM-dd} to {configuration.GetValue<DateTime>("DataGeneration:EndDate"):yyyy-MM-dd}");
+    Console.WriteLine($"- Date range: {configuration.GetValue<DateTimeOffset>("DataGeneration:StartDate"):yyyy-MM-dd} to {configuration.GetValue<DateTimeOffset>("DataGeneration:EndDate"):yyyy-MM-dd}");
     
     Console.Write("\nDo you want to continue? (y/n): ");
     var key = Console.ReadKey();
