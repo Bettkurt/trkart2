@@ -55,14 +55,18 @@ namespace TRKart.Entities.Models
         [Column("CardName", TypeName = "VARCHAR(16)")]
         public string? CardName { get; set; } = null!;
 
-        // Maps to CardExpirationDate DATE 
-        //  NOT NULL 
-        //  DEFAULT (DATE_TRUNC('MONTH', CURRENT_DATE) 
-        //  + INTERVAL '5 years' 
-        //  + INTERVAL '1 month - 1 day')::DATE
+        /* * Maps to CardExpirationDate DATE 
+           * NOT NULL 
+           * DEFAULT (DATE_TRUNC('MONTH', CURRENT_DATE) 
+           * + INTERVAL '5 years' 
+           * + INTERVAL '1 month - 1 day')::DATE
+           * */
+        // 5 years from current date, and end of the current month
         [Column("CardExpirationDate", TypeName = "DATE")]
-        //a [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime CardExpirationDate { get; set; }
+        //a [DatabaseGenerated(DatabaseGeneratedOption.Computed)]  // Commented out because DataGenrator is generating the card expiration date
+        //  and if this is not commented out, it will be ignored and the DB generated card expiration date will be used for all the cards
+        // So, I added the default value here, and removed DBGenerated
+        public DateTime CardExpirationDate { get; set; } = DateTime.Now.AddYears(5).AddMonths(1).AddDays(-1);
 
         // Soft delete fields
         [Column("IsBlacklisted", TypeName = "BOOLEAN")]

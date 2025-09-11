@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserCard } from '@/types';
-import { MoreVertical, Copy, Save, ArrowRightLeft, Trash2, ArrowUpRight, ShieldAlert, PenLine } from 'lucide-react';
+import { MoreVertical, Copy, Save, ArrowRightLeft, Trash2, ArrowUpRight, ShieldAlert, PenLine, TurkishLira } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CardStatus } from '@/types/cardStatus';
 
@@ -412,7 +412,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                     : 'text-gray-500 cursor-not-allowed'
                 }`}
               >
-                <span className="text-sm">₺</span>
+                <TurkishLira size={24} />
                 <span className="text-sm">Deposit</span>
               </button>
               
@@ -426,7 +426,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
               )}
             </div>
               
-              <div className="w-px h-16 bg-gray-400"></div>
+              <div className="w-px h-16 bg-gray-500"></div>
               
             {/* Column 2: Transfer */}
             <div className="relative group/transfer flex-1">
@@ -439,7 +439,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                     : 'text-gray-500 cursor-not-allowed'
                 }`}
               >
-                <ArrowUpRight size={16} />
+                <ArrowUpRight size={24} />
                 <span className="text-sm">Transfer</span>
               </button>
               
@@ -454,7 +454,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
               )}
             </div>
               
-              <div className="w-px h-16 bg-gray-400"></div>
+              <div className="w-px h-16 bg-gray-500"></div>
               
             {/* Column 3: History */}
             <div className="relative group/history flex-1">
@@ -467,7 +467,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                     : 'text-gray-500 cursor-not-allowed'
                 }`}
               >
-                <ArrowRightLeft size={16} />
+                <ArrowRightLeft size={24} />
                 <span className="text-sm">History</span>
               </button>
               
@@ -481,7 +481,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
               )}
             </div>
               
-              <div className="w-px h-16 bg-gray-400"></div>
+              <div className="w-px h-16 bg-gray-500"></div>
               
                 {/* Column 4: Lost and Delete stacked */}
                 <div className="flex flex-col gap-1 flex-1">
@@ -517,7 +517,7 @@ const CardItem: React.FC<CardItemProps> = ({ card, onNameEdit }) => {
                     )}
                   </div>
                 
-                <div className="w-full h-px bg-gray-400"></div>
+                <div className="w-full h-px bg-gray-500"></div>
                 
                 <div className="relative group/delete">
                   <button
