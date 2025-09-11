@@ -811,3 +811,4 @@ CREATE INDEX IDX_Transaction_CardID ON "Transaction"("CardID");
 CREATE INDEX IDX_Transaction_TransferTransactionID ON "Transaction"("TransferTransactionID");
 CREATE INDEX IDX_Transaction_Amount ON "Transaction"("Amount");
 CREATE INDEX IDX_Transaction_TransactionDate ON "Transaction"("TransactionDate");
+

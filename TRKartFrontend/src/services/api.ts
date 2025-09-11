@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Create axios instance with credentials
-const api: AxiosInstance = axios.create({
+export const api: AxiosInstance = axios.create({
   baseURL: (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:7037/api',
   timeout: 10000,
   withCredentials: true, // Include cookies in requests

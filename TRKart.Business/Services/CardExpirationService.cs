@@ -33,9 +33,10 @@ namespace TRKart.Business.Services
                 // Get current date
                 var currentDate = DateTime.UtcNow.Date;
                 
+                // Get cards that are not expired/deactivated but have passed their expiration date
                 var expiredCards = await _context.UserCard
-                    .Where(c => c.CardExpirationDate < currentDate && 
-                              c.CardStatus > CardStatus.Expired) // Only cards that are NOT already expired OR deactivated
+                    .Where(c => c.CardExpirationDate <= currentDate && 
+                              c.CardStatus > CardStatus.Expired) // Cards that are Active, Inactive, or Lost
                     .ToListAsync();
 
                 if (!expiredCards.Any())
@@ -48,35 +49,50 @@ namespace TRKart.Business.Services
 
                 foreach (var card in expiredCards)
                 {
+                    _logger.LogInformation("Processing card {CardId} (Status: {Status}, Expires: {ExpirationDate:yyyy-MM-dd})", 
+                        card.CardID, card.CardStatus, card.CardExpirationDate);
+                        
                     try
                     {
                         // Create a transaction for each card to ensure consistency
-                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        await using var transaction = await _context.Database.BeginTransactionAsync();
                         try
                         {
-                            // Update card status to expired (1)
-                            card.CardStatus = CardStatus.Expired;
+                            // Refresh the card from database to ensure we have the latest state
+                            var currentCard = await _context.UserCard
+                                .FirstOrDefaultAsync(c => c.CardID == card.CardID);
+                                
+                            if (currentCard == null)
+                            {
+                                _logger.LogWarning("Card {CardId} not found, skipping", card.CardID);
+                                continue;
+                            }
+
+                            // Update card status
+                            currentCard.CardStatus = CardStatus.Expired;
                             
                             // Create blacklist entry
-                            await CreateCardBlacklistAsync(card, (int)CardStatus.Expired);
+                            await CreateCardBlacklistAsync(currentCard, (int)CardStatus.Expired);
                             
-                            await _context.SaveChangesAsync();
+                            // Save changes
+                            var result = await _context.SaveChangesAsync();
                             await transaction.CommitAsync();
                             
-                            _logger.LogInformation("Successfully processed expired card {CardId}", card.CardID);
+                            _logger.LogInformation("Successfully updated card {CardId} status to Expired", currentCard.CardID);
                         }
                         catch (Exception ex)
                         {
                             try
                             {
                                 await transaction.RollbackAsync();
+                                _logger.LogInformation("Rolled back transaction for card {CardId}", card.CardID);
                             }
                             catch (Exception rollbackEx)
                             {
                                 _logger.LogError(rollbackEx, "Failed to rollback transaction for card {CardId}", card.CardID);
                             }
                             _logger.LogError(ex, "Failed to process card {CardId}: {ErrorMessage}", card.CardID, ex.Message);
-                            throw new InvalidOperationException($"Failed to process card {card.CardID}", ex);
+                            // Continue with next card even if one fails
                         }
                     }
                     catch (Exception ex)
@@ -138,12 +154,18 @@ namespace TRKart.Business.Services
                 // BlacklistedAt = DateTime.UtcNow, // Set by DB
                 Notes = $"Automatically blacklisted: {reason}"
             };
-            
-            // Save the blacklist entry
-            await _context.CardBlacklist.AddAsync(blacklist);
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Created blacklist entry for card {CardId} with reason: {Reason}", card.CardID, reason);
+
+            try
+            {
+                await _context.CardBlacklist.AddAsync(blacklist);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Successfully added card {CardId} to blacklist with reason: {Reason}", card.CardID, reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add card {CardId} to blacklist", card.CardID);
+                throw new InvalidOperationException($"Failed to add card {card.CardID} to blacklist", ex);
+            }
         }
     }
 }

@@ -20,6 +20,8 @@ import TransfersPage from '@/pages/TransfersPage';
 import AboutPage from '@/pages/AboutPage';
 import ChangePasswordPage from '@/pages/ChangePasswordPage';
 import ChangeEmailPage from '@/pages/ChangeEmailPage';
+import WalletPage from '@/pages/WalletPage';
+import WalletTransactionsPage from '@/pages/WalletTransactionsPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -99,6 +101,16 @@ const AppRoutes: React.FC = () => {
       <Route path="/cards-new" element={
         <ProtectedRoute>
           <NewUserCardsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/wallet" element={
+        <ProtectedRoute>
+          <WalletPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/wallet/transactions" element={
+        <ProtectedRoute>
+          <WalletTransactionsPage />
         </ProtectedRoute>
       } />
       <Route path="/create-card" element={

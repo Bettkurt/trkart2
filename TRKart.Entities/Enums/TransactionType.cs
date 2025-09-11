@@ -9,6 +9,11 @@ namespace TRKart.Entities.Enums
         TransferOut = 4,
         Pay = 5,
         SystemTransferIn = 6,
-        SystemTransferOut = 7
+        SystemTransferOut = 7,
+        WalletLoad = 8,
+        WalletPay = 9,
+        CardToWalletTransfer = 10,
+        WalletToCardTransfer = 11,
+        
     }
 }

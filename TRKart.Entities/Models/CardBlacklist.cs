@@ -41,7 +41,7 @@ namespace TRKart.Entities.Models
         public CardType CardType { get; set; }
 
         [Required]
-        [Column("CardExpirationDate")]
+        [Column("CardExpirationDate", TypeName = "date")]
         public DateTime CardExpirationDate { get; set; }
 
         [Required]

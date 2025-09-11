@@ -20,6 +20,22 @@ class UserCardService {
   }
 
   /**
+   * Get all cards for a specific customer (admin/support use)
+   * @param customerId The ID of the customer
+   */
+  async getCustomerCards(customerId: number): Promise<UserCard[]> {
+    try {
+      const response = await api.get<{ success: boolean; cards: UserCard[] }>(
+        `/SecureUserCard/admin/customer/${customerId}/cards`
+      );
+      return response.data.cards;
+    } catch (error) {
+      
+      throw error;
+    }
+  }
+
+  /**
    * Create a new card for the current user
    */
   async createUserCard(cardData: CreateUserCardRequest): Promise<UserCard> {

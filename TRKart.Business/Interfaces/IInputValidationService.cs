@@ -18,7 +18,7 @@ namespace TRKart.Business.Interfaces
         InputValidationResponse ValidateCardNumber(string cardNumber);
         
         // Business logic validation methods
-        InputValidationResponse ValidateTransferBusinessRules(TransferCreateDto dto, UserCard senderCard, UserCard recipientCard);
+        InputValidationResponse ValidateTransferBusinessRules(TransferCreateDto dto, object source, object destination, decimal sourceBalance);
         InputValidationResponse ValidateTransactionFeasibility(TransactionCreateDto dto, decimal currentBalance);
     }
 } 

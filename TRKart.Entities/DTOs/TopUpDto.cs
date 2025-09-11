@@ -47,7 +47,8 @@ namespace TRKart.Entities.DTOs
     public class TopUpTransactionDto
     {
         public int TransactionID { get; set; }
-        public int CardID { get; set; }
+        
+        public int? CardID { get; set; }
         public string CardNumber { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public TransactionType TransactionType { get; set; } = TransactionType.TopUp;

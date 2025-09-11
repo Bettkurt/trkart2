@@ -9,7 +9,8 @@ using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
 using TRKart.Core.Interfaces;
 using Microsoft.Extensions.Logging;
-
+using System.Linq;
+using TRKart.Entities.Enums;
 
 namespace TRKart.Business.Services
 {
@@ -373,10 +374,43 @@ namespace TRKart.Business.Services
                 CustomerNumber = customerNumber
             };
 
-            await _context.Customers.AddAsync(newCustomer);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("User registered successfully with email: {Email}", dto.Email);
-            return true;
+            // Start a transaction to ensure both customer and wallet are created together
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Add the new customer
+                    await _context.Customers.AddAsync(newCustomer);
+                    await _context.SaveChangesAsync();
+
+                    // Generate a unique wallet number
+                    string walletNumber = await WalletNumberHelper.GenerateWalletNumberAsync(_uniqueNumberChecker);
+
+                    // Create a wallet for the new customer with zero balance
+                    var wallet = new Wallet
+                    {
+                        CustomerID = newCustomer.CustomerID,
+                        WalletNumber = walletNumber,
+                        Balance = 0.00m,
+                        Status = CardStatus.Active,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    await _context.Wallets.AddAsync(wallet);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("User and wallet registered successfully with email: {Email}", dto.Email);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error during user registration for email: {Email}", dto.Email);
+                    throw; // Re-throw to be handled by the controller
+                }
+            }
         }
 
         public async Task<int?> GetCustomerIdFromAccessTokenAsync(string accessToken)

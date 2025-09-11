@@ -17,6 +17,8 @@ using TRKart.API.BackgroundServices;
 using Hangfire;
 using TRKart.API.BackgroundServices.Hangfire;
 using TRKart.API;
+using TRKart.API.Filters;
+//using TRKart.API.Mapping;
 using Hangfire;
 using Hangfire.PostgreSql;
 
@@ -60,14 +62,15 @@ async Task RunAsync()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-    // 3. CORS configuration for local development
-    var allowedOrigins = new[] 
-    {
-    "http://localhost:3000",   // Frontend (HTTP)
-    "https://localhost:3000",  // Frontend (HTTPS)
-    "http://localhost:7037",   // API (HTTP)
-    "https://localhost:7037"   // API (HTTPS)
-    };
+    // 3. CORS configuration
+    var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+        ?? new[] 
+        {
+            "http://localhost:3000",   // Frontend (HTTP)
+            "https://localhost:3000",  // Frontend (HTTPS)
+            "http://localhost:7037",   // API (HTTP)
+            "https://localhost:7037"   // API (HTTPS)
+        };
 
     builder.Services.AddCors(options =>
     {
@@ -84,13 +87,11 @@ async Task RunAsync()
     // 4. Register application services
     builder.Services.AddScoped<TRKart.Core.Interfaces.IUniqueNumberChecker, TRKart.DataAccess.Services.UniqueNumberChecker>();
 
-    // 4.1. Register card expiration services (temporarily disabled)
+    // 4.1. Register card expiration services
     builder.Services.AddScoped<ICardExpirationService, CardExpirationService>();
-    // builder.Services.AddHostedService<CardExpirationBackgroundService>();
 
-    // 4.2. Register card balance transfer services (temporarily disabled)
+    // 4.2. Register card balance transfer services
     builder.Services.AddScoped<ICardBalanceTransferService, CardBalanceTransferService>();
-    // builder.Services.AddHostedService<CardBalanceTransferBackgroundService>();
 
     // 5. Swagger + JWT support
     builder.Services.AddEndpointsApiExplorer();
@@ -150,7 +151,7 @@ async Task RunAsync()
     // 8. Register Background Services
     builder.Services.AddHostedService<TokenCleanupBackgroundService>();
 
-    // 9. DI Services
+    // 10. DI Services
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddSingleton<JwtHelper>();
     builder.Services.AddScoped<IUserCardService, UserCardService>();
@@ -159,35 +160,70 @@ async Task RunAsync()
     builder.Services.AddScoped<ITopUpService, TopUpService>();
     builder.Services.AddScoped<ITransactionRepository, TRKart.Repository.Repositories.TransactionRepository>();
     builder.Services.AddScoped<IInputValidationService, TRKart.Business.Services.InputValidationService>();
+    builder.Services.AddScoped<IWalletService>(sp => 
+        new WalletService(
+            sp.GetRequiredService<ApplicationDbContext>(),
+            sp.GetRequiredService<IUserCardService>(),
+            sp.GetRequiredService<ILogger<WalletService>>()));
+    builder.Services.AddScoped<ICardBalanceTransferService, CardBalanceTransferService>();
     
-    // 10. Add Hangfire services
-    /*  builder.Services.AddHangfireServices(builder.Configuration);
-   builder.Services.AddHangfireServer();*/
-   builder.Services.AddHangfire(cfg =>
-    cfg.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("HangfireConnection"))
-    );
+    // 10. Add Hangfire services with dedicated connection string
+    var hangfireConnection = builder.Configuration.GetConnectionString("HangfireConnection") ?? 
+        throw new InvalidOperationException("HangfireConnection string is not configured");
+        
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(hangfireConnection));
 
-    builder.Services.AddHangfireServer();
-
-
-
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.ServerName = $"{Environment.MachineName}";
+        options.WorkerCount = 1;
+    });
+    
+    // Register Hangfire services
+    builder.Services.AddScoped<HangfireCardBalanceTransferService>();
+    builder.Services.AddScoped<HangfireCardExpirationService>();
 
     var app = builder.Build();
 
-    // Ensure database is created and migrations are applied
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-       // await db.Database.MigrateAsync();
-    }
+    // Database initialization is handled by migrations at startup
+    // No need for manual migration in code
     
-    // Configure Hangfire dashboard and jobs
-    //app.UseHangfireDashboardWithAuth(builder.Configuration);
-    app.UseHangfireDashboard();
-    app.UseHangfireDashboard("/hangfire"); 
+    // Configure Hangfire dashboard without authentication
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new DashboardNoAuthorizationFilter() },
+        DashboardTitle = "TRKart Jobs (Development)",
+        StatsPollingInterval = 60000, // 1 minute
+        DisplayStorageConnectionString = false,
+        IgnoreAntiforgeryToken = true
+    });
     
     // Initialize Hangfire background processing
     GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3 });
+    
+    // Schedule recurring jobs if not already scheduled
+    using (var scope = app.Services.CreateScope())
+    {
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        
+        // Schedule card expiration check to run monthly on the 1st at midnight UTC
+        recurringJobManager.AddOrUpdate<HangfireCardExpirationService>(
+            "card-expiration-check",
+            x => x.CheckAndUpdateExpiredCardsAsync(),
+            Cron.Monthly,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+            
+        // Schedule balance transfer to run daily at midnight UTC
+        recurringJobManager.AddOrUpdate<HangfireCardBalanceTransferService>(
+            "card-balance-transfer",
+            x => x.TransferBalancesAsync(),
+            Cron.Daily,
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    }
     
     // Use CORS before authentication
     app.UseCors("AllowedOrigins");
@@ -216,9 +252,9 @@ async Task RunAsync()
     // Use the bottom one to directly connect to swagger interface
     app.MapGet("/", () => Results.Redirect("/swagger/index.html", true, true)).AllowAnonymous();
 
-    // Listen on all interfaces for development
-    var url = "http://localhost:7037";
+    // Get the URL from configuration or use default
+    var url = builder.Configuration["ApplicationUrl"] ?? "http://localhost:7037";
     Console.WriteLine($"Starting server on {url}");
-   await app.RunAsync(url);
+    await app.RunAsync(url);
    
 }

@@ -21,7 +21,7 @@ namespace TRKart.API.Controllers
         {
             try
             {
-                Console.WriteLine($"TransferController: Starting transfer request for senderCardID={dto.SenderCardID}");
+                Console.WriteLine($"TransferController: Starting transfer request for SourceId={dto.SourceId}");
                 var result = await _transferService.CreateTransferAsync(dto);
                 
                 Console.WriteLine($"TransferController: Transfer service completed. Success: {result.Success}");

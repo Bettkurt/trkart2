@@ -1,20 +1,30 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using TRKart.Entities.Enums;
 using TRKart.Entities.Models;
 
 namespace TRKart.Entities.DTOs
 {
+    public enum TransferSourceType
+    {
+        Card,
+        Wallet
+    }
+
     public class TransferCreateDto
     {
-        [Required(ErrorMessage = "SenderCardID is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "SenderCardID must be a positive number")]
-        public int SenderCardID { get; set; }
+        [Required(ErrorMessage = "Source type is required")]
+        public TransferSourceType SourceType { get; set; }
 
-        [Required(ErrorMessage = "RecipientCardNumber is required")]
-        [StringLength(16, ErrorMessage = "RecipientCardNumber must be 16 characters")]
-        [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "RecipientCardNumber can only contain letters and numbers")]
-        public string RecipientCardNumber { get; set; } = null!;
+        [Required(ErrorMessage = "Source ID is required")]
+        public int SourceId { get; set; }
+
+        [Required(ErrorMessage = "Destination type is required")]
+        public TransferSourceType DestinationType { get; set; }
+
+        [Required(ErrorMessage = "Destination identifier is required")]
+        public string DestinationIdentifier { get; set; } = null!;
 
         [Required(ErrorMessage = "Amount is required")]
         [Range(0.01, 999999.99, ErrorMessage = "Amount must be between 0.01 and 999,999.99")]

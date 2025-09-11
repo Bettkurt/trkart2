@@ -25,5 +25,11 @@ namespace TRKart.DataAccess.Services
             return !await _context.Customers
                 .AnyAsync(c => c.CustomerNumber == customerNumber);
         }
+
+        public async Task<bool> IsWalletNumberUniqueAsync(string walletNumber)
+        {
+            return !await _context.Wallets
+                .AnyAsync(w => w.WalletNumber == walletNumber);
+        }
     }
 }

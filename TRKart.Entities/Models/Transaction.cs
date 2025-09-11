@@ -16,10 +16,18 @@ namespace TRKart.Entities.Models
 
         [Column("CardID", TypeName = "INT")]
         [ForeignKey("UserCard")]
-        public int CardID { get; set; }
+        public int? CardID { get; set; }
 
         // Navigation property for the one-to-many relationship with UserCard
-        public UserCard UserCard { get; set; }
+        public UserCard? UserCard { get; set; }
+
+        // Foreign key for Wallet (for wallet transactions)
+        [Column("WalletID", TypeName = "INT")]
+        [ForeignKey("Wallet")]
+        public int? WalletId { get; set; }
+
+        // Navigation property for Wallet
+        public Wallet? Wallet { get; set; }
 
         // In case of a transfer transaction between cards and/or customers, this will point to the
         // counterpart of a transfer transaction. E.g., if a TransferOut transaction is done, this
@@ -40,6 +48,10 @@ namespace TRKart.Entities.Models
         [Column("TransactionType")]
         public TransactionType TransactionType { get; set; }
 
+        // Helper property to determine if this is a wallet transaction
+        [NotMapped]
+        public bool IsWalletTransaction => WalletId.HasValue;
+
         [Column("Description", TypeName = "TEXT")]
         public string? Description { get; set; }
 
@@ -59,9 +71,21 @@ namespace TRKart.Entities.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime TransactionDate { get; set; }
 
-        [Column("TransactionStatus", TypeName = "VARCHAR(20)")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        [Column("TransactionStatus")]
         public string TransactionStatus { get; set; }
+
+        [NotMapped]
+        public TransactionStatus Status 
+        { 
+            get => Enum.Parse<TransactionStatus>(TransactionStatus); 
+            set => TransactionStatus = value.ToString(); 
+        }
+
+        public Transaction()
+        {
+            // Set default status in constructor
+            TransactionStatus = TRKart.Entities.Enums.TransactionStatus.Pending.ToString();
+        }
 
         // Related Transactions (optional one-to-optional one)
         public virtual ICollection<Transaction>? TransferTransactions { get; set; }

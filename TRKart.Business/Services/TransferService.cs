@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using TRKart.Business.Interfaces;
 using TRKart.Business.Services;
 using TRKart.DataAccess;
+using Microsoft.Extensions.Logging;
 using TRKart.Entities.Models;
 using TRKart.Entities.DTOs;
 using TRKart.Entities.Enums;
@@ -14,17 +15,76 @@ namespace TRKart.Business.Services
 {
     public class TransferService : ITransferService
     {
-        private readonly ITransactionRepository _transactionRepository;
         private readonly ApplicationDbContext _context;
         private readonly IInputValidationService _inputValidationService;
+        private readonly ILogger<TransferService> _logger;
 
-        public TransferService(ITransactionRepository transactionRepository, 
-                               ApplicationDbContext context,
-                               IInputValidationService inputValidationService)
+        public TransferService(ApplicationDbContext context,
+                             IInputValidationService inputValidationService,
+                             ILogger<TransferService> logger)
         {
-            _transactionRepository = transactionRepository;
-            _context = context;
-            _inputValidationService = inputValidationService;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _inputValidationService = inputValidationService ?? throw new ArgumentNullException(nameof(inputValidationService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        private async Task<(object Source, decimal SourceBalance, string SourceIdentifier, bool Success, string ErrorMessage)> GetSourceDetailsAsync(TransferCreateDto dto)
+        {
+            if (dto.SourceType == TransferSourceType.Card)
+            {
+                var card = await _context.UserCard
+                    .FirstOrDefaultAsync(c => c.CardID == dto.SourceId);
+                
+                if (card == null)
+                {
+                    return (null, 0, null, false, "Source card not found");
+                }
+                
+                return (card, card.Balance, card.CardNumber, true, null);
+            }
+            
+            // Handle wallet source
+            var wallet = await _context.Wallets
+                .FirstOrDefaultAsync(w => w.WalletId == dto.SourceId);
+            
+            if (wallet == null)
+            {
+                return (null, 0, null, false, "Source wallet not found");
+            }
+            
+            return (wallet, wallet.Balance, wallet.WalletNumber, true, null);
+        }
+
+        private async Task<(object Destination, string DestinationIdentifier, bool Success, string ErrorMessage)> GetDestinationDetailsAsync(TransferCreateDto dto)
+        {
+            if (dto.DestinationType == TransferSourceType.Card)
+            {
+                var card = await _context.UserCard
+                    .FirstOrDefaultAsync(c => c.CardNumber == dto.DestinationIdentifier);
+                
+                if (card == null)
+                {
+                    return (null, null, false, "Destination card not found");
+                }
+                
+                return (card, card.CardNumber, true, null);
+            }
+            
+            // Handle wallet destination
+            if (!int.TryParse(dto.DestinationIdentifier, out int walletId))
+            {
+                return (null, null, false, "Invalid wallet identifier");
+            }
+            
+            var wallet = await _context.Wallets
+                .FirstOrDefaultAsync(w => w.WalletId == walletId);
+            
+            if (wallet == null)
+            {
+                return (null, null, false, "Destination wallet not found");
+            }
+            
+            return (wallet, wallet.WalletNumber, true, null);
         }
 
         public async Task<TransferResponse> CreateTransferAsync(TransferCreateDto dto)
@@ -33,9 +93,8 @@ namespace TRKart.Business.Services
 
             try
             {
-                Console.WriteLine($"TransferService: Starting transfer for senderCardID={dto.SenderCardID}, recipientCardNumber={dto.RecipientCardNumber}, amount={dto.Amount}");
+                Console.WriteLine($"TransferService: Starting transfer - SourceType={dto.SourceType}, SourceId={dto.SourceId}, DestinationType={dto.DestinationType}, Destination={dto.DestinationIdentifier}, Amount={dto.Amount}");
                 
-                // Validate input format using InputValidationService
                 var inputValidation = _inputValidationService.ValidateTransferInput(dto);
                 if (!inputValidation.IsValid)
                 {
@@ -44,18 +103,26 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                // Get sender card and validate
-                Console.WriteLine($"TransferService: Looking up sender card ID {dto.SenderCardID}");
-                var senderCard = await _context.UserCard
-                    .FirstOrDefaultAsync(c => c.CardID == dto.SenderCardID);
+                // Get source details
+                var (source, sourceBalance, sourceIdentifier, sourceSuccess, sourceError) = await GetSourceDetailsAsync(dto);
+                if (!sourceSuccess)
+                {
+                    response.Success = false;
+                    response.Message = sourceError;
+                    return response;
+                }
 
-                // Get recipient card by card number
-                Console.WriteLine($"TransferService: Looking up recipient card number {dto.RecipientCardNumber}");
-                var recipientCard = await _context.UserCard
-                    .FirstOrDefaultAsync(c => c.CardNumber == dto.RecipientCardNumber);
+                // Get destination details
+                var (destination, destinationIdentifier, destSuccess, destError) = await GetDestinationDetailsAsync(dto);
+                if (!destSuccess)
+                {
+                    response.Success = false;
+                    response.Message = destError;
+                    return response;
+                }
 
-                // Validate business rules using InputValidationService
-                var businessValidation = _inputValidationService.ValidateTransferBusinessRules(dto, senderCard, recipientCard);
+                // Validate business rules
+                var businessValidation = _inputValidationService.ValidateTransferBusinessRules(dto, source, destination, sourceBalance);
                 if (!businessValidation.IsValid)
                 {
                     response.Success = false;
@@ -63,28 +130,35 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                Console.WriteLine($"TransferService: Business validation passed - Sender balance: {senderCard.Balance}, Recipient status: {recipientCard.CardStatus}");
+                Console.WriteLine($"TransferService: Business validation passed - Sender balance: {sourceBalance}, Recipient status: {(destination as UserCard)?.CardStatus}");
 
-                // Validate both transactions before creating any
-                Console.WriteLine($"TransferService: Validating both transactions before creation");
+                // Create transaction DTOs
+                Console.WriteLine($"TransferService: Creating transaction DTOs");
+                
+                // For TransferOut (source)
                 var transferOutDto = new TransactionCreateDto
                 {
-                    CardID = senderCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = TransactionType.TransferOut,
-                    Description = $"Transfer to card {recipientCard.CardNumber}"
+                    Description = $"Transfer to {dto.DestinationType} {destinationIdentifier}",
+                    ReferenceId = $"TRF-OUT-{Guid.NewGuid()}"
                 };
 
+                // For TransferIn (destination)
                 var transferInDto = new TransactionCreateDto
                 {
-                    CardID = recipientCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = TransactionType.TransferIn,
-                    Description = $"Transfer from card {senderCard.CardNumber}"
+                    Description = $"Transfer from {dto.SourceType} {sourceIdentifier}",
+                    ReferenceId = $"TRF-IN-{Guid.NewGuid()}"
                 };
 
-                // Validate TransferOut transaction feasibility using InputValidationService
-                var transferOutFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferOutDto, senderCard.Balance);
+                // Set source properties based on source type
+                SetSourceTransactionProperties(dto, source, transferOutDto);
+                
+                // Set destination properties based on destination type
+                SetDestinationTransactionProperties(dto, destination, transferInDto);
+
+                // Validate TransferOut transaction feasibility
+                var transferOutFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferOutDto, sourceBalance);
                 if (!transferOutFeasibility.IsValid)
                 {
                     response.Success = false;
@@ -92,94 +166,161 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                // Validate TransferIn transaction feasibility using InputValidationService
-                var transferInFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferInDto, recipientCard.Balance);
-                if (!transferInFeasibility.IsValid)
+                // PHASE 1: Create TransferOut transaction (for sender)
+                Console.WriteLine("TransferService: PHASE 1 - Creating TransferOut transaction");
+                var transferOutResult = await CreateAndSaveTransactionAsync(source, transferOutDto);
+                if (transferOutResult == null)
                 {
                     response.Success = false;
-                    response.Message = $"TransferIn validation failed: {string.Join("; ", transferInFeasibility.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
+                    response.Message = "Failed to create transfer out transaction";
                     return response;
                 }
 
-                // PHASE 1: Create TransferOut transaction (for sender)
-                Console.WriteLine($"TransferService: PHASE 1 - Creating TransferOut transaction");
-                var transferOutTransaction = new Transaction
-                {
-                    CardID = senderCard.CardID,
-                    Amount = dto.Amount,
-                    TransactionType = TransactionType.TransferOut,
-                    Description = $"Transfer to card {recipientCard.CardNumber}"
-                };
-
-                var transferOutResult = await _transactionRepository.AddTransactionAsync(transferOutTransaction);
-                Console.WriteLine($"TransferService: TransferOut transaction created with ID {transferOutResult.TransactionID}");
-
                 // PHASE 2: Create TransferIn transaction (for recipient)
-                Console.WriteLine($"TransferService: PHASE 2 - Creating TransferIn transaction");
-                
-                // Double-check recipient card status before creating TransferIn
-                var currentRecipientCard = await _context.UserCard
-                    .FirstOrDefaultAsync(c => c.CardID == recipientCard.CardID);
-                
-                if (currentRecipientCard == null)
+                Console.WriteLine("TransferService: PHASE 2 - Creating TransferIn transaction");
+                var transferInResult = await CreateAndSaveTransactionAsync(destination, transferInDto);
+                if (transferInResult == null)
                 {
-                    var failureReason = "Recipient card no longer exists";
-                    return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
+                    // If we fail to create the transfer in, we need to handle the partial transaction
+                    await HandleTransferFailureAsync(transferOutResult, "Failed to create transfer in transaction", destinationIdentifier);
+                    response.Success = false;
+                    response.Message = "Failed to create transfer in transaction";
+                    return response;
                 }
                 
-                if (currentRecipientCard.CardStatus != CardStatus.Active)
-                {
-                    var failureReason = $"Recipient card status changed to {currentRecipientCard.CardStatus} during transfer. Only active cards can receive transfers.";
-                    return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
-                }
+                // Update source and destination balances
+                await UpdateBalancesAsync(dto, source, destination);
+
+                await _context.SaveChangesAsync();
+
+                // PHASE 3: Update transaction statuses
+                Console.WriteLine($"TransferService: PHASE 3 - Updating transaction statuses");
+                transferOutResult.TransactionStatus = TransactionStatus.Approved.ToString();
+                transferInResult.TransactionStatus = TransactionStatus.Approved.ToString();
+                await _context.SaveChangesAsync();
+
+                response.Success = true;
+                response.Message = "Transfer completed successfully";
+                response.TransferOutTransaction = transferOutResult;
+                response.TransferInTransaction = transferInResult;
                 
-                var transferInTransaction = new Transaction
+                // Only check card status if destination is a card
+                if (dto.DestinationType == TransferSourceType.Card && 
+                    destination is UserCard recipientCard && 
+                    recipientCard.CardStatus != CardStatus.Active)
                 {
-                    CardID = recipientCard.CardID,
-                    Amount = dto.Amount,
-                    TransactionType = TransactionType.TransferIn,
-                    Description = $"Transfer from card {senderCard.CardNumber}",
-                    TransferTransactionID = transferOutResult.TransactionID // Link to TransferOut
-                };
-
-                try
-                {
-                    var transferInResult = await _transactionRepository.AddTransactionAsync(transferInTransaction);
-                    Console.WriteLine($"TransferService: TransferIn transaction created with ID {transferInResult.TransactionID}");
-
-                    // PHASE 3: Update TransferOut transaction to link back to TransferIn
-                    Console.WriteLine($"TransferService: PHASE 3 - Updating TransferOut transaction to link back");
-                    transferOutResult.TransferTransactionID = transferInResult.TransactionID;
-                    await _context.SaveChangesAsync();
-                    Console.WriteLine($"TransferService: Successfully updated TransferOut transaction");
-
-                    response.Success = true;
-                    response.Message = "Transfer completed successfully";
-                    response.TransferInTransaction = transferInResult;
-                    response.TransferOutTransaction = transferOutResult;
-                    
-                    Console.WriteLine($"TransferService: Transfer completed successfully");
-                }
-                catch (Exception transferInException)
-                {
-                    Console.WriteLine($"TransferService: TransferIn failed: {transferInException.Message}");
-                    
-                    // TransferOut succeeded but TransferIn failed - create refund
-                    var failureReason = $"TransferIn creation failed: {transferInException.Message}";
+                    var failureReason = $"Recipient card status changed to {recipientCard.CardStatus} during transfer. Only active cards can receive transfers.";
                     return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TransferService: Exception occurred: {ex.Message}");
-                Console.WriteLine($"TransferService: Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Unexpected error in transfer process");
                 
                 response.Success = false;
-                response.Message = $"Transfer failed: {ex.Message}";
+                response.Message = "An unexpected error occurred while processing your transfer";
                 response.Error = ex.Message;
             }
 
             return response;
+        }
+
+        private static void SetSourceTransactionProperties(TransferCreateDto dto, object source, TransactionCreateDto transferOutDto)
+        {
+            if (dto.SourceType == TransferSourceType.Card)
+            {
+                var sourceCard = (UserCard)source;
+                transferOutDto.CardID = sourceCard.CardID;
+                transferOutDto.TransactionType = TransactionType.TransferOut;
+            }
+            else // Source is Wallet
+            {
+                var sourceWallet = (Wallet)source;
+                transferOutDto.WalletId = sourceWallet.WalletId;
+                transferOutDto.TransactionType = TransactionType.WalletPay;
+            }
+        }
+
+        private static void SetDestinationTransactionProperties(TransferCreateDto dto, object destination, TransactionCreateDto transferInDto)
+        {
+            if (dto.DestinationType == TransferSourceType.Card)
+            {
+                var destCard = (UserCard)destination;
+                transferInDto.CardID = destCard.CardID;
+                transferInDto.TransactionType = TransactionType.TransferIn;
+            }
+            else // Destination is Wallet
+            {
+                var destWallet = (Wallet)destination;
+                transferInDto.WalletId = destWallet.WalletId;
+                transferInDto.TransactionType = TransactionType.WalletLoad;
+            }
+        }
+
+
+        private async Task<Transaction> CreateAndSaveTransactionAsync(object source, TransactionCreateDto transactionDto)
+        {
+            try
+            {
+                var transaction = new Transaction
+                {
+                    Amount = transactionDto.Amount,
+                    Description = transactionDto.Description,
+                    TransactionType = transactionDto.TransactionType,
+                    Status = TransactionStatus.Approved,
+                    TransactionDate = DateTime.UtcNow
+                };
+
+                if (source is UserCard card)
+                {
+                    transaction.CardID = card.CardID;
+                }
+                else if (source is Wallet wallet)
+                {
+                    transaction.WalletId = wallet.WalletId;
+                }
+
+                _context.Transactions.Add(transaction);
+                await _context.SaveChangesAsync();
+
+                return transaction;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating transaction");
+                return null;
+            }
+        }
+
+        private async Task UpdateBalancesAsync(TransferCreateDto dto, object source, object destination)
+        {
+            var amount = dto.Amount;
+
+            // Update source balance
+            if (source is UserCard sourceCard)
+            {
+                sourceCard.Balance -= amount;
+                _context.UserCards.Update(sourceCard);
+            }
+            else if (source is Wallet sourceWallet)
+            {
+                sourceWallet.Balance -= amount;
+                _context.Wallets.Update(sourceWallet);
+            }
+
+            // Update destination balance
+            if (destination is UserCard destCard)
+            {
+                destCard.Balance += amount;
+                _context.UserCards.Update(destCard);
+            }
+            else if (destination is Wallet destWallet)
+            {
+                destWallet.Balance += amount;
+                _context.Wallets.Update(destWallet);
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<TransferValidationResponse> ValidateRecipientCardAsync(string cardNumber)
@@ -195,7 +336,7 @@ namespace TRKart.Business.Services
                         CardID = c.CardID,
                         CardNumber = c.CardNumber,
                         Balance = c.Balance,
-                        CardStatus = (CardStatus)c.CardStatus,
+                        CardStatus = c.CardStatus,
                         CustomerID = c.CustomerID
                     })
                     .FirstOrDefaultAsync();
@@ -272,67 +413,35 @@ namespace TRKart.Business.Services
         }
 
         /// <summary>
-        /// Creates a refund transaction to reverse a failed transfer
-        /// This method is used when TransferOut succeeds but TransferIn fails
-        /// </summary>
-        private async Task<Transaction> CreateRefundTransactionAsync(int cardId, decimal amount, string description)
-        {
-            Console.WriteLine($"TransferService: Creating refund transaction for card {cardId}, amount {amount}");
-            
-            var refundTransaction = new Transaction
-            {
-                CardID = cardId,
-                Amount = amount, // Positive amount for refund
-                TransactionType = TransactionType.Refund,
-                Description = description
-            };
-
-            var result = await _transactionRepository.AddTransactionAsync(refundTransaction);
-            Console.WriteLine($"TransferService: Refund transaction created with ID {result.TransactionID}");
-            
-            return result;
-        }
-
-        /// <summary>
-        /// Handles transfer failure by creating a refund transaction
-        /// This method is called when TransferOut succeeds but TransferIn fails
+        /// Handles transfer failure by updating the transaction status
         /// </summary>
         private async Task<TransferResponse> HandleTransferFailureAsync(
-            Transaction transferOutTransaction, 
-            string failureReason, 
-            string recipientCardNumber)
+            Transaction transferOutTransaction,
+            string failureReason,
+            string destinationIdentifier)
         {
             Console.WriteLine($"TransferService: Handling transfer failure: {failureReason}");
             
+            // Update the transfer out transaction status to failed
+            transferOutTransaction.Status = TransactionStatus.Denied;
+            transferOutTransaction.Description = $"Transfer to {destinationIdentifier} failed: {failureReason}";
+            
             try
             {
-                // Create refund transaction to reverse the TransferOut
-                var refundDescription = $"Refund for failed transfer to card {recipientCardNumber}. Reason: {failureReason}";
-                var refundTransaction = await CreateRefundTransactionAsync(
-                    transferOutTransaction.CardID, 
-                    transferOutTransaction.Amount, 
-                    refundDescription);
-
-                // Update TransferOut transaction to mark it as failed
-                transferOutTransaction.TransactionStatus = "Denied";
-                transferOutTransaction.Description = $"FAILED: {transferOutTransaction.Description}. {failureReason}";
-                
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"TransferService: TransferOut transaction marked as failed and refund created");
-
-                return new TransferResponse
-                {
-                    Success = false,
-                    Message = $"Transfer failed: {failureReason}. The amount has been automatically refunded to your account.",
-                    TransferOutTransaction = transferOutTransaction,
-                    Error = failureReason
-                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TransferService: Error creating refund transaction: {ex.Message}");
-                throw new InvalidOperationException($"Transfer failed and refund creation failed: {ex.Message}");
+                Console.WriteLine($"Error updating failed transaction status: {ex.Message}");
             }
+
+            return new TransferResponse
+            {
+                Success = false,
+                Message = $"Transfer failed: {failureReason}",
+                TransferOutTransaction = transferOutTransaction,
+                TransferInTransaction = null
+            };
         }
     }
-} 
+}

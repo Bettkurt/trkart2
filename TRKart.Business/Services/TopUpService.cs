@@ -129,7 +129,7 @@ namespace TRKart.Business.Services
                             PaymentMethod = request.PaymentMethod,
                             FeeAmount = request.FeeAmount ?? 0m,
                             Note = request.Note,
-                            TransactionStatus = "Pending"
+                            TransactionStatus = TransactionStatus.Pending.ToString()
                         };
 
                         _context.Transaction.Add(topUpTransaction);
@@ -433,13 +433,13 @@ namespace TRKart.Business.Services
             {
                 var pendingTransactions = await _context.Transaction
                     .Where(t => t.TransactionType == TransactionType.TopUp 
-                               && t.TransactionStatus == "Pending" 
+                               && t.TransactionStatus == TransactionStatus.Pending.ToString() 
                                && t.TransactionDate < cutoffTime)
                     .ToListAsync();
 
                 foreach (var transaction in pendingTransactions)
                 {
-                    transaction.TransactionStatus = "Expired";
+                    transaction.TransactionStatus = TransactionStatus.Denied.ToString();
                     expiredCount++;
                 }
 
@@ -474,7 +474,7 @@ namespace TRKart.Business.Services
                     CardID = t.CardID,
                     CardNumber = t.UserCard.CardNumber,
                     Amount = t.Amount,
-                    TransactionType = (TransactionType)t.TransactionType,
+                    TransactionType = (TRKart.Entities.Enums.TransactionType)t.TransactionType,
                     PaymentMethod = t.PaymentMethod ?? "",
                     FeeAmount = t.FeeAmount,
                     NetAmount = t.Amount - (t.FeeAmount ?? 0m),
@@ -507,9 +507,14 @@ namespace TRKart.Business.Services
 
         private async Task<TopUpResponseDto> CreateResponseFromExistingTransaction(Transaction transaction, string correlationId)
         {
+            if (!transaction.CardID.HasValue)
+            {
+                throw new InvalidOperationException("Transaction is missing CardID");
+            }
+
             var card = await _context.UserCard
-                .Where(c => c.CardID == transaction.CardID)
-                .FirstOrDefaultAsync();
+                .Where(c => c.CardID == transaction.CardID.Value)
+                .FirstOrDefaultAsync() ?? throw new InvalidOperationException("Card not found for transaction");
 
             return new TopUpResponseDto
             {
@@ -519,8 +524,8 @@ namespace TRKart.Business.Services
                 Transaction = new TopUpTransactionDto
                 {
                     TransactionID = transaction.TransactionID,
-                    CardID = transaction.CardID,
-                    CardNumber = card?.CardNumber ?? "",
+                    CardID = transaction.CardID.Value,
+                    CardNumber = card.CardNumber,
                     Amount = transaction.Amount,
                     TransactionType = (TransactionType)transaction.TransactionType,
                     PaymentMethod = transaction.PaymentMethod ?? "",
@@ -544,7 +549,7 @@ namespace TRKart.Business.Services
             // For now, we immediately approve and update the balance
             var netAmount = transaction.Amount - (transaction.FeeAmount ?? 0m);
             
-            transaction.TransactionStatus = "Approved";
+            transaction.TransactionStatus = TransactionStatus.Approved.ToString();
             card.Balance += netAmount;
 
             _logger.LogInformation("[{CorrelationId}] TopUp transaction {TransactionId} approved, card balance updated by {NetAmount}", 

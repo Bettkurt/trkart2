@@ -1,0 +1,49 @@
+/* Card height matching */
+.card {
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* Regular cards (Transactions, My Cards) */
+.card:not(.quick-actions-card) {
+  min-height: 190px;
+}
+
+/* Quick Actions specific */
+.quick-actions-card {
+  min-height: 120px;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.collapsed-content {
+  overflow: hidden;
+  transition: height 0.3s ease;
+  flex-shrink: 0;
+  /* Remove any fixed height to allow natural content height */
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Quick actions specific styles */
+.quick-actions-submenu {
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+  opacity: 0;
+  max-height: 0;
+}
+
+.quick-actions-submenu.open {
+  opacity: 1;
+  max-height: 1000px; /* Adjust based on your content */
+}
+
+/* Ensure buttons are properly spaced */
+.quick-actions-submenu .space-y-4 > * + * {
+  margin-top: 1rem;
+}

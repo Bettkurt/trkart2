@@ -3,8 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TRKart.Entities.Enums;
 using TRKart.Business.Interfaces;
 using TRKart.DataAccess;
+using TRKart.Entities.DTOs;
 using TRKart.Entities.Models;
 using TRKart.Entities.Enums;
 
@@ -14,13 +16,16 @@ namespace TRKart.Business.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<CardBalanceTransferService> _logger;
+        private readonly IWalletService _walletService;
 
         public CardBalanceTransferService(
             ApplicationDbContext context,
-            ILogger<CardBalanceTransferService> logger)
+            ILogger<CardBalanceTransferService> logger,
+            IWalletService walletService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _walletService = walletService ?? throw new ArgumentNullException(nameof(walletService));
         }
 
         public async Task<int> TransferBalancesFromBlacklistedCardsAsync()
@@ -60,14 +65,16 @@ namespace TRKart.Business.Services
 
                         if (activeCard == null)
                         {
-                            _logger.LogInformation("No active card found for customer {CustomerId} to transfer balance to", 
+                            _logger.LogInformation("No active card found for customer {CustomerId}, attempting to transfer to wallet", 
                                 blacklistedCard.CustomerID);
+                            
+                            // Try to transfer to wallet instead
+                            await TransferBalanceToWalletAsync(blacklistedCard);
+                            transfersCompleted++;
+                            await transaction.CommitAsync();
                             continue;
                         }
 
-                        // Create timestamp for consistent transaction time
-                        //var transactionTime = DateTime.UtcNow;
-                        
                         // Create SystemTransferOut transaction (from blacklisted card)
                         var transferOut = new Transaction
                         {
@@ -132,9 +139,109 @@ namespace TRKart.Business.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in TransferBalancesFromBlacklistedCardsAsync");
-                throw;
+                _logger.LogError(ex, "Error processing balance transfers for blacklisted cards");
+                throw new InvalidOperationException("An error occurred while processing balance transfers. See logs for details.", ex);
             }
+        }
+
+        private async Task TransferBalanceToWalletAsync(CardBlacklist blacklistedCard)
+        {
+            // Check if we're already in a transaction
+            var transaction = _context.Database.CurrentTransaction != null 
+                ? null 
+                : await _context.Database.BeginTransactionAsync();
+                
+            try
+            {
+                // Get or create wallet ID
+                var walletId = await GetOrCreateWalletId(blacklistedCard.CustomerID);
+                var amount = blacklistedCard.LeftOverBalance;
+
+                // Create a wallet transaction DTO with the required CardId
+                var walletTransaction = new WalletTransactionDto
+                {
+                    WalletId = walletId,
+                    CardId = blacklistedCard.OriginalCardID, // This is required by LoadWalletAsync
+                    Amount = amount,
+                    Description = $"Transfer from blacklisted card {blacklistedCard.CardNumber}",
+                    ReferenceId = $"BLK-{blacklistedCard.CardBlacklistID}-{DateTime.UtcNow:yyyyMMddHHmmss}"
+                };
+
+                // Process the wallet load first, passing isSystemTransfer=true to bypass card status validation
+                var walletTransactionResult = await _walletService.LoadWalletAsync(walletTransaction, isSystemTransfer: true);
+
+                if (walletTransactionResult == null || walletTransactionResult.TransactionID == 0)
+                {
+                    throw new InvalidOperationException("Failed to process wallet load transaction");
+                }
+
+                // Create SystemTransferOut transaction (from blacklisted card)
+                var transferOut = new Transaction
+                {
+                    CardID = blacklistedCard.OriginalCardID,
+                    Amount = amount,
+                    TransactionType = TransactionType.SystemTransferOut,
+                    TransactionStatus = TransactionStatus.Approved.ToString(),
+                    Description = $"System transfer to wallet for blacklisted card {blacklistedCard.CardNumber}",
+                    TransactionDate = DateTime.UtcNow,
+                    // Link to the wallet transaction
+                    TransferTransactionID = walletTransactionResult.TransactionID
+                };
+
+                // Add the transaction to the context
+                _context.Transaction.Add(transferOut);
+                
+                // Update the blacklisted card's leftover balance to zero
+                blacklistedCard.LeftOverBalance = 0;
+                blacklistedCard.Notes = $"Balance of {amount} transferred to wallet on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}. {blacklistedCard.Notes}";
+                
+                // Save all changes in a single transaction
+                await _context.SaveChangesAsync();
+                
+                // Only commit if we created the transaction
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
+
+                _logger.LogInformation("Successfully transferred {Amount} from blacklisted card {CardId} to wallet {WalletId}", 
+                    amount, blacklistedCard.OriginalCardID, walletId);
+            }
+            catch (Exception ex)
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+                _logger.LogError(ex, "Error transferring balance from blacklisted card {CardId} to wallet. Error: {ErrorMessage}", 
+                    blacklistedCard.OriginalCardID, ex.Message);
+                throw; // Re-throw to be handled by the caller the exception
+            }
+        }
+
+        private async Task<int> GetOrCreateWalletId(int customerId)
+        {
+            // Check if wallet exists
+            var wallet = await _context.Wallets
+                .FirstOrDefaultAsync(w => w.CustomerID == customerId);
+
+            if (wallet != null)
+                return wallet.WalletId;
+
+            // Create a new wallet if it doesn't exist
+            var newWallet = new Wallet
+            {
+                CustomerID = customerId,
+                Balance = 0,
+                Status = CardStatus.Active,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _context.Wallets.AddAsync(newWallet);
+            await _context.SaveChangesAsync();
+
+            return newWallet.WalletId;
         }
     }
 }

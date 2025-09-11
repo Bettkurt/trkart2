@@ -60,18 +60,48 @@ namespace TRKart.Business.Services
             var response = new InputValidationResponse();
             var errors = new List<ValidationError>();
 
-            // Validate SenderCardID
-            var senderCardIdValidation = ValidateCardId(dto.SenderCardID.ToString());
-            if (!senderCardIdValidation.IsValid)
+            // Validate Source
+            if (dto.SourceType == TransferSourceType.Card)
             {
-                errors.AddRange(senderCardIdValidation.Errors);
+                var sourceValidation = ValidateCardId(dto.SourceId.ToString());
+                if (!sourceValidation.IsValid)
+                {
+                    errors.AddRange(sourceValidation.Errors);
+                }
+            }
+            else if (dto.SourceType == TransferSourceType.Wallet)
+            {
+                if (dto.SourceId <= 0)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = nameof(dto.SourceId),
+                        Error = "Wallet ID must be a positive number",
+                        Value = dto.SourceId.ToString()
+                    });
+                }
             }
 
-            // Validate RecipientCardNumber
-            var recipientCardNumberValidation = ValidateCardNumber(dto.RecipientCardNumber);
-            if (!recipientCardNumberValidation.IsValid)
+            // Validate Destination
+            if (dto.DestinationType == TransferSourceType.Card)
             {
-                errors.AddRange(recipientCardNumberValidation.Errors);
+                var destinationValidation = ValidateCardNumber(dto.DestinationIdentifier);
+                if (!destinationValidation.IsValid)
+                {
+                    errors.AddRange(destinationValidation.Errors);
+                }
+            }
+            else if (dto.DestinationType == TransferSourceType.Wallet)
+            {
+                if (string.IsNullOrWhiteSpace(dto.DestinationIdentifier) || !int.TryParse(dto.DestinationIdentifier, out _))
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = nameof(dto.DestinationIdentifier),
+                        Error = "Wallet identifier must be a valid number",
+                        Value = dto.DestinationIdentifier ?? "null"
+                    });
+                }
             }
 
             // Validate Amount
@@ -81,14 +111,15 @@ namespace TRKart.Business.Services
                 errors.AddRange(amountValidation.Errors);
             }
 
-            // Check if sender and recipient are the same
-            if (dto.SenderCardID.ToString() == dto.RecipientCardNumber)
+            // Check if source and destination are the same and of the same type
+            if (dto.SourceType == dto.DestinationType && 
+                dto.SourceId.ToString() == dto.DestinationIdentifier)
             {
                 errors.Add(new ValidationError
                 {
                     Field = "Transfer",
-                    Error = "Sender and recipient cannot be the same",
-                    Value = $"Sender: {dto.SenderCardID}, Recipient: {dto.RecipientCardNumber}"
+                    Error = "Source and destination cannot be the same",
+                    Value = $"Source: {dto.SourceId}, Destination: {dto.DestinationIdentifier}"
                 });
             }
 
@@ -314,58 +345,117 @@ namespace TRKart.Business.Services
             return response;
         }
 
-        public InputValidationResponse ValidateTransferBusinessRules(TransferCreateDto dto, UserCard senderCard, UserCard recipientCard)
+        public InputValidationResponse ValidateTransferBusinessRules(TransferCreateDto dto, object source, object destination, decimal sourceBalance)
         {
             var response = new InputValidationResponse();
             var errors = new List<ValidationError>();
 
-            // Validate sender card exists
-            if (senderCard == null)
+            // Validate source (card or wallet)
+            if (dto.SourceType == TransferSourceType.Card)
             {
-                errors.Add(new ValidationError
+                var card = source as UserCard;
+                if (card == null)
                 {
-                    Field = "SenderCard",
-                    Error = "Sender card not found",
-                    Value = dto.SenderCardID.ToString()
-                });
+                    errors.Add(new ValidationError
+                    {
+                        Field = "SourceId",
+                        Error = "Source card not found",
+                        Value = dto.SourceId.ToString()
+                    });
+                }
+                else if (card.CardStatus != CardStatus.Active)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "SourceCard",
+                        Error = "Source card is not active",
+                        Value = card.CardStatus.ToString()
+                    });
+                }
+            }
+            else // Wallet
+            {
+                var wallet = source as Wallet;
+                if (wallet == null)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "SourceId",
+                        Error = "Source wallet not found",
+                        Value = dto.SourceId.ToString()
+                    });
+                }
+                else if (wallet.Status != CardStatus.Active)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "SourceWallet",
+                        Error = "Source wallet is not active",
+                        Value = wallet.Status.ToString()
+                    });
+                }
             }
 
-            // Validate recipient card exists
-            if (recipientCard == null)
+            // Validate destination (card or wallet)
+            if (dto.DestinationType == TransferSourceType.Card)
             {
-                errors.Add(new ValidationError
+                var card = destination as UserCard;
+                if (card == null)
                 {
-                    Field = "RecipientCard",
-                    Error = "Recipient card not found",
-                    Value = dto.RecipientCardNumber
-                });
+                    errors.Add(new ValidationError
+                    {
+                        Field = "DestinationIdentifier",
+                        Error = "Destination card not found",
+                        Value = dto.DestinationIdentifier
+                    });
+                }
+                else if (card.CardStatus != CardStatus.Active)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "DestinationCard",
+                        Error = "Destination card is not active",
+                        Value = card.CardStatus.ToString()
+                    });
+                }
+            }
+            else // Wallet
+            {
+                var wallet = destination as Wallet;
+                if (wallet == null)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "DestinationIdentifier",
+                        Error = "Destination wallet not found",
+                        Value = dto.DestinationIdentifier
+                    });
+                }
+                else if (wallet.Status != CardStatus.Active)
+                {
+                    errors.Add(new ValidationError
+                    {
+                        Field = "DestinationWallet",
+                        Error = "Destination wallet is not active",
+                        Value = wallet.Status.ToString()
+                    });
+                }
             }
 
-            // Validate sender has sufficient balance
-            if (senderCard != null && senderCard.Balance < dto.Amount)
+            // Check if source has sufficient balance
+            if (sourceBalance < dto.Amount)
             {
                 errors.Add(new ValidationError
                 {
-                    Field = "Balance",
+                    Field = "Amount",
                     Error = "Insufficient balance for transfer",
-                    Value = $"Current: {senderCard.Balance}, Required: {dto.Amount}"
-                });
-            }
-
-            // Validate recipient card status is Active
-            if (recipientCard != null && recipientCard.CardStatus != CardStatus.Active)
-            {
-                errors.Add(new ValidationError
-                {
-                    Field = "RecipientCardStatus",
-                    Error = "Transfer cannot be completed. Card not found.",
-                    Value = recipientCard.CardStatus.ToString()
+                    Value = $"Current balance: {sourceBalance}, Transfer amount: {dto.Amount}"
                 });
             }
 
             response.Errors = errors;
             response.IsValid = errors.Count == 0;
-            response.Message = response.IsValid ? "Transfer business rules validation passed" : "Transfer business rules validation failed";
+            response.Message = response.IsValid ? "Business validation passed" : "Business validation failed";
 
             return response;
         }

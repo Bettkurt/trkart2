@@ -52,5 +52,8 @@ namespace TRKart.Entities.Models
         
         // Related BlacklistedCards (mandatory one-to-optional many)
         public virtual ICollection<CardBlacklist>? BlacklistedCards { get; set; } = new List<CardBlacklist>();
+
+        // Related Wallet (one-to-one relationship)
+        public virtual Wallet? Wallet { get; set; }
     }
 }

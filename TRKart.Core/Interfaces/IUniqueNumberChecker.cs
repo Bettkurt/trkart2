@@ -6,5 +6,6 @@ namespace TRKart.Core.Interfaces
     {
         Task<bool> IsCardNumberUniqueAsync(string cardNumber);
         Task<bool> IsCustomerNumberUniqueAsync(string customerNumber);
+        Task<bool> IsWalletNumberUniqueAsync(string walletNumber);
     }
 }

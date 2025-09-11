@@ -6,9 +6,9 @@ namespace TRKart.Entities.DTOs
 {
     public class TransactionCreateDto
     {
-        [Required(ErrorMessage = "CardID is required")]
-        [Range(1, int.MaxValue, ErrorMessage = "CardID must be a positive number")]
-        public int CardID { get; set; }
+        public int? CardID { get; set; }
+        public int? WalletId { get; set; }
+        public string? ReferenceId { get; set; }
 
         [Required(ErrorMessage = "Amount is required")]
         [Range(0.01, 999999.99, ErrorMessage = "Amount must be between 0.01 and 999,999.99")]
@@ -22,6 +22,8 @@ namespace TRKart.Entities.DTOs
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Description can only contain letters and numbers. No special characters allowed.")]
         public string? Description { get; set; } = null!;
+
+        public bool IsWalletTransaction => WalletId.HasValue;
     }
 
     public class TransactionFeasibilityResponse

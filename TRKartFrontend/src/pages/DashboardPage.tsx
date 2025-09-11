@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
+import { useMatchCardHeights } from '@/hooks/useMatchCardHeights';
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [expanded, setExpanded] = useState(false);
+  const quickActionsRef = useRef<HTMLDivElement>(null);
+  const transactionsRef = useRef<HTMLAnchorElement>(null);
+  const myCardsRef = useRef<HTMLAnchorElement>(null);
+  
+  // Use the height matching hook
+  useMatchCardHeights(expanded);
 
   // Log component mount and user info
   useEffect(() => {
@@ -51,6 +59,16 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-6">
               <span className="text-lg text-gray-700">Welcome, {user?.email}</span>
+              
+              {/* Wallet Button */}
+              <Link 
+                to="/wallet" 
+                className="btn-primary px-6 py-2 text-base"
+                onClick={() => handleNavigation('wallet')}
+              >
+                Wallet
+              </Link>
+              
               {/* Settings button with dropdown */}
               <div className="relative">
                 <button
@@ -93,38 +111,107 @@ const DashboardPage: React.FC = () => {
 
       <div className="flex">
         {/* Left Sidebar Navigation */}
-        <div className="w-80 bg-white shadow-sm min-h-screen p-8">
-          <div className="flex flex-col space-y-6">
-            {/* Quick Actions - Bottom */}
-            <div className="card p-6 bg-yellow-400 border-yellow-600">
-              <h3 className="text-xl font-medium text-gray-900 mb-6">Quick Actions</h3>
-              <div className="space-y-4">
-                <Link to="/new-transaction" className="btn-primary w-full block text-center py-3 text-base">New Transaction</Link>
-                <Link to="/top-up" className="bg-green-600 hover:bg-green-700 text-white w-full block text-center py-3 text-base rounded-md font-medium transition-colors">💳 Top-Up Card</Link>
-                <Link to="/create-card" className="btn-secondary w-full block text-center py-3 text-base">Add New Card</Link>
-                <Link to="/new-transfer" className="btn-primary w-full block text-center py-3 text-base">New Transfer</Link>
-                <Link to="/cards-new" className="btn-secondary w-full block text-center py-3 text-base">View New Card Design</Link>
+        <div className="w-80 bg-white shadow-sm min-h-screen p-6">
+          <div className="flex flex-col space-y-4">
+            {/* Quick Actions - Expandable */}
+            <div className="w-full" ref={quickActionsRef}>
+              <div className={`card quick-actions-card bg-yellow-400 border-yellow-600 overflow-hidden transition-all duration-300 ease-in-out ${expanded ? 'open' : ''}`}>
+                <button 
+                  className="w-full text-left p-6 focus:outline-none"
+                  onClick={() => setExpanded(!expanded)}
+                  onKeyDown={(e) => e.key === 'Enter' && setExpanded(!expanded)}
+                  aria-expanded={expanded}
+                  aria-controls="quick-actions-content"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xl font-medium text-gray-900">Quick Actions</h3>
+                      <p className="text-gray-600 mt-1 text-base">Perform common actions quickly</p>
+                    </div>
+                    <span className={`chevron transition-transform duration-300 ease-in-out ${expanded ? 'rotate-90' : ''}`}>
+                      &#9654;
+                    </span>
+                  </div>
+                </button>
+                <div className="card-body p-0">
+                  <div className="collapsed-content overflow-hidden transition-[height] duration-300 ease-in-out">
+                    {/* Minimal height for collapsed state */}
+                    <div className="h-4"></div>
+                  </div>
+                  <div 
+                    className={`quick-actions-submenu ${expanded ? 'open' : ''}`}
+                    style={{
+                      maxHeight: expanded ? '1000px' : '0',
+                      paddingTop: expanded ? '0.5rem' : '0',
+                      paddingBottom: expanded ? '1.5rem' : '0',
+                      marginTop: '0.5rem',
+                      transition: 'max-height 0.3s ease, padding 0.3s ease',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="space-y-4 px-6" onClick={(e) => e.stopPropagation()}>
+                      <Link 
+                        to="/new-transaction" 
+                        className="btn-primary w-full block text-center py-3 text-base transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        New Transaction
+                      </Link>
+                      <Link 
+                        to="/top-up" 
+                        className="bg-green-600 hover:bg-green-700 text-white w-full block text-center py-3 text-base rounded-md font-medium transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        💳 Top-Up Card
+                      </Link>
+                      <Link 
+                        to="/create-card" 
+                        className="btn-secondary w-full block text-center py-3 text-base transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Add New Card
+                      </Link>
+                      <Link 
+                        to="/new-transfer" 
+                        className="btn-primary w-full block text-center py-3 text-base transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        New Transfer
+                      </Link>
+                      <Link 
+                        to="/cards-new" 
+                        className="btn-secondary w-full block text-center py-3 text-base transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View New Card Design
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            {/* Transactions - Middle */}
+            {/* Transactions */}
             <Link 
               to="/transactions" 
-              onClick={() => handleNavigation('Transactions')}
+              ref={transactionsRef}
               className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600"
             >
-              <h3 className="text-xl font-medium text-gray-900">Transactions</h3>
-              <p className="text-gray-600 mt-3 text-base">View your transaction history</p>
+              <div className="ml-5 mt-2.5">
+                <h3 className="text-xl font-medium text-gray-900">Transactions</h3>
+                <p className="text-gray-600 mt-3 text-base">View your transaction history</p>
+              </div>
             </Link>
             
-            {/* My Cards - Top */}
             <Link 
               to="/cards" 
-              onClick={() => handleNavigation('My Cards')}
+              ref={myCardsRef}
               className="card hover:shadow-lg transition-shadow p-6 bg-yellow-400 border-yellow-600"
             >
-              <h3 className="text-xl font-medium text-gray-900">My Cards</h3>
-              <p className="text-gray-600 mt-3 text-base">Manage your payment cards</p>
+              <div className="ml-5 mt-2.5">
+                <h3 className="text-xl font-medium text-gray-900">My Cards</h3>
+                <p className="text-gray-600 mt-3 text-base">Manage your payment cards</p>
+              </div>
             </Link>
           </div>
         </div>
