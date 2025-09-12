@@ -6,7 +6,7 @@ import userCardService from '@/services/userCardService';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard, CreateTransactionRequest } from '@/types';
 import { CardStatus } from '@/types/cardStatus';
-import { TransactionType, getTransactionTypeName, getUserCreatableTransactionTypes } from '@/types/TransactionType';
+import { TransactionType, getTransactionTypeName, getTransactionFormPageTypes } from '@/types/TransactionType';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 
@@ -79,19 +79,21 @@ const TransactionFormPage: React.FC = () => {
 
         const cards = await userCardService.getUserCards();
 
-        // Filter out deactivated cards - only show Active, Inactive, and Lost cards
-        const activeCards = cards.filter(card =>
-          card.cardStatus !== CardStatus.Deactivated && card.cardStatus !== CardStatus.Expired
+        // Filter to only show Active and Inactive cards (can deposit to both)
+        const availableCards = cards.filter(card =>
+          card.cardStatus === CardStatus.Active || card.cardStatus === CardStatus.Inactive
         );
 
         // Log which cards are being filtered out
-        const deactivatedCards = cards.filter(card =>
-          card.cardStatus === CardStatus.Deactivated || card.cardStatus === CardStatus.Expired
+        const filteredCards = cards.filter(card =>
+          card.cardStatus === CardStatus.Deactivated || 
+          card.cardStatus === CardStatus.Expired || 
+          card.cardStatus === CardStatus.Lost
         );
 
-        if (deactivatedCards.length > 0) {
-          logger.info('TransactionForm', 'loadCards', 'Filtered out deactivated cards', {
-            deactivatedCards: deactivatedCards.map(card => ({
+        if (filteredCards.length > 0) {
+          logger.info('TransactionForm', 'loadCards', 'Filtered out unavailable cards', {
+            filteredCards: filteredCards.map(card => ({
               cardId: card.cardID,
               cardNumber: card.cardNumber,
               status: card.cardStatus
@@ -101,15 +103,15 @@ const TransactionFormPage: React.FC = () => {
 
         logger.info('TransactionForm', 'loadCards', 'Successfully loaded user cards', {
           totalCardCount: cards.length,
-          activeCardCount: activeCards.length,
-          deactivatedCardCount: deactivatedCards.length
+          availableCardCount: availableCards.length,
+          filteredCardCount: filteredCards.length
         });
 
-        setUserCards(cards);
+        setUserCards(availableCards);
 
-        // If we have a valid cardId in the URL and it exists in the user's cards, select it
+        // If we have a valid cardId in the URL and it exists in the available cards, select it
         if (cardIdNum !== null && cardIdFromUrl !== null) {
-          const cardExists = cards.some(card => card.cardID === cardIdNum);
+          const cardExists = availableCards.some(card => card.cardID === cardIdNum);
           if (cardExists) {
             logger.debug('TransactionForm', 'loadCards', 'Auto-selecting card from URL', {
               cardId: cardIdNum,
@@ -120,10 +122,10 @@ const TransactionFormPage: React.FC = () => {
               cardID: cardIdFromUrl! // This is guaranteed to be a string here (we checked it's not null above)
             }));
           } else {
-            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in user cards', {
+            logger.warn('TransactionForm', 'loadCards', 'Card from URL not found in available cards', {
               cardId: cardIdNum,
               cardIdStr: cardIdFromUrl,
-              availableCardIds: cards.map(c => c.cardID)
+              availableCardIds: availableCards.map(c => c.cardID)
             });
           }
         }
@@ -457,16 +459,17 @@ const TransactionFormPage: React.FC = () => {
                 <label htmlFor="cardID" className="block text-sm font-medium text-gray-700 mb-1">
                   Card
                 </label>
-                {loadingCards ? (
-                  <LoadingSpinner />
-                ) : userCards.length === 0 ? (
+                {loadingCards && <LoadingSpinner />}
+                {!loadingCards && userCards.length === 0 && (
                   <p className="text-red-500 text-sm">No cards found for this customer. Please add a card first.</p>
-                ) : (
+                )}
+                {!loadingCards && userCards.length > 0 && (
                   <select
                     id="cardID"
                     value={formData.cardID}
                     onChange={handleCardIdChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                      ${errors.cardID ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                       }`}
                     required
                   >
@@ -493,7 +496,8 @@ const TransactionFormPage: React.FC = () => {
                   id="amount"
                   value={formData.amount}
                   onChange={handleAmountChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.amount ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   placeholder="Enter amount"
                   required
@@ -512,12 +516,13 @@ const TransactionFormPage: React.FC = () => {
                   id="transactionType"
                   value={formData.transactionType}
                   onChange={handleTransactionTypeChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.transactionType ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   required
                 >
                   <option value="">Select transaction type</option>
-                  {getUserCreatableTransactionTypes().map(type => (
+                  {getTransactionFormPageTypes().map(type => (
                     <option key={type} value={type}>
                       {getTransactionTypeName(type)}
                     </option>
@@ -538,7 +543,8 @@ const TransactionFormPage: React.FC = () => {
                   id="description"
                   value={formData.description}
                   onChange={handleDescriptionChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                    ${errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                     }`}
                   placeholder="Enter description (letters and numbers only)"
                 />
@@ -549,7 +555,8 @@ const TransactionFormPage: React.FC = () => {
 
               {/* Validation Message */}
               {validationMessage && (
-                <div className={`p-3 rounded-md ${validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                <div className={`p-3 rounded-md 
+                  ${validationMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                   {validationMessage}
                 </div>
@@ -580,13 +587,14 @@ const TransactionFormPage: React.FC = () => {
 
           {/* Help Section */}
           <div className="mt-6 bg-blue-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Transaction Types</h3>
+            <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Available Transaction Types</h3>
             <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>Pay:</strong> Payment transaction (negative amount)</p>
-              <p><strong>Load:</strong> Loading money to card (positive amount)</p>
-              <p><strong>Refund:</strong> Refund transaction (positive amount)</p>
-              <p><strong>Transfer In:</strong> Money received (positive amount)</p>
-              <p><strong>Transfer Out:</strong> Money sent (negative amount)</p>
+              <p><strong>Load:</strong> Loading money to card (amount will be added)</p>
+              <p><strong>Refund:</strong> Refund transaction (amount will be added) - Testing only</p>
+              <p><strong>Pay:</strong> Payment transaction (amount will be deducted) - Testing only</p>
+            </div>
+            <div className="text-xs text-blue-600 mt-2">
+              <p>💡 <strong>Note:</strong> Top-Up and Transfer operations are available in their dedicated pages.</p>
             </div>
           </div>
         </div>

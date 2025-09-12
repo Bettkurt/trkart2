@@ -73,7 +73,7 @@ namespace TRKart.API.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var now = DateTime.UtcNow;
+            var now = DateTimeOffset.UtcNow;
 
             // Single transaction for the entire cleanup process
             using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);

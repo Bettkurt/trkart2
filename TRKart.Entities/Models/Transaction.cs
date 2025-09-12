@@ -27,37 +27,40 @@ namespace TRKart.Entities.Models
         // Otherwise, it will be null.
         [Column("TransferTransactionID", TypeName = "INT")]
         [ForeignKey("TransferTransaction")]
-        public int? TransferTransactionID { get; set; }
+        public int? TransferTransactionID { get; set; } = null!;
 
         // Navigation property for the one-to-one relationship with TransferTransaction
         public Transaction? TransferTransaction { get; set; }
 
         [Required]
-        [Column("Amount", TypeName = "DECIMAL(10, 2)")]
-        public decimal Amount { get; set; } 
-
-        [Required]
-        [Column("TransactionType", TypeName = "INT")]
-        public int TransactionType { get; set; }
-
-        [Column("Description", TypeName = "TEXT")]
-        public string? Description { get; set; }
-
-        [Column("ExternalRef")]
-        public string? ExternalRef { get; set; }
-
-        [Column("PaymentMethod")]
-        public string? PaymentMethod { get; set; }
+        [Column("Amount", TypeName = "DECIMAL(18, 2)")]
+        public decimal Amount { get; set; }
 
         [Column("FeeAmount", TypeName = "decimal(18, 2)")]
-        public decimal? FeeAmount { get; set; }
+        public decimal? FeeAmount { get; set; } = null!;
 
-        [Column("Note")]
-        public string? Note { get; set; }
+        // 0: Load, 1: TopUp, 2: Refund, 3: TransferIn, 4: TransferOut, 5: Pay, 
+        // 6: SystemTransferIn, 7: SystemTransferOut
+        [Required]
+        [Column("TransactionType")]
+        [EnumDataType(typeof(TransactionType), ErrorMessage = "Invalid transaction type")]
+        public TransactionType TransactionType { get; set; }
+
+        [Column("PaymentMethod", TypeName = "VARCHAR(50)")]
+        public string? PaymentMethod { get; set; } = null!;
+
+        [Column("ExternalRef", TypeName = "VARCHAR(100)")]
+        public string? ExternalRef { get; set; } = null!;
+
+        [Column("Description", TypeName = "TEXT")]
+        public string? Description { get; set; } = null!;
+
+        [Column("Note", TypeName = "TEXT")]
+        public string? Note { get; set; } = null!;
 
         [Column("TransactionDate")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime TransactionDate { get; set; }
+        public DateTimeOffset TransactionDate { get; set; }
 
         [Column("TransactionStatus", TypeName = "VARCHAR(20)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]

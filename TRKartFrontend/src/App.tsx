@@ -6,9 +6,14 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
-import UserCardsPage from '@/pages/UserCardsPage';
+/* *
+   * @deprecated
+   * Use NewUserCardsPage instead
+   * Not removed yet in case we need it for testing or comparison
+   */
+// import UserCardsPage from '@/pages/UserCardsPage';
 import NewUserCardsPage from '@/pages/NewUserCardsPage';
-import TransactionTestPage from '@/pages/TransactionTestPage'; // Fixed import path
+import TransactionTestPage from '@/pages/TransactionTestPage';
 import TransactionsPage from '@/pages/TransactionsPage';
 import TransactionFormPage from '@/pages/TransactionFormPage';
 import TopUpPage from '@/pages/TopUpPage';
@@ -86,11 +91,6 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />
       <Route path="/cards" element={
-        <ProtectedRoute>
-          <UserCardsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/cards-new" element={
         <ProtectedRoute>
           <NewUserCardsPage />
         </ProtectedRoute>

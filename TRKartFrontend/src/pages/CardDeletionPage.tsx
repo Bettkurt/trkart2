@@ -282,7 +282,7 @@ const CardDeletionPage: React.FC = () => {
       transferAmount: card.balance
     });
     
-    navigate('/new-transfer', { 
+    navigate(`/new-transfer?fromCardId=${card.cardID}`, { 
       state: { 
         fromCardNumber: card.cardNumber,
         amount: card.balance,

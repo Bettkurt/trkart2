@@ -104,9 +104,75 @@ const NewUserCardsPage: React.FC = () => {
     };
   }, [user]);
 
-  const handleNameEdit = (cardId: number) => {
-    // TODO: Implement name edit functionality
-    console.log('Edit card name:', cardId);
+  const handleNameEdit = async (cardId: number, newName: string) => {
+    try {
+      // Validate input length
+      if (newName.length > 16) {
+        throw new Error('Card name cannot exceed 16 characters');
+      }
+
+      // Call the API to update the card name
+      const response = await userCardService.updateCardName(cardId, newName);
+      
+      if (response.success) {
+        // Update the local state with the new name
+        setCards(prevCards => 
+          prevCards.map(card => 
+            card.cardID === cardId 
+              ? { ...card, cardName: newName }
+              : card
+          )
+        );
+        
+        // Save updated cards to localStorage as backup
+        const updatedCards = cards.map(card => 
+          card.cardID === cardId 
+            ? { ...card, cardName: newName }
+            : card
+        );
+        saveCardsToStorage(updatedCards);
+        
+        logger.info('NewUserCardsPage', 'handleNameEdit', 'Card name updated successfully', { cardId, newName });
+        
+        // Return success to trigger success message in CardItem
+        return Promise.resolve();
+      } else {
+        // Provide user-friendly error message
+        let errorMessage = 'Failed to update card name';
+        if (response.message) {
+          // Map technical error messages to user-friendly ones
+          if (response.message.includes('validation')) {
+            errorMessage = 'Card name cannot exceed 16 characters';
+          } else if (response.message.includes('not found')) {
+            errorMessage = 'Card not found or access denied';
+          } else if (response.message.includes('unauthorized')) {
+            errorMessage = 'Please log in again to continue';
+          } else {
+            errorMessage = 'Unable to save card name. Please try again.';
+          }
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      logger.error('NewUserCardsPage', 'handleNameEdit', 'Error updating card name', error as Error, { cardId, newName });
+      
+      // Provide user-friendly error messages for common scenarios
+      let userMessage = 'Failed to update card name';
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          userMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('timeout')) {
+          userMessage = 'Request timed out. Please try again.';
+        } else if (error.message.includes('16 characters')) {
+          userMessage = 'Card name cannot exceed 16 characters';
+        } else {
+          userMessage = error.message;
+        }
+      }
+      
+      // Re-throw with user-friendly message
+      throw new Error(userMessage);
+    }
   };
 
   if (isLoading) {
@@ -148,13 +214,14 @@ const NewUserCardsPage: React.FC = () => {
               <Link to="/create-card" className="btn-primary mt-4 inline-block">Add Your First Card</Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-wrap gap-x-24 gap-y-32 p-8 max-w-7xl mx-auto">
               {cards.map((card) => (
-                <CardItem 
-                  key={card.cardID} 
-                  card={card} 
-                  onNameEdit={() => handleNameEdit(card.cardID)} 
-                />
+                <div key={card.cardID} className="w-80">
+                  <CardItem 
+                    card={card} 
+                    onNameEdit={handleNameEdit} 
+                  />
+                </div>
               ))}
             </div>
           )}

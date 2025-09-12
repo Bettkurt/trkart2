@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import transactionService from '@/services/transactionService';
+import userCardService from '@/services/userCardService';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
-import { Transaction } from '@/types';
+import { Transaction, UserCard } from '@/types';
+import { CardStatus } from '@/types/cardStatus';
 import { TransactionType, getTransactionTypeName, getUserViewableTransactionTypes } from '@/types/TransactionType';
 
 interface TransactionWithStatus extends Transaction {
@@ -16,6 +18,7 @@ const TransactionsPage: React.FC = () => {
   const location = useLocation();
   const [allTransactions, setAllTransactions] = useState<TransactionWithStatus[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionWithStatus[]>([]);
+  const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -49,17 +52,36 @@ const TransactionsPage: React.FC = () => {
     if (urlFilterType === 'cardID' && cardID) {
       const cardIdNum = parseInt(cardID, 10);
       if (!isNaN(cardIdNum)) {
-        setFilterType('cardID');
+        // Set filter type to cardNumber for UI consistency
+        setFilterType('cardNumber');
         setSelectedCardID(cardIdNum);
-        logger.info('TransactionsPage', 'urlParams', 'Filtering by card ID from URL', { cardID: cardIdNum });
+        
+        // Find the card number for this card ID
+        if (userCards.length > 0) {
+          const card = userCards.find(c => c.cardID === cardIdNum);
+          if (card) {
+            setSelectedCardNumber(card.cardNumber);
+            logger.info('TransactionsPage', 'urlParams', 'Filtering by card from URL', { 
+              cardID: cardIdNum, 
+              cardNumber: card.cardNumber 
+            });
+          }
+        }
       }
     }
-  }, [location.search]);
+  }, [location.search, userCards]);
 
-  // Apply filters when allTransactions or filter settings change
+  // Apply filters when allTransactions, userCards, or filter settings change
   useEffect(() => {
     applyFilters();
-  }, [allTransactions, filterType, selectedCardNumber, selectedCardID, transactionTypeFilter, dateRangeFilter]);
+  }, [allTransactions, userCards, filterType, selectedCardNumber, selectedCardID, transactionTypeFilter, dateRangeFilter]);
+
+  // Update available card numbers when user cards are loaded
+  useEffect(() => {
+    if (userCards.length > 0 && allTransactions.length > 0) {
+      extractAvailableCardNumbers(allTransactions);
+    }
+  }, [userCards, allTransactions]);
 
   // Helper function to save transactions to localStorage (user-specific)
   const saveTransactionsToStorage = (transactions: TransactionWithStatus[], userEmail?: string) => {
@@ -105,13 +127,18 @@ const TransactionsPage: React.FC = () => {
   const applyFilters = () => {
     const startTime = performance.now();
     let filtered = [...allTransactions];
+    
+    // First, filter out transactions for deleted and expired cards
+    filtered = filterTransactionsByCardStatus(filtered);
+    
     const filterContext = {
       filterType,
       selectedCardNumber,
       selectedCardID,
       transactionTypeFilter,
       dateRangeFilter,
-      totalTransactions: allTransactions.length
+      totalTransactions: allTransactions.length,
+      afterCardStatusFilter: filtered.length
     };
 
     try {
@@ -139,6 +166,17 @@ const TransactionsPage: React.FC = () => {
           filteredOut: beforeCount - filtered.length
         });
       }
+      // Apply card ID filter when using cardNumber filter type but have selectedCardID (from URL)
+      else if (filterType === 'cardNumber' && selectedCardID !== null && !selectedCardNumber) {
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(tx => tx.cardID === selectedCardID);
+        logger.debug('TransactionsPage', 'filter', 'Applied card ID filter via cardNumber type', {
+          cardID: selectedCardID,
+          beforeCount,
+          afterCount: filtered.length,
+          filteredOut: beforeCount - filtered.length
+        });
+      }
 
       // Apply transaction type filter
       if (transactionTypeFilter !== '') {
@@ -161,7 +199,14 @@ const TransactionsPage: React.FC = () => {
         filtered = filtered.filter(tx => {
           const transactionDate = new Date(tx.transactionDate);
           const startDate = dateRangeFilter.start ? new Date(dateRangeFilter.start) : null;
-          const endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+          let endDate = dateRangeFilter.end ? new Date(dateRangeFilter.end) : null;
+
+          // If end date is provided, set it to end of day (23:59:59.999)
+          // Otherwise it is set to start of day (00:00:00.000), 
+          //  and does not display transactions for the last day of the range
+          if (endDate) {
+            endDate.setHours(23, 59, 59, 999);
+          }
 
           if (startDate && endDate) {
             return transactionDate >= startDate && transactionDate <= endDate;
@@ -176,11 +221,26 @@ const TransactionsPage: React.FC = () => {
         logger.debug('TransactionsPage', 'filter', 'Applied date range filter', {
           start: dateRangeFilter.start || 'none',
           end: dateRangeFilter.end || 'none',
+          startDate: dateRangeFilter.start ? new Date(dateRangeFilter.start).toISOString() : 'none',
+          endDate: dateRangeFilter.end ? new Date(dateRangeFilter.end).setHours(23, 59, 59, 999) && new Date(dateRangeFilter.end).toISOString() : 'none',
           beforeCount,
           afterCount: filtered.length,
           filteredOut: beforeCount - filtered.length
         });
       }
+
+      // Sort transactions by date (newest first)
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.transactionDate);
+        const dateB = new Date(b.transactionDate);
+        return dateB.getTime() - dateA.getTime(); // Newest first
+      });
+
+      logger.debug('TransactionsPage', 'sort', 'Sorted transactions by date (newest first)', {
+        transactionCount: filtered.length,
+        firstTransactionDate: filtered.length > 0 ? filtered[0].transactionDate : 'none',
+        lastTransactionDate: filtered.length > 0 ? filtered[filtered.length - 1].transactionDate : 'none'
+      });
 
       setFilteredTransactions(filtered);
       
@@ -198,10 +258,61 @@ const TransactionsPage: React.FC = () => {
     }
   };
 
-  // Extract available CardNumbers
+
+  // Filter transactions based on card status (exclude deleted and expired cards)
+  const filterTransactionsByCardStatus = (transactions: TransactionWithStatus[]): TransactionWithStatus[] => {
+    if (userCards.length === 0) {
+      // If no cards loaded yet, return all transactions (will be filtered later)
+      return transactions;
+    }
+
+    const allowedStatuses = [CardStatus.Active, CardStatus.Inactive, CardStatus.Lost];
+    const allowedCardIds = userCards
+      .filter(card => allowedStatuses.includes(card.cardStatus))
+      .map(card => card.cardID);
+
+    const filtered = transactions.filter(tx => allowedCardIds.includes(tx.cardID));
+    
+    logger.debug('TransactionsPage', 'filterByStatus', 'Filtered transactions by card status', {
+      totalTransactions: transactions.length,
+      filteredTransactions: filtered.length,
+      allowedCardIds,
+      excludedCount: transactions.length - filtered.length
+    });
+
+    return filtered;
+  };
+
+  // Extract available CardNumbers (only for active, inactive, and lost cards)
   const extractAvailableCardNumbers = (transactions: TransactionWithStatus[]) => {
-    const cardNumbers = [...new Set(transactions.map(t => t.cardNumber || t.cardID.toString()))];
+    if (userCards.length === 0) {
+      // If no cards loaded yet, extract from all transactions (will be filtered later)
+      const cardNumbers = [...new Set(transactions.map(t => t.cardNumber || t.cardID.toString()))];
+      setAvailableCardNumbers(cardNumbers.sort());
+      return;
+    }
+
+    // Filter to only include cards with allowed statuses
+    const allowedStatuses = [CardStatus.Active, CardStatus.Inactive, CardStatus.Lost];
+    const allowedCardIds = userCards
+      .filter(card => allowedStatuses.includes(card.cardStatus))
+      .map(card => card.cardID);
+
+    // Extract card numbers only for allowed cards
+    const cardNumbers = [...new Set(
+      transactions
+        .filter(tx => allowedCardIds.includes(tx.cardID))
+        .map(t => t.cardNumber || t.cardID.toString())
+    )];
+    
     setAvailableCardNumbers(cardNumbers.sort());
+    
+    logger.debug('TransactionsPage', 'extractCardNumbers', 'Extracted available card numbers', {
+      totalTransactions: transactions.length,
+      allowedCardIds,
+      extractedCardNumbers: cardNumbers.length,
+      cardNumbers
+    });
   };
 
   const loadTransactions = async () => {
@@ -211,7 +322,7 @@ const TransactionsPage: React.FC = () => {
       userEmail: user?.email ? `${user.email.substring(0, 3)}...${user.email.split('@')[1]}` : 'none'
     };
 
-    logger.info('TransactionsPage', 'load', 'Loading transactions', context);
+    logger.info('TransactionsPage', 'load', 'Loading transactions and cards', context);
     
     try {
       setLoading(true);
@@ -224,6 +335,21 @@ const TransactionsPage: React.FC = () => {
         setAvailableCardNumbers([]);
         setLoading(false);
         return;
+      }
+
+      // Load user cards first to get card status information
+      if (user?.customerID) {
+        try {
+          const cards = await userCardService.getUserCards();
+          setUserCards(cards);
+          logger.debug('TransactionsPage', 'loadCards', 'Loaded user cards', {
+            cardCount: cards.length,
+            cardStatuses: cards.map(c => ({ id: c.cardID, status: c.cardStatus }))
+          });
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('TransactionsPage', 'loadCards', 'Failed to load user cards', err);
+        }
       }
 
       // First, try to load from localStorage
@@ -319,6 +445,7 @@ const TransactionsPage: React.FC = () => {
     logger.info('TransactionsPage', 'filter', 'Clearing all filters');
     setFilterType('customerID');
     setSelectedCardNumber('');
+    setSelectedCardID(null);
     setTransactionTypeFilter('');
     setDateRangeFilter({ start: '', end: '' });
   };

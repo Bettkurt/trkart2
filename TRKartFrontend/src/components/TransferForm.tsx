@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { validationUtils } from '@/utils/validationUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserCard } from '@/types';
+import { CardStatus } from '@/types/cardStatus';
 import userCardService from '@/services/userCardService';
 import transferService from '@/services/transferService';
+import validationService from '@/services/validationService';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface TransferFormProps {
@@ -27,6 +29,35 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
   const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
 
+  // Helper method to validate sender card status
+  const validateSenderCard = (senderCardID: string) => {
+    const validation = validationService.validateSenderCard(senderCardID, userCards);
+    
+    setErrors(prev => ({
+      ...prev,
+      senderCardID: validation.isValid ? '' : validation.error || ''
+    }));
+    
+    return validation.isValid;
+  };
+
+  // Helper method to validate recipient card (self-transfer and status)
+  const validateRecipientCard = (senderCardID: string, recipientCardNumber: string) => {
+    const validation = validationService.validateTransferRecipient(senderCardID, recipientCardNumber, userCards);
+    
+    setErrors(prev => ({
+      ...prev,
+      recipientCardNumber: validation.isValid ? '' : validation.error || ''
+    }));
+    
+    return !validation.isValid; // Return true if validation failed
+  };
+
+  // Filter only active cards for sender selection
+  const getActiveCards = () => {
+    return validationService.getAvailableCardsForTransfer(userCards);
+  };
+
   // Load user cards and handle initial card selection
   useEffect(() => {
     const loadUserCards = async () => {
@@ -40,12 +71,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
         const cards = await userCardService.getUserCards();
         setUserCards(cards);
 
-        // If we have an initial card ID, verify it exists in the user's cards
+        // If we have an initial cardID, verify the card exists and is active
         if (initialFromCardId) {
           const cardId = parseInt(initialFromCardId, 10);
           if (!isNaN(cardId)) {
-            const cardExists = cards.some(card => card.cardID === cardId);
-            if (cardExists) {
+            const card = cards.find(card => card.cardID === cardId);
+            if (card && card.cardStatus === CardStatus.Active) {
               setFormData(prev => ({
                 ...prev,
                 senderCardID: initialFromCardId
@@ -80,12 +111,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
     const value = e.target.value;
     setFormData(prev => ({ ...prev, senderCardID: value }));
     
-    if (value) {
-      setErrors(prev => ({
-        ...prev,
-        senderCardID: ''
-      }));
-    }
+    // Validate sender card status
+    validateSenderCard(value);
+
+    // Check for recipient validation when sender card changes
+    //  in case they are the same cards to prevent self-transfer
+    validateRecipientCard(value, formData.recipientCardNumber);
   };
 
   const handleRecipientCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +133,9 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
         recipientCardNumber: ''
       }));
     }
+
+    // Check for recipient validation when recipient card number changes
+    validateRecipientCard(formData.senderCardID, value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,22 +143,15 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
     setIsSubmitting(true);
     setValidationMessage('');
 
-    // Validate form
-    const newErrors: { [key: string]: string } = {};
+    // Validate form using service
+    const validationData = {
+      senderCardID: formData.senderCardID,
+      recipientCardNumber: formData.recipientCardNumber,
+      amount: formData.amount,
+      userCards
+    };
     
-    if (!formData.senderCardID) {
-      newErrors.senderCardID = 'Please select a sender card';
-    }
-    
-    if (!formData.recipientCardNumber) {
-      newErrors.recipientCardNumber = 'Please enter recipient card number';
-    } else if (formData.recipientCardNumber.length < 8) {
-      newErrors.recipientCardNumber = 'Card number must be at least 8 characters';
-    }
-    
-    if (!formData.amount) {
-      newErrors.amount = 'Please enter transfer amount';
-    }
+    const newErrors = validationService.validateTransferForm(validationData);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -207,7 +234,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
             required
           >
             <option value="">Select your card</option>
-            {userCards.map((card) => (
+            {getActiveCards().map((card) => (
               <option key={card.cardID} value={card.cardID}>
                 {card.cardNumber} - Balance: ₺{card.balance}
               </option>
@@ -215,6 +242,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
           </select>
           {errors.senderCardID && (
             <p className="text-red-500 text-sm mt-1">{errors.senderCardID}</p>
+          )}
+          {getActiveCards().length === 0 && (
+            <p className="text-yellow-600 text-sm mt-1">
+              ⚠️ No active cards available for transfer. Please activate a card first.
+            </p>
           )}
         </div>
 
@@ -285,11 +317,13 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit, initialFromCardId
       <div className="mt-4 p-3 bg-blue-50 rounded-md">
         <h3 className="font-medium text-blue-800 mb-2">Transfer Features:</h3>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• <strong>Select your card</strong> from your available cards</li>
+          <li>• <strong>Select your card</strong> from your available (active) cards</li>
           <li>• <strong>Enter recipient card number</strong> manually</li>
           <li>• <strong>Specify transfer amount</strong> with validation</li>
           <li>• <strong>Linked transactions</strong> for traceability</li>
           <li>• <strong>Real-time validation</strong> and error handling</li>
+          <li>• <strong>Self-transfer prevention</strong> cannot transfer to the same card</li>
+          <li>• <strong>Active cards only</strong> both sender and recipient must be active</li>
         </ul>
       </div>
     </div>

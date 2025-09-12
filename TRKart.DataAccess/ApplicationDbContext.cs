@@ -22,5 +22,10 @@ namespace TRKart.DataAccess
         public DbSet<CardLimits> CardLimits { get; set; } = null!;
         public DbSet<CardUpdates> CardUpdates { get; set; } = null!;
         public DbSet<Transaction> Transaction { get; set; } = null!;
+
+        // Tables related to Security
+        public DbSet<AuditEvents> AuditEvents { get; set; } = null!;
+        public DbSet<SecurityEvents> SecurityEvents { get; set; } = null!;
+        public DbSet<RateLimiting> RateLimiting { get; set; } = null!;
     }
 }

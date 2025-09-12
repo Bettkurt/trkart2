@@ -46,11 +46,11 @@ namespace TRKart.UnitTests.BusinessTests
 				// Set default values for DatabaseGenerated properties in test environment
 				if (string.IsNullOrEmpty(transaction.TransactionStatus))
 				{
-					transaction.TransactionStatus = "Completed";
+					transaction.TransactionStatus = "Pending";
 				}
 				if (transaction.TransactionDate == default)
 				{
-					transaction.TransactionDate = DateTime.UtcNow;
+					transaction.TransactionDate = DateTimeOffset.UtcNow;
 				}
 
 				_context.Transaction.Add(transaction);

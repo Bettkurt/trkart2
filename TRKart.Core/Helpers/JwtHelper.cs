@@ -34,7 +34,7 @@ namespace TRKart.Core.Helpers
                 issuer: jwtSection["Issuer"],
                 audience: jwtSection["Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddSeconds(/*double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "5")*/ 5),
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "15")),
                 signingCredentials: creds
             );
 
@@ -75,16 +75,16 @@ namespace TRKart.Core.Helpers
             return principal;
         }
 
-        public DateTime GetAccessTokenExpiration()
+        public DateTimeOffset GetAccessTokenExpiration()
         {
             var jwtSection = _config.GetSection("Jwt");
-            return DateTime.UtcNow.AddMinutes(double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "15"));
+            return DateTimeOffset.UtcNow.AddMinutes(double.Parse(jwtSection["AccessTokenExpireMinutes"] ?? "15"));
         }
 
-        public DateTime GetRefreshTokenExpiration()
+        public DateTimeOffset GetRefreshTokenExpiration()
         {
             var jwtSection = _config.GetSection("Jwt");
-            return DateTime.UtcNow.AddDays(double.Parse(jwtSection["RefreshTokenExpireDays"] ?? "7"));
+            return DateTimeOffset.UtcNow.AddDays(double.Parse(jwtSection["RefreshTokenExpireDays"] ?? "7"));
         }
     }
 }

@@ -11,7 +11,7 @@ namespace TRKart.Entities.DTOs
         public decimal Amount { get; set; }
         public TransactionType TransactionType { get; set; }
         public string? Description { get; set; }
-        public DateTime TransactionDate { get; set; }
+        public DateTimeOffset TransactionDate { get; set; }
         public string? TransactionStatus { get; set; }
     }
 } 

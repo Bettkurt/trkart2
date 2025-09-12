@@ -32,55 +32,59 @@ namespace TRKart.Entities.Models
         [Column("CardNumber", TypeName = "CHAR(16)")]
         public string CardNumber { get; set; }
 
-        // Maps to Balance DECIMAL(10, 2) NOT NULL DEFAULT 0.00
+        // Maps to Balance DECIMAL(18, 2) NOT NULL DEFAULT 0.00
         [Required]
-        [Column("Balance", TypeName = "DECIMAL(10, 2)")]
-        public decimal Balance { get; set; }
+        [Column("Balance", TypeName = "DECIMAL(18, 2)")]
+        public decimal Balance { get; set; } = 0.00m;
 
         // Maps to CardStatus VARCHAR(20) NOT NULL DEFAULT '3'
         // 0: Deativated, 1: Expired, 2: Lost, 3: Inactive, 4: Active
         [Required]
         [Column("CardStatus", TypeName = "INT")]
         [EnumDataType(typeof(CardStatus), ErrorMessage = "Invalid card status")]
-        public CardStatus CardStatus { get; set; }
+        public CardStatus CardStatus { get; set; } = CardStatus.Inactive;
 
         // Maps to CardType INT NOT NULL DEFAULT 0
         // 0: Standard, 1: Gold, 2: Platinum
         [Required]
         [Column("CardType", TypeName = "INT")]
         [EnumDataType(typeof(CardType), ErrorMessage = "Invalid card type")]
-        public CardType CardType { get; set; }
+        public CardType CardType { get; set; } = CardType.Standard;
 
         // Maps to CardName VARCHAR(20)
-        [Column("CardName", TypeName = "VARCHAR(20)")]
+        [Column("CardName", TypeName = "VARCHAR(16)")]
         public string? CardName { get; set; } = null!;
 
-        // Maps to CardExpirationDate DATE 
-        //  NOT NULL 
-        //  DEFAULT (DATE_TRUNC('MONTH', CURRENT_DATE) 
-        //  + INTERVAL '5 years' 
-        //  + INTERVAL '1 month - 1 day')::DATE
+        /* * Maps to CardExpirationDate DATE 
+           * NOT NULL 
+           * DEFAULT (DATE_TRUNC('MONTH', CURRENT_DATE) 
+           * + INTERVAL '5 years' 
+           * + INTERVAL '1 month - 1 day')::DATE
+           * */
+        // 5 years from current date, and end of the current month
         [Column("CardExpirationDate", TypeName = "DATE")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime CardExpirationDate { get; set; }
+        //a [DatabaseGenerated(DatabaseGeneratedOption.Computed)]  // Commented out because DataGenrator is generating the card expiration date
+        //  and if this is not commented out, it will be ignored and the DB generated card expiration date will be used for all the cards
+        // So, I added the default value here, and removed DBGenerated
+        public DateTime CardExpirationDate { get; set; } = DateTime.Now.AddYears(5).AddMonths(1).AddDays(-1);
 
         // Soft delete fields
         [Column("IsBlacklisted", TypeName = "BOOLEAN")]
         public bool IsBlacklisted { get; set; } = false;
 
-        // Maps to CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        // Maps to CreatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         [Column("CreatedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
-        // Maps to LastUpdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        // Maps to LastUpdate TIMESTAMP WITH TIME ZONE
         [Column("LastUpdate")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime? LastUpdate { get; set; }
+        //a [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTimeOffset? LastUpdate { get; set; } = null!;
 
         // Maps to UpdateReason VARCHAR(100)
         [Column("UpdateReason", TypeName = "VARCHAR(100)")]
-        public string? UpdateReason { get; set; }
+        public string? UpdateReason { get; set; } = null!;
 
         // Related Transactions (optional one-to-optional many)
         public virtual ICollection<Transaction>? Transactions { get; set; }

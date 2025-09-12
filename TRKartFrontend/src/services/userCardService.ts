@@ -110,6 +110,33 @@ class UserCardService {
     
     return response.data;
   }
+
+  /**
+   * Updates the name of a user's card
+   * @param cardId The ID of the card to update
+   * @param cardName The new name for the card
+   */
+  async updateCardName(cardId: number, cardName: string) {
+    const response = await api.put<{
+      success: boolean; 
+      message: string; 
+      card: { cardID: number; cardNumber: string; cardName: string } 
+    }>(
+      '/SecureUserCard/user/card/name',
+      {
+        cardID: cardId,
+        cardName: cardName
+      }
+    );
+    
+    // Log the name update for debugging
+    logger.debug('userCardService', 'updateCardName', 'Card name updated', {
+      cardId,
+      cardName
+    });
+    
+    return response.data;
+  }
 }
 
 export default new UserCardService();

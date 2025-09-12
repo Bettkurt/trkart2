@@ -16,33 +16,66 @@ namespace TRKart.API.Controllers
         private readonly IAuthService _authService;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AuthController> _logger;
+        private readonly IAuditService _auditService;
 
-        public AuthController(IAuthService authService, ApplicationDbContext context, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ApplicationDbContext context, ILogger<AuthController> logger, IAuditService auditService)
         {
             _authService = authService;
             _context = context;
             _logger = logger;
+            _auditService = auditService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            _logger.LogInformation("Registration attempt for email: {Email}", dto.Email);
+            // Get client information
+            string? ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            string? userAgent = Request.Headers["User-Agent"].ToString();
+
+            _logger.LogInformation("Registration attempt for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
             
             try
             {
-                var result = await _authService.RegisterAsync(dto);
-                if (!result) {
-                    _logger.LogWarning("Registration failed - email already exists: {Email}", dto.Email);
+                var success = await _authService.RegisterAsync(dto);
+                if (!success) {
+                    _logger.LogWarning("Registration failed - email already exists: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
                     return BadRequest("Bu e-posta adresiyle zaten bir kullanıcı var.");
                 }
 
-                _logger.LogInformation("User registered successfully: {Email}", dto.Email);
-                return Ok("Kayıt başarılı!");
+                _logger.LogInformation("User registered successfully: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
+
+                // Log successful registration to audit events
+                try
+                {
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == dto.Email);
+                    if (customer != null)
+                    {
+                        await _auditService.LogAuditEventAsync(
+                            customer.CustomerID, 
+                            null, // No session ID for registration
+                            new AuditEventDto
+                            {
+                                EventType = "REGISTRATION",
+                                EventSubType = "SUCCESS",
+                                EventDetails = $"User registered successfully from IP: {ipAddress}",
+                                RiskLevel = "LOW"
+                            },
+                            ipAddress,
+                            userAgent
+                        );
+                    }
+                }
+                catch (Exception auditEx)
+                {
+                    _logger.LogError(auditEx, "Failed to log audit events for registration");
+                }
+
+                return Ok(new { message = "Kullanıcı başarıyla kaydedildi." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Registration error for email: {Email}", dto.Email);
+                _logger.LogError(ex, "Registration error for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
                 return StatusCode(500, "Kayıt sırasında bir hata oluştu.");
             }
         }
@@ -91,6 +124,47 @@ namespace TRKart.API.Controllers
                 var tokenResponse = await _authService.LoginAsync(dto, ipAddress, userAgent);
                 if (tokenResponse == null) {
                     _logger.LogWarning("Login failed - invalid credentials for email: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
+                    
+                    // Log failed login attempt to security events and update failed attempts counter
+                    try
+                    {
+                        // Try to get customer ID for failed login attempt
+                        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == dto.Email);
+                        int? customerId = null;
+                        int failedAttempts = 0;
+                        
+                        if (customer != null)
+                        {
+                            // Increment failed login attempts counter for existing customers
+                            customer.FailedLoginAttempts++;
+                            await _context.SaveChangesAsync();
+                            customerId = customer.CustomerID;
+                            failedAttempts = customer.FailedLoginAttempts;
+                        }
+                        
+                        // Always log security event for failed login attempts (even for non-existent emails)
+                        await _auditService.LogSecurityEventAsync(
+                            customerId,
+                            new SecurityEventDto
+                            {
+                                EventType = "LOGIN_FAILED",
+                                EventSeverity = customer != null ? "MEDIUM" : "HIGH", // Higher severity for non-existent emails
+                                EventDetails = customer != null 
+                                    ? $"Failed login attempt for existing email: {dto.Email} from IP: {ipAddress}. Total failed attempts: {failedAttempts}"
+                                    : $"Failed login attempt for non-existent email: {dto.Email} from IP: {ipAddress}",
+                                Email = dto.Email, // Always include the email from the request
+                                IPAddress = ipAddress,
+                                UserAgent = userAgent
+                            },
+                            ipAddress,
+                            userAgent
+                        );
+                    }
+                    catch (Exception securityEx)
+                    {
+                        _logger.LogError(securityEx, "Failed to log security event for failed login");
+                    }
+                    
                     return Unauthorized("Geçersiz e-posta veya şifre.");
                 }
 
@@ -121,6 +195,45 @@ namespace TRKart.API.Controllers
                     });
 
                 _logger.LogInformation("User logged in successfully: {Email} from IP: {IPAddress}", dto.Email, ipAddress);
+                
+                // Log successful login to audit events and reset failed attempts counter
+                try
+                {
+                    // Get customer and session information from database
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == dto.Email);
+                    var session = await _context.SessionToken
+                        .FirstOrDefaultAsync(s => s.AccessToken == tokenResponse.AccessToken);
+                    
+                    if (customer != null && session != null)
+                    {
+                        // Reset failed login attempts counter and update last login time on successful login
+                        if (customer.FailedLoginAttempts > 0)
+                        {
+                            customer.FailedLoginAttempts = 0;
+                        }
+                        customer.LastLoginAt = DateTimeOffset.UtcNow;
+                        await _context.SaveChangesAsync();
+                        
+                        await _auditService.LogAuditEventAsync(
+                            customer.CustomerID, 
+                            session.SessionID, 
+                            new AuditEventDto
+                            {
+                                EventType = "LOGIN",
+                                EventSubType = "SUCCESS",
+                                EventDetails = $"User logged in successfully from IP: {ipAddress}",
+                                RiskLevel = "LOW"
+                            },
+                            ipAddress,
+                            userAgent
+                        );
+                    }
+                }
+                catch (Exception auditEx)
+                {
+                    _logger.LogError(auditEx, "Failed to log audit event for successful login");
+                }
+                
                 return Ok(new { 
                     message = "Giriş başarılı!", 
                     accessToken = tokenResponse.AccessToken,
@@ -258,6 +371,7 @@ namespace TRKart.API.Controllers
                         Response.Cookies.Append("AccessToken", tokenResponse.AccessToken, new CookieOptions
                         {
                             HttpOnly = true,
+                            Expires = tokenResponse.AccessTokenExpiration,
                             Secure = true,
                             SameSite = SameSiteMode.Strict,
                             Path = "/"
@@ -332,8 +446,46 @@ namespace TRKart.API.Controllers
                     
                     if (session != null)
                     {
-                        // Set access token expiration to now in the database
-                        session.AccessTokenExpiration = DateTime.UtcNow;
+                        // Log logout to audit events before expiring the session
+                        try
+                        {
+                            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerID == session.CustomerID);
+                            if (customer != null)
+                            {
+                                await _auditService.LogAuditEventAsync(
+                                    customer.CustomerID,
+                                    session.SessionID,
+                                    new AuditEventDto
+                                    {
+                                        EventType = "LOGOUT",
+                                        EventSubType = "SUCCESS",
+                                        EventDetails = "User logged out successfully",
+                                        RiskLevel = "LOW"
+                                    },
+                                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                                    Request.Headers["User-Agent"].ToString()
+                                );
+                            }
+                        }
+                        catch (Exception auditEx)
+                        {
+                            _logger.LogError(auditEx, "Failed to log audit event for logout");
+                        }
+
+                        // Blacklist the refresh token for security
+                        try
+                        {
+                            await _authService.BlacklistRefreshTokenAsync(session.RefreshToken, "User-initiated logout");
+                            _logger.LogDebug("Refresh token blacklisted for logout: {TokenPrefix}...", session.RefreshToken.Substring(0, Math.Min(10, session.RefreshToken.Length)));
+                        }
+                        catch (Exception blacklistEx)
+                        {
+                            _logger.LogError(blacklistEx, "Failed to blacklist refresh token during logout");
+                        }
+
+                        // Mark session as revoked and set access token expiration to now
+                        session.IsRevoked = true;
+                        session.AccessTokenExpiration = DateTimeOffset.UtcNow;
                         await _context.SaveChangesAsync();
                         _logger.LogDebug("Session expired in database for token: {TokenPrefix}...", accessToken.Substring(0, Math.Min(10, accessToken.Length)));
                     }

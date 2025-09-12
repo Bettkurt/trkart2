@@ -22,7 +22,12 @@ namespace TRKart.Entities.Models
 
         [Column("CreatedAt")]
         [Required]
-        public DateTime CreatedAt{ get; set; } = DateTime.UtcNow;
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public DateTimeOffset CreatedAt{ get; set; }
+
+        [Column("CreatedBy")]
+        [Required]
+        public string CreatedBy { get; set; } = "System";
 
         // Navigation property to Customer
         public Customers Customer { get; set; } 

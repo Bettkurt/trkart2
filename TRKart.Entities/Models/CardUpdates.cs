@@ -22,21 +22,21 @@ namespace TRKart.Entities.Models
         public UserCard Card { get; set; }
 
         [Column("PreviousStatus")]
-        public CardStatus? PreviousStatus { get; set; }
+        public CardStatus? PreviousStatus { get; set; } = null!;
 
         [Column("NewStatus")]
-        public CardStatus? NewStatus { get; set; }
+        public CardStatus? NewStatus { get; set; } = null!;
 
         [Column("StatusUpdatedAt")]
-        public DateTime? StatusUpdatedAt { get; set; }
+        public DateTimeOffset? StatusUpdatedAt { get; set; } = null!;
 
         [Column("PreviousType")]
-        public CardType? PreviousType { get; set; }
+        public CardType? PreviousType { get; set; } = null!;
 
         [Column("NewType")]
-        public CardType? NewType { get; set; }
+        public CardType? NewType { get; set; } = null!;
 
         [Column("TypeUpdatedAt")]
-        public DateTime? TypeUpdatedAt { get; set; }
+        public DateTimeOffset? TypeUpdatedAt { get; set; } = null!;
     }
 }

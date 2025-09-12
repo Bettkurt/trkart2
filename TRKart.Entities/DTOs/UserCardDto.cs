@@ -26,7 +26,7 @@ namespace TRKart.Entities.DTOs
         [EnumDataType(typeof(CardType), ErrorMessage = "Invalid card type")]
         public CardType CardType { get; set; } = CardType.Standard;
 
-        [StringLength(20, ErrorMessage = "Card name cannot exceed 20 characters")]
+        [StringLength(16, ErrorMessage = "Card name cannot exceed 16 characters")]
         public string? CardName { get; set; }
     }
 
@@ -66,6 +66,22 @@ namespace TRKart.Entities.DTOs
         public int CardID { get; set; }
         public CardStatus? PreviousStatus { get; set; }
         public CardStatus? NewStatus { get; set; }
-        public DateTime? StatusUpdatedAt { get; set; }
+        public DateTimeOffset? StatusUpdatedAt { get; set; }
+    }
+
+    // DTO for updating card name
+    public class UpdateCardNameDto
+    {
+        /// <summary>
+        /// The ID of the card to update
+        /// </summary>
+        [Required(ErrorMessage = "Card ID is required")]
+        public int CardID { get; set; }
+
+        /// <summary>
+        /// The new name for the card
+        /// </summary>
+        [StringLength(16, ErrorMessage = "Card name cannot exceed 16 characters")]
+        public string? CardName { get; set; }
     }
 }

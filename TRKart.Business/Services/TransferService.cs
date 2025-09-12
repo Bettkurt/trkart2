@@ -27,6 +27,14 @@ namespace TRKart.Business.Services
             _inputValidationService = inputValidationService;
         }
 
+        /// <summary>
+        /// Creates a transfer using proper approval workflow with business rules:
+        /// 1. Comprehensive validation (cards, balance, limits, risk assessment)
+        /// 2. Create TransferOut transaction and wait for approval (database trigger handles approval)
+        /// 3. If TransferOut is approved, create TransferIn transaction
+        /// 4. If TransferIn is approved, complete transfer
+        /// 5. If any step fails, create automatic refund
+        /// </summary>
         public async Task<TransferResponse> CreateTransferAsync(TransferCreateDto dto)
         {
             var response = new TransferResponse();
@@ -35,7 +43,10 @@ namespace TRKart.Business.Services
             {
                 Console.WriteLine($"TransferService: Starting transfer for senderCardID={dto.SenderCardID}, recipientCardNumber={dto.RecipientCardNumber}, amount={dto.Amount}");
                 
-                // Validate input format using InputValidationService
+                // PHASE 1: COMPREHENSIVE VALIDATION
+                Console.WriteLine($"TransferService: PHASE 1 - Comprehensive validation");
+                
+                // Basic input validation
                 var inputValidation = _inputValidationService.ValidateTransferInput(dto);
                 if (!inputValidation.IsValid)
                 {
@@ -44,26 +55,21 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                // Get sender card and validate
-                Console.WriteLine($"TransferService: Looking up sender card ID {dto.SenderCardID}");
+                // Get sender and recipient cards
                 var senderCard = await _context.UserCard
                     .FirstOrDefaultAsync(c => c.CardID == dto.SenderCardID);
-
-                // Get recipient card by card number
-                Console.WriteLine($"TransferService: Looking up recipient card number {dto.RecipientCardNumber}");
                 var recipientCard = await _context.UserCard
                     .FirstOrDefaultAsync(c => c.CardNumber == dto.RecipientCardNumber);
 
-                // Validate business rules using InputValidationService
-                var businessValidation = _inputValidationService.ValidateTransferBusinessRules(dto, senderCard, recipientCard);
-                if (!businessValidation.IsValid)
+                var cardValidation = _inputValidationService.ValidateTransferBusinessRules(dto, senderCard, recipientCard);
+                if (!cardValidation.IsValid)
                 {
                     response.Success = false;
-                    response.Message = $"Business validation failed: {string.Join("; ", businessValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
+                    response.Message = $"Card validation failed: {string.Join("; ", cardValidation.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
 
-                Console.WriteLine($"TransferService: Business validation passed - Sender balance: {senderCard.Balance}, Recipient status: {recipientCard.CardStatus}");
+                Console.WriteLine($"TransferService: All validations passed - Sender balance: {senderCard.Balance}, Recipient status: {recipientCard.CardStatus}");
 
                 // Validate both transactions before creating any
                 Console.WriteLine($"TransferService: Validating both transactions before creation");
@@ -75,14 +81,6 @@ namespace TRKart.Business.Services
                     Description = $"Transfer to card {recipientCard.CardNumber}"
                 };
 
-                var transferInDto = new TransactionCreateDto
-                {
-                    CardID = recipientCard.CardID,
-                    Amount = dto.Amount,
-                    TransactionType = TransactionType.TransferIn,
-                    Description = $"Transfer from card {senderCard.CardNumber}"
-                };
-
                 // Validate TransferOut transaction feasibility using InputValidationService
                 var transferOutFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferOutDto, senderCard.Balance);
                 if (!transferOutFeasibility.IsValid)
@@ -91,6 +89,14 @@ namespace TRKart.Business.Services
                     response.Message = $"TransferOut validation failed: {string.Join("; ", transferOutFeasibility.Errors.Select(e => $"{e.Field}: {e.Error}"))}";
                     return response;
                 }
+
+                var transferInDto = new TransactionCreateDto
+                {
+                    CardID = recipientCard.CardID,
+                    Amount = dto.Amount,
+                    TransactionType = TransactionType.TransferIn,
+                    Description = $"Transfer from card {senderCard.CardNumber}"
+                };
 
                 // Validate TransferIn transaction feasibility using InputValidationService
                 var transferInFeasibility = _inputValidationService.ValidateTransactionFeasibility(transferInDto, recipientCard.Balance);
@@ -101,73 +107,110 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                // PHASE 1: Create TransferOut transaction (for sender)
-                Console.WriteLine($"TransferService: PHASE 1 - Creating TransferOut transaction");
+                // PHASE 2: CREATE TRANSFEROUT TRANSACTION
+                Console.WriteLine($"TransferService: PHASE 2 - Creating TransferOut transaction");
+                
                 var transferOutTransaction = new Transaction
                 {
                     CardID = senderCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = (int)TransactionType.TransferOut,
+                    TransactionType = TransactionType.TransferOut,
                     Description = $"Transfer to card {recipientCard.CardNumber}"
+                    // TransactionStatus and TransactionDate are set by database
                 };
 
                 var transferOutResult = await _transactionRepository.AddTransactionAsync(transferOutTransaction);
                 Console.WriteLine($"TransferService: TransferOut transaction created with ID {transferOutResult.TransactionID}");
 
-                // PHASE 2: Create TransferIn transaction (for recipient)
-                Console.WriteLine($"TransferService: PHASE 2 - Creating TransferIn transaction");
+                // PHASE 3: CHECK TRANSFEROUT APPROVAL (handled by database trigger)
+                Console.WriteLine($"TransferService: PHASE 3 - Checking TransferOut approval from database trigger");
                 
-                // Double-check recipient card status before creating TransferIn
+                // Check TransferOut status after database trigger processing
+                var updatedTransferOut = await _context.Transaction
+                    .FirstOrDefaultAsync(t => t.TransactionID == transferOutResult.TransactionID);
+                
+                if (updatedTransferOut == null)
+                {
+                    return await HandleTransferFailureAsync(transferOutResult, "TransferOut transaction not found after creation", recipientCard.CardNumber);
+                }
+
+                if (updatedTransferOut.TransactionStatus == "Denied")
+                {
+                    Console.WriteLine($"TransferService: TransferOut denied with ID {updatedTransferOut.TransactionID}. Reason: {updatedTransferOut.Description}");
+                    return new TransferResponse
+                    {
+                        Success = false,
+                        Message = $"Transfer denied: {updatedTransferOut.Description}",
+                        TransferOutTransaction = updatedTransferOut,
+                        Error = updatedTransferOut.Description
+                    };
+                }
+                
+                Console.WriteLine($"TransferService: TransferOut approved with ID {updatedTransferOut.TransactionID}");
+
+                // PHASE 4: CREATE TRANSFERIN TRANSACTION
+                Console.WriteLine($"TransferService: PHASE 4 - Creating TransferIn transaction");
+                
+                // Re-validate recipient card status before creating TransferIn
                 var currentRecipientCard = await _context.UserCard
                     .FirstOrDefaultAsync(c => c.CardID == recipientCard.CardID);
                 
                 if (currentRecipientCard == null)
                 {
-                    var failureReason = "Recipient card no longer exists";
-                    return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
+                    return await HandleTransferFailureAsync(updatedTransferOut, "Recipient card no longer exists", recipientCard.CardNumber);
                 }
                 
                 if (currentRecipientCard.CardStatus != CardStatus.Active)
                 {
-                    var failureReason = $"Recipient card status changed to {currentRecipientCard.CardStatus} during transfer. Only active cards can receive transfers.";
-                    return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
+                    return await HandleTransferFailureAsync(updatedTransferOut, $"Recipient card status changed to {currentRecipientCard.CardStatus} during transfer", recipientCard.CardNumber);
                 }
                 
                 var transferInTransaction = new Transaction
                 {
                     CardID = recipientCard.CardID,
                     Amount = dto.Amount,
-                    TransactionType = (int)TransactionType.TransferIn,
+                    TransactionType = TransactionType.TransferIn,
                     Description = $"Transfer from card {senderCard.CardNumber}",
-                    TransferTransactionID = transferOutResult.TransactionID // Link to TransferOut
+                    TransferTransactionID = updatedTransferOut.TransactionID // Link to TransferOut
+                    // TransactionStatus and TransactionDate are set by database
                 };
 
-                try
-                {
-                    var transferInResult = await _transactionRepository.AddTransactionAsync(transferInTransaction);
-                    Console.WriteLine($"TransferService: TransferIn transaction created with ID {transferInResult.TransactionID}");
+                var transferInResult = await _transactionRepository.AddTransactionAsync(transferInTransaction);
+                Console.WriteLine($"TransferService: TransferIn transaction created with ID {transferInResult.TransactionID}, Status: {transferInResult.TransactionStatus}");
 
-                    // PHASE 3: Update TransferOut transaction to link back to TransferIn
-                    Console.WriteLine($"TransferService: PHASE 3 - Updating TransferOut transaction to link back");
-                    transferOutResult.TransferTransactionID = transferInResult.TransactionID;
-                    await _context.SaveChangesAsync();
-                    Console.WriteLine($"TransferService: Successfully updated TransferOut transaction");
-
-                    response.Success = true;
-                    response.Message = "Transfer completed successfully";
-                    response.TransferInTransaction = transferInResult;
-                    response.TransferOutTransaction = transferOutResult;
-                    
-                    Console.WriteLine($"TransferService: Transfer completed successfully");
-                }
-                catch (Exception transferInException)
+                // PHASE 5: CHECK TRANSFERIN APPROVAL (handled by database trigger)
+                Console.WriteLine($"TransferService: PHASE 5 - Checking TransferIn approval from database trigger");
+                
+                // Check TransferIn status after database trigger processing
+                var updatedTransferIn = await _context.Transaction
+                    .FirstOrDefaultAsync(t => t.TransactionID == transferInResult.TransactionID);
+                
+                if (updatedTransferIn == null)
                 {
-                    Console.WriteLine($"TransferService: TransferIn failed: {transferInException.Message}");
-                    
-                    // TransferOut succeeded but TransferIn failed - create refund
-                    var failureReason = $"TransferIn creation failed: {transferInException.Message}";
-                    return await HandleTransferFailureAsync(transferOutResult, failureReason, recipientCard.CardNumber);
+                    return await HandleTransferFailureAsync(updatedTransferOut, "TransferIn transaction not found after creation", recipientCard.CardNumber);
                 }
+
+                if (updatedTransferIn.TransactionStatus == "Denied")
+                {
+                    Console.WriteLine($"TransferService: TransferIn denied with ID {updatedTransferIn.TransactionID}. Reason: {updatedTransferIn.Description}");
+                    return await HandleTransferFailureAsync(updatedTransferOut, updatedTransferIn.Description, recipientCard.CardNumber);
+                }
+                
+                // Update TransferOut to link back to TransferIn
+                updatedTransferOut.TransferTransactionID = updatedTransferIn.TransactionID;
+                
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"TransferService: TransferIn approved with ID {updatedTransferIn.TransactionID}");
+
+                // PHASE 6: TRANSFER COMPLETED SUCCESSFULLY
+                Console.WriteLine($"TransferService: PHASE 6 - Transfer completed successfully");
+                
+                response.Success = true;
+                response.Message = "Transfer completed successfully";
+                response.TransferInTransaction = updatedTransferIn;
+                response.TransferOutTransaction = updatedTransferOut;
+                
+                Console.WriteLine($"TransferService: Transfer completed successfully - TransferOut: {updatedTransferOut.TransactionID}, TransferIn: {updatedTransferIn.TransactionID}");
             }
             catch (Exception ex)
             {
@@ -210,7 +253,7 @@ namespace TRKart.Business.Services
                 {
                     response.Success = true;
                     response.IsValid = false;
-                    response.Message = "Transfer can not be completed.Card not found.";
+                    response.Message = "Transfer can not be completed. No available card found.";
                 }
                 else
                 {
@@ -247,12 +290,12 @@ namespace TRKart.Business.Services
                     return response;
                 }
 
-                if (transaction.TransactionType == (int)TransactionType.TransferOut)
+                if (transaction.TransactionType == TransactionType.TransferOut)
                 {
                     response.TransferOutTransaction = transaction;
                     response.TransferInTransaction = transaction.TransferTransaction;
                 }
-                else if (transaction.TransactionType == (int)TransactionType.TransferIn)
+                else if (transaction.TransactionType == TransactionType.TransferIn)
                 {
                     response.TransferInTransaction = transaction;
                     response.TransferOutTransaction = transaction.TransferTransaction;
@@ -271,6 +314,7 @@ namespace TRKart.Business.Services
             return response;
         }
 
+
         /// <summary>
         /// Creates a refund transaction to reverse a failed transfer
         /// This method is used when TransferOut succeeds but TransferIn fails
@@ -283,8 +327,9 @@ namespace TRKart.Business.Services
             {
                 CardID = cardId,
                 Amount = amount, // Positive amount for refund
-                TransactionType = (int)TransactionType.Refund,
+                TransactionType = TransactionType.Refund,
                 Description = description
+                // TransactionStatus and TransactionDate are set by database
             };
 
             var result = await _transactionRepository.AddTransactionAsync(refundTransaction);
@@ -295,7 +340,7 @@ namespace TRKart.Business.Services
 
         /// <summary>
         /// Handles transfer failure by creating a refund transaction
-        /// This method is called when TransferOut succeeds but TransferIn fails
+        /// This method is called when TransferOut is approved but TransferIn fails or is denied
         /// </summary>
         private async Task<TransferResponse> HandleTransferFailureAsync(
             Transaction transferOutTransaction, 
@@ -306,33 +351,44 @@ namespace TRKart.Business.Services
             
             try
             {
-                // Create refund transaction to reverse the TransferOut
-                var refundDescription = $"Refund for failed transfer to card {recipientCardNumber}. Reason: {failureReason}";
-                var refundTransaction = await CreateRefundTransactionAsync(
-                    transferOutTransaction.CardID, 
-                    transferOutTransaction.Amount, 
-                    refundDescription);
+                // Only create refund if TransferOut was actually approved (money was deducted)
+                if (transferOutTransaction.TransactionStatus == "Approved")
+                {
+                    // Create refund transaction to reverse the TransferOut
+                    var refundDescription = $"Automatic refund for failed transfer to card {recipientCardNumber}. Reason: {failureReason}";
+                    var refundTransaction = await CreateRefundTransactionAsync(
+                        transferOutTransaction.CardID, 
+                        transferOutTransaction.Amount, 
+                        refundDescription);
+
+                    Console.WriteLine($"TransferService: Refund transaction created with ID {refundTransaction.TransactionID}");
+                }
 
                 // Update TransferOut transaction to mark it as failed
                 transferOutTransaction.TransactionStatus = "Denied";
                 transferOutTransaction.Description = $"FAILED: {transferOutTransaction.Description}. {failureReason}";
                 
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"TransferService: TransferOut transaction marked as failed and refund created");
+                Console.WriteLine($"TransferService: TransferOut transaction marked as failed");
+
+                var responseMessage = transferOutTransaction.TransactionStatus == "Approved" 
+                    ? $"Transfer failed: {failureReason}. The amount has been automatically refunded to your account."
+                    : $"Transfer failed: {failureReason}. No funds were deducted.";
 
                 return new TransferResponse
                 {
                     Success = false,
-                    Message = $"Transfer failed: {failureReason}. The amount has been automatically refunded to your account.",
+                    Message = responseMessage,
                     TransferOutTransaction = transferOutTransaction,
                     Error = failureReason
                 };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"TransferService: Error creating refund transaction: {ex.Message}");
-                throw new InvalidOperationException($"Transfer failed and refund creation failed: {ex.Message}");
+                Console.WriteLine($"TransferService: Error handling transfer failure: {ex.Message}");
+                throw new InvalidOperationException($"Transfer failed and error handling failed: {ex.Message}");
             }
         }
     }
+
 } 

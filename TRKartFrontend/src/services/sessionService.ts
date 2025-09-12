@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+/* *
+   * @Deprecated since we are using cookies and localStorage instead of sessionStorage
+   * Not deleted in case we use sessionStorage in the future for something else
+   * */
 // Session storage keys
 export const SESSION_KEYS = {
   USER_ID: 'userId',

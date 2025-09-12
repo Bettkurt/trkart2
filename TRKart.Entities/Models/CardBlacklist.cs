@@ -33,7 +33,7 @@ namespace TRKart.Entities.Models
         public string CardNumber { get; set; }
 
         [Required]
-        [Column("LeftOverBalance", TypeName = "DECIMAL(10, 2)")]
+        [Column("LeftOverBalance", TypeName = "DECIMAL(18, 2)")]
         public decimal LeftOverBalance { get; set; }
 
         [Required]
@@ -46,18 +46,23 @@ namespace TRKart.Entities.Models
 
         [Required]
         [Column("OriginalCreatedAt")]
-        public DateTime OriginalCreatedAt { get; set; }
+        public DateTimeOffset OriginalCreatedAt { get; set; }
 
+        // 0: Deactivated, 1: Expired, 2: Reported Lost
         [Required]
         [Column("Reason")]
-        public CardBlacklistReason Reason { get; set; } // 0: Deactivated, 1: Expired, 2: Reported Lost
+        [EnumDataType(typeof(CardBlacklistReason), ErrorMessage = "Invalid blacklist reason")]
+        public CardBlacklistReason Reason { get; set; }
+
+        // [Column("BlacklistedBy")]
+        // public string BlacklistedBy { get; set; } = "System";
 
         [Required]
         [Column("BlacklistedAt")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public DateTime BlacklistedAt { get; set; }
+        public DateTimeOffset BlacklistedAt { get; set; }
         
         [Column("Notes", TypeName = "TEXT")]
-        public string? Notes { get; set; }
+        public string? Notes { get; set; } = null!;
     }
 }

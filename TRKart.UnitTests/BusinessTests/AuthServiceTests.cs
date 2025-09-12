@@ -168,9 +168,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = existingRefresh,
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(3),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(3),
                 AccessToken = existingAccess,
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(5),
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(5),
                 IsRevoked = false
             });
             await context.SaveChangesAsync();
@@ -184,7 +184,7 @@ namespace TRKart.UnitTests.BusinessTests
 
             Assert.NotNull(token);
             Assert.Equal(existingRefresh, token!.RefreshToken);
-            Assert.True(token.AccessTokenExpiration > DateTime.UtcNow);
+            Assert.True(token.AccessTokenExpiration > DateTimeOffset.UtcNow);
             var session = await context.SessionToken.FirstAsync();
             Assert.Equal("2.2.2.2", session.IPAddress);
             Assert.Equal("Edge", session.DeviceInfo);
@@ -199,7 +199,7 @@ namespace TRKart.UnitTests.BusinessTests
             await context.SaveChangesAsync();
 
             var blacklisted = "blacklisted-rt";
-            context.TokenBlacklist.Add(new TokenBlacklist { RefreshToken = blacklisted, BlacklistedAt = DateTime.UtcNow });
+            context.TokenBlacklist.Add(new TokenBlacklist { RefreshToken = blacklisted, BlacklistedAt = DateTimeOffset.UtcNow });
             await context.SaveChangesAsync();
 
             var service = CreateService(context);
@@ -223,9 +223,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = oldRefresh,
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = jwt.GenerateAccessToken(user.Email, user.CustomerID),
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(10),
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(10),
                 IPAddress = "1.1.1.1"
             });
             await context.SaveChangesAsync();
@@ -254,9 +254,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = oldRefresh,
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = jwt.GenerateAccessToken(user.Email, user.CustomerID),
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(10),
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(10),
                 IPAddress = "1.1.1.1"
             });
             await context.SaveChangesAsync();
@@ -286,9 +286,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = "rt-ok",
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = access,
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(30)
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(30)
             });
             await context.SaveChangesAsync();
 
@@ -317,11 +317,11 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = rt,
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = access,
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(30)
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(30)
             });
-            context.TokenBlacklist.Add(new TokenBlacklist { RefreshToken = rt, BlacklistedAt = DateTime.UtcNow });
+            context.TokenBlacklist.Add(new TokenBlacklist { RefreshToken = rt, BlacklistedAt = DateTimeOffset.UtcNow });
             await context.SaveChangesAsync();
 
             var service = CreateService(context);
@@ -344,7 +344,7 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = rt,
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1)
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1)
             });
             await context.SaveChangesAsync();
 
@@ -373,9 +373,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = "rt-x",
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = access,
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(30)
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(30)
             });
             await context.SaveChangesAsync();
 
@@ -400,9 +400,9 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 RefreshToken = "rt-y",
-                RefreshTokenExpiration = DateTime.UtcNow.AddDays(1),
+                RefreshTokenExpiration = DateTimeOffset.UtcNow.AddDays(1),
                 AccessToken = access,
-                AccessTokenExpiration = DateTime.UtcNow.AddMinutes(30)
+                AccessTokenExpiration = DateTimeOffset.UtcNow.AddMinutes(30)
             });
             await context.SaveChangesAsync();
 
@@ -446,7 +446,7 @@ namespace TRKart.UnitTests.BusinessTests
             {
                 CustomerID = user.CustomerID,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Recent1!"),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTimeOffset.UtcNow
             });
             await context.SaveChangesAsync();
 

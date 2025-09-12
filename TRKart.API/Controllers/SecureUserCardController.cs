@@ -219,6 +219,66 @@ namespace TRKart.API.Controllers
         }
 
         /// <summary>
+        /// Update card name
+        /// </summary>
+        [HttpPut("user/card/name")]
+        public async Task<IActionResult> UpdateCardName([FromBody] UpdateCardNameDto updateDto)
+        {
+            var customerId = GetCurrentCustomerId();
+            if (!customerId.HasValue)
+            {
+                _logger.LogWarning("No customer ID found in the current session");
+                return UnauthorizedResponse();
+            }
+
+            try
+            {
+                // Verify the card belongs to the current user
+                var card = await _context.UserCard
+                    .FirstOrDefaultAsync(uc => uc.CardID == updateDto.CardID && uc.CustomerID == customerId);
+
+                if (card == null)
+                {
+                    _logger.LogWarning("Card {CardID} not found or access denied for customer {CustomerId}", updateDto.CardID, customerId.Value);
+                    return NotFound(new { 
+                        success = false, 
+                        message = "Card not found or access denied" 
+                    });
+                }
+
+                // Update the card name
+                var success = await _userCardService.UpdateCardNameAsync(updateDto);
+                
+                if (!success)
+                {
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "Failed to update card name"
+                    });
+                }
+
+                // Return updated card information
+                return Ok(new { 
+                    success = true, 
+                    message = "Card name updated successfully",
+                    card = new {
+                        CardID = card.CardID,
+                        CardNumber = card.CardNumber,
+                        CardName = updateDto.CardName
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating card name for card {CardID}", updateDto.CardID);
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "An error occurred while updating card name" 
+                });
+            }
+        }
+
+        /// <summary>
         /// Get current user information
         /// </summary>
         [HttpGet("user/profile")]

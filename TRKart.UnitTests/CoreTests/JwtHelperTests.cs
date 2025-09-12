@@ -45,7 +45,7 @@ namespace TRKart.UnitTests.CoreTests
 		{
 			var helper = new JwtHelper(BuildConfig());
 			var exp = helper.GetAccessTokenExpiration();
-			Assert.True(exp > DateTime.UtcNow);
+			Assert.True(exp > DateTimeOffset.UtcNow);
 		}
 
 		[Fact]
@@ -53,7 +53,7 @@ namespace TRKart.UnitTests.CoreTests
 		{
 			var helper = new JwtHelper(BuildConfig());
 			var exp = helper.GetRefreshTokenExpiration();
-			Assert.True(exp > DateTime.UtcNow);
+			Assert.True(exp > DateTimeOffset.UtcNow);
 		}
 	}
 }

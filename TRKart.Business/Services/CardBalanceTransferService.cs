@@ -33,7 +33,7 @@ namespace TRKart.Business.Services
                 // Get all blacklisted cards with positive balance
                 var blacklistedCards = await _context.CardBlacklist
                     .Where(cb => cb.LeftOverBalance > 0
-                    && cb.BlacklistedAt < DateTime.UtcNow.AddDays(-5)) // Cards blacklisted for at least 5 days
+                    && cb.BlacklistedAt < DateTimeOffset.UtcNow.AddDays(-5)) // Cards blacklisted for at least 5 days
                     .ToListAsync();
 
                 if (!blacklistedCards.Any())
@@ -64,18 +64,15 @@ namespace TRKart.Business.Services
                                 blacklistedCard.CustomerID);
                             continue;
                         }
-
-                        // Create timestamp for consistent transaction time
-                        //var transactionTime = DateTime.UtcNow;
                         
                         // Create SystemTransferOut transaction (from blacklisted card)
                         var transferOut = new Transaction
                         {
                             CardID = blacklistedCard.OriginalCardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = (int)TransactionType.SystemTransferOut,
-                            Description = $"System transfer to card {activeCard.CardNumber}",
-                            // TransactionStatus = "Pending"
+                            TransactionType = TransactionType.SystemTransferOut,
+                            Description = $"System transfer to card {activeCard.CardNumber}"
+                            // TransactionStatus and TransactionDate are set by database
                         };
 
                         // Create SystemTransferIn transaction (to active card)
@@ -83,9 +80,9 @@ namespace TRKart.Business.Services
                         {
                             CardID = activeCard.CardID,
                             Amount = blacklistedCard.LeftOverBalance,
-                            TransactionType = (int)TransactionType.SystemTransferIn,
-                            Description = $"System transfer from blacklisted card {blacklistedCard.CardNumber}",
-                            // TransactionStatus = "Pending"
+                            TransactionType = TransactionType.SystemTransferIn,
+                            Description = $"System transfer from blacklisted card {blacklistedCard.CardNumber}"
+                            // TransactionStatus and TransactionDate are set by database
                         };
 
                         // Add both transactions to the context first (without the foreign key references)
@@ -105,7 +102,7 @@ namespace TRKart.Business.Services
                             // Update balances
                             activeCard.Balance += blacklistedCard.LeftOverBalance;
                             blacklistedCard.LeftOverBalance = 0;
-                            blacklistedCard.Notes += $"| Balance transferred to card {activeCard.CardNumber} on {DateTime.UtcNow:yyyy-MM-dd}. | ";
+                            blacklistedCard.Notes += $"| Balance transferred to card {activeCard.CardNumber} on {DateTimeOffset.UtcNow:yyyy-MM-dd}. | ";
 
                             // Save all changes
                             await _context.SaveChangesAsync();

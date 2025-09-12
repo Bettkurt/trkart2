@@ -103,7 +103,6 @@ const DashboardPage: React.FC = () => {
                 <Link to="/top-up" className="bg-green-600 hover:bg-green-700 text-white w-full block text-center py-3 text-base rounded-md font-medium transition-colors">💳 Top-Up Card</Link>
                 <Link to="/create-card" className="btn-secondary w-full block text-center py-3 text-base">Add New Card</Link>
                 <Link to="/new-transfer" className="btn-primary w-full block text-center py-3 text-base">New Transfer</Link>
-                <Link to="/cards-new" className="btn-secondary w-full block text-center py-3 text-base">View New Card Design</Link>
               </div>
             </div>
             

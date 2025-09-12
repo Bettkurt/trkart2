@@ -53,7 +53,8 @@ const TopUpForm: React.FC<TopUpFormProps> = ({ onSubmit, onCancel }) => {
       if (result.isValid && result.cardInfo) {
         setCardValidation({
           isValid: true,
-          message: `Card found - Status: ${result.cardInfo.cardStatus}, Balance: ${topUpService.formatCurrency(result.cardInfo.currentBalance)}`,
+          message: `Card found - Status: ${result.cardInfo.cardStatus}, 
+            Balance: ${topUpService.formatCurrency(result.cardInfo.currentBalance)}`,
           cardNumber: result.cardInfo.cardNumber,
           cardStatus: result.cardInfo.cardStatus,
           currentBalance: result.cardInfo.currentBalance,

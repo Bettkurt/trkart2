@@ -35,5 +35,12 @@ namespace TRKart.Business.Interfaces
         /// <param name="updateDto">Contains card ID, new status, and user's password for verification</param>
         /// <returns>True if update was successful, false otherwise</returns>
         Task<bool> UpdateCardStatusAsync(CardStatusUpdateDto updateDto);
+
+        /// <summary>
+        /// Updates the name of a user's card
+        /// </summary>
+        /// <param name="updateDto">Contains card ID and new name</param>
+        /// <returns>True if update was successful, false otherwise</returns>
+        Task<bool> UpdateCardNameAsync(UpdateCardNameDto updateDto);
     }
 }
